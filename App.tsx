@@ -179,7 +179,11 @@ function WelcomeScreen({
     <View style={styles.welcomeShell}>
       <View style={styles.welcomeCard}>
         <View style={styles.logoFrame}>
-          <Image source={beeLogo} style={styles.welcomeLogo} resizeMode="contain" />
+          <Image
+            source={beeLogo}
+            style={styles.welcomeLogo}
+            resizeMode="contain"
+          />
         </View>
 
         <Text style={styles.tagline}>Smart Beekeeping, Healthier Hives.</Text>
@@ -221,7 +225,11 @@ function LoginScreen({
 
       <View style={styles.formCard}>
         <View style={styles.brandMark}>
-          <Image source={beeLogo} style={styles.brandLogo} resizeMode="contain" />
+          <Image
+            source={beeLogo}
+            style={styles.brandLogo}
+            resizeMode="contain"
+          />
         </View>
         <Text style={styles.brandText}>BSADS</Text>
         <Text style={styles.heading}>Welcome Back</Text>
@@ -284,7 +292,11 @@ function SignupScreen({
 
       <View style={styles.formCard}>
         <View style={styles.brandMark}>
-          <Image source={beeLogo} style={styles.brandLogo} resizeMode="contain" />
+          <Image
+            source={beeLogo}
+            style={styles.brandLogo}
+            resizeMode="contain"
+          />
         </View>
         <Text style={styles.brandText}>BSADS</Text>
         <Text style={styles.heading}>Create Your Account</Text>
@@ -423,7 +435,10 @@ function AlertsListScreen({
       <View style={styles.centerState}>
         <Text style={styles.errorTitle}>Failed to load alerts</Text>
         <Text style={styles.errorBody}>{error}</Text>
-        <Pressable style={styles.primaryButtonSmall} onPress={() => void loadAlerts()}>
+        <Pressable
+          style={styles.primaryButtonSmall}
+          onPress={() => void loadAlerts()}
+        >
           <Text style={styles.primaryButtonText}>Retry</Text>
         </Pressable>
       </View>
@@ -437,8 +452,13 @@ function AlertsListScreen({
       {alerts.map((alert) => (
         <Pressable
           key={alert.id}
-          style={({ pressed }) => [styles.alertRowCard, pressed && styles.pressedRow]}
-          onPress={() => navigation.navigate("AlertDetails", { alertId: alert.id })}
+          style={({ pressed }) => [
+            styles.alertRowCard,
+            pressed && styles.pressedRow,
+          ]}
+          onPress={() =>
+            navigation.navigate("AlertDetails", { alertId: alert.id })
+          }
         >
           <View style={styles.alertRowHeader}>
             <SeverityPill severity={alert.severity} />
@@ -472,7 +492,9 @@ function AlertDetailsScreen({
       const data = await fetchAlertDetail(alertId);
       setDetail(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load alert details");
+      setError(
+        err instanceof Error ? err.message : "Could not load alert details",
+      );
     } finally {
       setLoading(false);
     }
@@ -491,10 +513,12 @@ function AlertDetailsScreen({
     try {
       await acknowledgeAlert(detail.id);
       setDetail((current) =>
-        current ? { ...current, acknowledged: true } : current
+        current ? { ...current, acknowledged: true } : current,
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not acknowledge alert");
+      setError(
+        err instanceof Error ? err.message : "Could not acknowledge alert",
+      );
     } finally {
       setAcknowledging(false);
     }
@@ -513,8 +537,13 @@ function AlertDetailsScreen({
     return (
       <View style={styles.centerState}>
         <Text style={styles.errorTitle}>Failed to load alert</Text>
-        <Text style={styles.errorBody}>{error ?? "No detail returned from API"}</Text>
-        <Pressable style={styles.primaryButtonSmall} onPress={() => void loadDetail()}>
+        <Text style={styles.errorBody}>
+          {error ?? "No detail returned from API"}
+        </Text>
+        <Pressable
+          style={styles.primaryButtonSmall}
+          onPress={() => void loadDetail()}
+        >
           <Text style={styles.primaryButtonText}>Retry</Text>
         </Pressable>
       </View>
@@ -537,7 +566,11 @@ function AlertDetailsScreen({
 
       <View style={styles.infoCard}>
         <Text style={styles.sectionTitle}>Alert Information</Text>
-        <InfoRow label="Severity" value={detail.severity} valueColor={severityColor(detail.severity)} />
+        <InfoRow
+          label="Severity"
+          value={detail.severity}
+          valueColor={severityColor(detail.severity)}
+        />
         <InfoRow label="Hive" value={detail.hiveId} />
         <InfoRow label="Time" value={detail.time} />
       </View>
@@ -571,8 +604,15 @@ function AlertDetailsScreen({
 
 function SeverityPill({ severity }: { severity: AlertSeverity }) {
   return (
-    <View style={[styles.severityPill, { backgroundColor: `${severityColor(severity)}20` }]}>
-      <Text style={[styles.severityPillText, { color: severityColor(severity) }]}>
+    <View
+      style={[
+        styles.severityPill,
+        { backgroundColor: `${severityColor(severity)}20` },
+      ]}
+    >
+      <Text
+        style={[styles.severityPillText, { color: severityColor(severity) }]}
+      >
         {severity}
       </Text>
     </View>
@@ -603,7 +643,9 @@ function DashboardScreen({
       const data = await fetchDashboard();
       setDashboard(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load dashboard data");
+      setError(
+        err instanceof Error ? err.message : "Could not load dashboard data",
+      );
     } finally {
       setLoading(false);
     }
@@ -626,8 +668,13 @@ function DashboardScreen({
     return (
       <View style={styles.centerState}>
         <Text style={styles.errorTitle}>Failed to load dashboard</Text>
-        <Text style={styles.errorBody}>{error ?? "No data returned from API"}</Text>
-        <Pressable style={styles.primaryButtonSmall} onPress={() => void loadDashboard()}>
+        <Text style={styles.errorBody}>
+          {error ?? "No data returned from API"}
+        </Text>
+        <Pressable
+          style={styles.primaryButtonSmall}
+          onPress={() => void loadDashboard()}
+        >
           <Text style={styles.primaryButtonText}>Retry</Text>
         </Pressable>
       </View>
@@ -663,10 +710,14 @@ function DashboardScreen({
         <View style={styles.alertBannerTextWrap}>
           <Text style={styles.alertBannerTitle}>Pre-swarm risk</Text>
           <Text style={styles.alertBannerSubtitle}>
-            {dashboard.statusCounts["Pre-swarm"]} hives need attention right now.
+            {dashboard.statusCounts["Pre-swarm"]} hives need attention right
+            now.
           </Text>
         </View>
-        <Pressable style={styles.alertBannerButton} onPress={() => navigation.navigate("Hives") }>
+        <Pressable
+          style={styles.alertBannerButton}
+          onPress={() => navigation.navigate("Hives")}
+        >
           <Text style={styles.alertBannerButtonText}>Review</Text>
         </Pressable>
       </View>
@@ -856,7 +907,9 @@ function HivesListScreen({
 
       {!loading && !error && hives.length === 0 && (
         <View style={styles.inlineState}>
-          <Text style={styles.stateTextSmall}>No hives found for this search.</Text>
+          <Text style={styles.stateTextSmall}>
+            No hives found for this search.
+          </Text>
         </View>
       )}
 
@@ -864,18 +917,30 @@ function HivesListScreen({
         hives.map((hive) => (
           <Pressable
             key={hive.id}
-            style={({ pressed }) => [styles.hiveRowCard, pressed && styles.pressedRow]}
-            onPress={() => navigation.navigate("HiveDetails", { hiveId: hive.id })}
+            style={({ pressed }) => [
+              styles.hiveRowCard,
+              pressed && styles.pressedRow,
+            ]}
+            onPress={() =>
+              navigation.navigate("HiveDetails", { hiveId: hive.id })
+            }
           >
             <View>
               <Text style={styles.hiveName}>{hive.id}</Text>
-              <Text style={[styles.hiveStatus, { color: STATUS_COLOR[hive.status] }]}>
+              <Text
+                style={[
+                  styles.hiveStatus,
+                  { color: STATUS_COLOR[hive.status] },
+                ]}
+              >
                 {hive.status}
               </Text>
             </View>
             <Pressable
               style={styles.mapChip}
-              onPress={() => navigation.navigate("HiveDetails", { hiveId: hive.id })}
+              onPress={() =>
+                navigation.navigate("HiveDetails", { hiveId: hive.id })
+              }
             >
               <Text style={styles.mapChipText}>View details</Text>
             </Pressable>
@@ -902,7 +967,9 @@ function HiveDetailsScreen({
       const data = await fetchHiveDetail(hiveId);
       setDetail(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load hive details");
+      setError(
+        err instanceof Error ? err.message : "Could not load hive details",
+      );
     } finally {
       setLoading(false);
     }
@@ -921,10 +988,12 @@ function HiveDetailsScreen({
     try {
       await acknowledgeHiveAlert(detail.id);
       setDetail((current) =>
-        current ? { ...current, acknowledged: true } : current
+        current ? { ...current, acknowledged: true } : current,
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not acknowledge alert");
+      setError(
+        err instanceof Error ? err.message : "Could not acknowledge alert",
+      );
     } finally {
       setAcknowledging(false);
     }
@@ -943,8 +1012,13 @@ function HiveDetailsScreen({
     return (
       <View style={styles.centerState}>
         <Text style={styles.errorTitle}>Failed to load hive</Text>
-        <Text style={styles.errorBody}>{error ?? "No detail returned from API"}</Text>
-        <Pressable style={styles.primaryButtonSmall} onPress={() => void loadDetail()}>
+        <Text style={styles.errorBody}>
+          {error ?? "No detail returned from API"}
+        </Text>
+        <Pressable
+          style={styles.primaryButtonSmall}
+          onPress={() => void loadDetail()}
+        >
           <Text style={styles.primaryButtonText}>Retry</Text>
         </Pressable>
       </View>
@@ -963,13 +1037,18 @@ function HiveDetailsScreen({
           </View>
           <View style={styles.detailHeroTextWrap}>
             <Text style={styles.detailAlertTitle}>{detail.alertTitle}</Text>
-            <Text style={styles.detailAlertSubtitle}>{detail.alertMessage}</Text>
+            <Text style={styles.detailAlertSubtitle}>
+              {detail.alertMessage}
+            </Text>
           </View>
         </View>
         <View style={styles.heroDivider} />
         <View style={styles.detailStatusRow}>
           <StatusPill status={detail.status} />
-          <Pressable style={styles.secondaryButton} onPress={() => navigation.navigate("HiveList")}>
+          <Pressable
+            style={styles.secondaryButton}
+            onPress={() => navigation.navigate("HiveList")}
+          >
             <Text style={styles.secondaryButtonText}>Back to list</Text>
           </Pressable>
         </View>
@@ -979,7 +1058,11 @@ function HiveDetailsScreen({
         <Text style={styles.sectionTitle}>Hive Information</Text>
         <InfoRow label="Name" value={detail.name} />
         <InfoRow label="Location" value={detail.location} />
-        <InfoRow label="Status" value={detail.status} valueColor={STATUS_COLOR[detail.status]} />
+        <InfoRow
+          label="Status"
+          value={detail.status}
+          valueColor={STATUS_COLOR[detail.status]}
+        />
       </View>
 
       <View style={styles.infoCard}>
@@ -1041,8 +1124,15 @@ function HiveDetailsScreen({
 
 function StatusPill({ status }: { status: HiveStatus }) {
   return (
-    <View style={[styles.statusPill, { backgroundColor: `${STATUS_COLOR[status]}20` }]}>
-      <Text style={[styles.statusPillText, { color: STATUS_COLOR[status] }]}>{status}</Text>
+    <View
+      style={[
+        styles.statusPill,
+        { backgroundColor: `${STATUS_COLOR[status]}20` },
+      ]}
+    >
+      <Text style={[styles.statusPillText, { color: STATUS_COLOR[status] }]}>
+        {status}
+      </Text>
     </View>
   );
 }
