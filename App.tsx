@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Image,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -10,7 +11,7 @@ import {
   View,
 } from "react-native";
 import { StatusBar as ExpoStatusBar } from "expo-status-bar";
-import { NavigationContainer } from "@react-navigation/native";
+import { NavigationContainer, NavigatorScreenParams } from "@react-navigation/native";
 import {
   createNativeStackNavigator,
   NativeStackScreenProps,
@@ -35,6 +36,7 @@ import {
   fetchHiveDetail,
   fetchHives,
 } from "./src/api/beeswarmApi";
+import HiveMap from "./src/components/HiveMap";
 
 const beeLogo = require("./assets/images/bee.png");
 
@@ -47,8 +49,8 @@ type RootStackParamList = {
 
 type MainTabParamList = {
   Dashboard: undefined;
-  Hives: undefined;
-  Alerts: undefined;
+  Hives: NavigatorScreenParams<HivesStackParamList>;
+  Alerts: NavigatorScreenParams<AlertsStackParamList>;
   Map: undefined;
 };
 
@@ -73,6 +75,42 @@ const STATUS_COLOR: Record<HiveStatus, string> = {
   Swarm: "#D45353",
   Abscondment: "#666A73",
 };
+
+type MapHive = Hive & { latitude: number; longitude: number };
+
+const DEFAULT_MAP_REGION = {
+  latitude: -1.2921,
+  longitude: 36.8219,
+  latitudeDelta: 0.012,
+  longitudeDelta: 0.012,
+};
+
+function hasMapCoordinates(hive: Hive): hive is MapHive {
+  return (
+    typeof hive.latitude === "number" && Number.isFinite(hive.latitude) &&
+    typeof hive.longitude === "number" && Number.isFinite(hive.longitude)
+  );
+}
+
+function getMapRegion(hives: MapHive[]) {
+  if (hives.length === 0) {
+    return DEFAULT_MAP_REGION;
+  }
+
+  const latitude = hives.reduce((sum, hive) => sum + hive.latitude, 0) / hives.length;
+  const longitude = hives.reduce((sum, hive) => sum + hive.longitude, 0) / hives.length;
+
+  return {
+    latitude,
+    longitude,
+    latitudeDelta: 0.012,
+    longitudeDelta: 0.012,
+  };
+}
+
+function formatCoordinate(value: number) {
+  return value.toFixed(4);
+}
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -716,7 +754,7 @@ function DashboardScreen({
         </View>
         <Pressable
           style={styles.alertBannerButton}
-          onPress={() => navigation.navigate("Hives")}
+          onPress={() => navigation.navigate("Hives", { screen: "HiveList" })}
         >
           <Text style={styles.alertBannerButtonText}>Review</Text>
         </Pressable>
@@ -781,7 +819,7 @@ function DashboardScreen({
       <View style={styles.quickActionsRow}>
         <Pressable
           style={styles.quickActionButton}
-          onPress={() => navigation.navigate("Hives")}
+          onPress={() => navigation.navigate("Hives", { screen: "HiveList" })}
         >
           <Text style={styles.quickActionText}>All Hives</Text>
         </Pressable>
@@ -1154,25 +1192,117 @@ function InfoRow({
   );
 }
 
-function MapScreen() {
+function MapScreen({ navigation }: BottomTabScreenProps<MainTabParamList, "Map">) {
+  const [hives, setHives] = useState<Hive[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadHives = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const data = await fetchHives();
+      setHives(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not load hive map data");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadHives();
+  }, [loadHives]);
+
+  const mapHives = useMemo(() => hives.filter(hasMapCoordinates), [hives]);
+  const region = useMemo(() => getMapRegion(mapHives), [mapHives]);
+
   return (
     <ScrollView contentContainerStyle={styles.appPage}>
       <View style={styles.mapCard}>
-        <View style={styles.mapCanvas}>
-          <View style={[styles.pin, { top: 26, left: 42 }]} />
-          <View style={[styles.pin, { top: 82, left: 148 }]} />
-          <View style={[styles.pin, { top: 156, left: 88 }]} />
-          <View style={[styles.pin, { top: 122, left: 220 }]} />
-          <View style={styles.mapLabel}>
-            <Text style={styles.mapLabelTitle}>Hive A01</Text>
-            <Text style={styles.mapLabelSub}>Healthy</Text>
+        <View style={styles.mapHeaderRow}>
+          <View>
+            <Text style={styles.cardTitle}>Live Hive Map</Text>
+            <Text style={styles.mapHeaderSub}>
+              {mapHives.length} mapped hives with status-based pins
+            </Text>
           </View>
+          <Pressable style={styles.mapRefreshButton} onPress={() => void loadHives()}>
+            <Text style={styles.mapRefreshText}>Refresh</Text>
+          </Pressable>
         </View>
 
+        {Platform.OS === "web" ? (
+          <View style={styles.mapFallback}>
+            <Text style={styles.mapFallbackTitle}>Interactive map preview is native-only.</Text>
+            <Text style={styles.mapFallbackText}>
+              Open the app on Android or iOS to see real pins on the map. Hive rows below remain clickable.
+            </Text>
+            <View style={styles.mapFallbackList}>
+              {mapHives.map((hive) => (
+                <Pressable
+                  key={hive.id}
+                  style={styles.mapFallbackRow}
+                  onPress={() =>
+                    navigation.navigate("Hives", {
+                      screen: "HiveDetails",
+                      params: { hiveId: hive.id },
+                    })
+                  }
+                >
+                  <View>
+                    <Text style={styles.mapFallbackRowTitle}>{hive.id}</Text>
+                    <Text style={styles.mapFallbackRowSub}>
+                      {formatCoordinate(hive.latitude)}, {formatCoordinate(hive.longitude)}
+                    </Text>
+                  </View>
+                  <Text style={[styles.hiveStatus, { color: STATUS_COLOR[hive.status] }]}>
+                    {hive.status}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        ) : (
+          <View style={styles.mapViewport}>
+            <HiveMap
+              mapHives={mapHives}
+              region={region}
+              statusColor={STATUS_COLOR}
+              onMarkerPress={(hiveId: string) =>
+                navigation.navigate("Hives", {
+                  screen: "HiveDetails",
+                  params: { hiveId },
+                })
+              }
+            />
+
+            {loading && (
+              <View style={styles.mapOverlay}>
+                <ActivityIndicator color="#57C61E" />
+                <Text style={styles.stateTextSmall}>Loading hive map...</Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {!!error && <Text style={styles.errorText}>{error}</Text>}
+
+        {!loading && mapHives.length === 0 && (
+          <View style={styles.emptyMapState}>
+            <Text style={styles.stateTitle}>No mapped hives yet</Text>
+            <Text style={styles.stateTextSmall}>
+              Add latitude and longitude to the hive data returned by the API.
+            </Text>
+          </View>
+        )}
+
         <View style={styles.legendWrap}>
-          <LegendItem color="#49B25C" text="Green = Normal" />
-          <LegendItem color="#D45353" text="Red = Swarm" />
-          <LegendItem color="#F2A93B" text="Orange = Pre-swarm" />
+          <LegendItem color={STATUS_COLOR.Healthy} text="Healthy" />
+          <LegendItem color={STATUS_COLOR["Pre-swarm"]} text="Pre-swarm" />
+          <LegendItem color={STATUS_COLOR.Swarm} text="Swarm" />
+          <LegendItem color={STATUS_COLOR.Abscondment} text="Abscondment" />
         </View>
       </View>
     </ScrollView>
@@ -1712,6 +1842,114 @@ const styles = StyleSheet.create({
     borderColor: "#E1ECD9",
     borderRadius: 14,
     padding: 12,
+  },
+  mapHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    marginBottom: 12,
+  },
+  mapHeaderSub: {
+    marginTop: 4,
+    color: "#667085",
+    fontWeight: "600",
+    fontSize: 12,
+  },
+  mapRefreshButton: {
+    backgroundColor: "#F4F8F1",
+    borderWidth: 1,
+    borderColor: "#D9E6D0",
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  mapRefreshText: {
+    color: "#344054",
+    fontWeight: "700",
+    fontSize: 12,
+  },
+  mapViewport: {
+    height: 320,
+    borderRadius: 12,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#D7E3D0",
+    backgroundColor: "#EDF3E8",
+  },
+  realMap: {
+    flex: 1,
+  },
+  mapOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(242, 248, 238, 0.82)",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+  },
+  mapFallback: {
+    minHeight: 320,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#D7E3D0",
+    backgroundColor: "#EDF3E8",
+    padding: 12,
+  },
+  mapFallbackTitle: {
+    color: "#253242",
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  mapFallbackText: {
+    marginTop: 6,
+    color: "#667085",
+    lineHeight: 20,
+    fontWeight: "600",
+  },
+  mapFallbackList: {
+    marginTop: 12,
+    gap: 10,
+  },
+  mapFallbackRow: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#D9E6D0",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  mapFallbackRowTitle: {
+    color: "#253242",
+    fontWeight: "800",
+  },
+  mapFallbackRowSub: {
+    marginTop: 4,
+    color: "#667085",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  emptyMapState: {
+    marginTop: 12,
+    backgroundColor: "#F4F8F1",
+    borderWidth: 1,
+    borderColor: "#D9E6D0",
+    borderRadius: 12,
+    padding: 12,
+  },
+  stateTitle: {
+    color: "#253242",
+    fontWeight: "800",
+    fontSize: 15,
+  },
+  errorText: {
+    marginTop: 12,
+    color: "#B42318",
+    fontWeight: "700",
+    lineHeight: 20,
   },
   mapCanvas: {
     position: "relative",

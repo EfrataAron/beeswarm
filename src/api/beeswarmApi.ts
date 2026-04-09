@@ -3,6 +3,8 @@ export type HiveStatus = "Healthy" | "Pre-swarm" | "Swarm" | "Abscondment";
 export type Hive = {
   id: string;
   status: HiveStatus;
+  latitude?: number;
+  longitude?: number;
 };
 
 export type DashboardData = {
@@ -50,21 +52,25 @@ export type AlertDetailData = {
   acknowledged: boolean;
 };
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? "";
+const BASE_URL =
+  String((globalThis as { process?: { env?: Record<string, string | undefined> } }).process
+    ?.env?.EXPO_PUBLIC_API_BASE_URL ?? "")
+    .replace(/\/$/, "")
+    .trim();
 
 const LOCAL_HIVES: Hive[] = [
-  { id: "Hive A01", status: "Healthy" },
-  { id: "Hive A02", status: "Pre-swarm" },
-  { id: "Hive A03", status: "Healthy" },
-  { id: "Hive A04", status: "Swarm" },
-  { id: "Hive A05", status: "Abscondment" },
-  { id: "Hive A06", status: "Healthy" },
-  { id: "Hive A07", status: "Healthy" },
-  { id: "Hive A08", status: "Pre-swarm" },
-  { id: "Hive A09", status: "Healthy" },
-  { id: "Hive A10", status: "Healthy" },
-  { id: "Hive A11", status: "Swarm" },
-  { id: "Hive A12", status: "Healthy" },
+  { id: "Hive A01", status: "Healthy", latitude: -1.2921, longitude: 36.8219 },
+  { id: "Hive A02", status: "Pre-swarm", latitude: -1.2925, longitude: 36.8232 },
+  { id: "Hive A03", status: "Healthy", latitude: -1.2913, longitude: 36.8227 },
+  { id: "Hive A04", status: "Swarm", latitude: -1.2932, longitude: 36.8241 },
+  { id: "Hive A05", status: "Abscondment", latitude: -1.2941, longitude: 36.8224 },
+  { id: "Hive A06", status: "Healthy", latitude: -1.2918, longitude: 36.8208 },
+  { id: "Hive A07", status: "Healthy", latitude: -1.2928, longitude: 36.8211 },
+  { id: "Hive A08", status: "Pre-swarm", latitude: -1.2935, longitude: 36.8206 },
+  { id: "Hive A09", status: "Healthy", latitude: -1.2911, longitude: 36.8248 },
+  { id: "Hive A10", status: "Healthy", latitude: -1.2929, longitude: 36.8251 },
+  { id: "Hive A11", status: "Swarm", latitude: -1.2944, longitude: 36.8247 },
+  { id: "Hive A12", status: "Healthy", latitude: -1.2916, longitude: 36.8239 },
 ];
 
 const LOCAL_ALERTS: AlertItem[] = [
@@ -218,19 +224,61 @@ export async function fetchHives(search = ""): Promise<Hive[]> {
     return LOCAL_HIVES.filter((hive) => hive.id.toLowerCase().includes(q));
   }
 
-  const raw = await requestJson<any[]>("/hives", search ? { search } : undefined);
+  const raw = await requestJson<any>("/hives", search ? { search } : undefined);
 
-  if (!Array.isArray(raw)) {
-    return [];
-  }
+  const rows: any[] = Array.isArray(raw)
+    ? raw
+    : Array.isArray(raw?.items)
+      ? raw.items
+      : Array.isArray(raw?.data)
+        ? raw.data
+        : Array.isArray(raw?.results)
+          ? raw.results
+          : [];
 
-  return raw
-    .map((item, index) => {
+  const mapped = rows
+    .map((item: any, index: number) => {
       const id = String(item.id ?? item.name ?? item.hiveId ?? `Hive-${index + 1}`);
       const status = normalizeStatus(String(item.status ?? item.state ?? "Healthy"));
-      return { id, status };
+      const fallbackLocation =
+        LOCAL_HIVES.find((localHive) => localHive.id === id) ??
+        LOCAL_HIVES[index % LOCAL_HIVES.length];
+      const latitude = Number(
+        item.latitude ??
+          item.lat ??
+          item.location?.latitude ??
+          item.coordinates?.latitude ??
+          item.coordinates?.lat ??
+          item.position?.latitude ??
+          item.position?.lat ??
+          fallbackLocation?.latitude
+      );
+      const longitude = Number(
+        item.longitude ??
+          item.lng ??
+          item.location?.longitude ??
+          item.coordinates?.longitude ??
+          item.coordinates?.lng ??
+          item.position?.longitude ??
+          item.position?.lng ??
+          fallbackLocation?.longitude
+      );
+
+      return {
+        id,
+        status,
+        latitude: Number.isFinite(latitude) ? latitude : undefined,
+        longitude: Number.isFinite(longitude) ? longitude : undefined,
+      };
     })
-    .sort((a, b) => a.id.localeCompare(b.id));
+    .sort((a: Hive, b: Hive) => a.id.localeCompare(b.id));
+
+  if (mapped.length > 0) {
+    return mapped;
+  }
+
+  const q = search.trim().toLowerCase();
+  return LOCAL_HIVES.filter((hive) => hive.id.toLowerCase().includes(q));
 }
 
 function buildLocalHiveDetail(hiveId: string): HiveDetailData {
