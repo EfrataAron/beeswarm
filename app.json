@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "BeeSwarm",
+    "slug": "beeswarm",
+    "scheme": "beeswarm",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#f5ffeb"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "plugins": [
+      "expo-asset"
+    ]
+  }
+}
