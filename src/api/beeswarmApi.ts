@@ -59,18 +59,18 @@ const BASE_URL =
     .trim();
 
 const LOCAL_HIVES: Hive[] = [
-  { id: "Hive A01", status: "Healthy", latitude: -1.2921, longitude: 36.8219 },
-  { id: "Hive A02", status: "Pre-swarm", latitude: -1.2925, longitude: 36.8232 },
-  { id: "Hive A03", status: "Healthy", latitude: -1.2913, longitude: 36.8227 },
-  { id: "Hive A04", status: "Swarm", latitude: -1.2932, longitude: 36.8241 },
-  { id: "Hive A05", status: "Abscondment", latitude: -1.2941, longitude: 36.8224 },
-  { id: "Hive A06", status: "Healthy", latitude: -1.2918, longitude: 36.8208 },
-  { id: "Hive A07", status: "Healthy", latitude: -1.2928, longitude: 36.8211 },
-  { id: "Hive A08", status: "Pre-swarm", latitude: -1.2935, longitude: 36.8206 },
-  { id: "Hive A09", status: "Healthy", latitude: -1.2911, longitude: 36.8248 },
-  { id: "Hive A10", status: "Healthy", latitude: -1.2929, longitude: 36.8251 },
-  { id: "Hive A11", status: "Swarm", latitude: -1.2944, longitude: 36.8247 },
-  { id: "Hive A12", status: "Healthy", latitude: -1.2916, longitude: 36.8239 },
+  { id: "Hive A01", status: "Healthy", latitude: 0.3476, longitude: 32.5825 },
+  { id: "Hive A02", status: "Pre-swarm", latitude: 0.3492, longitude: 32.5851 },
+  { id: "Hive A03", status: "Healthy", latitude: 0.3459, longitude: 32.5798 },
+  { id: "Hive A04", status: "Swarm", latitude: 0.3511, longitude: 32.5883 },
+  { id: "Hive A05", status: "Abscondment", latitude: 0.3438, longitude: 32.5774 },
+  { id: "Hive A06", status: "Healthy", latitude: 0.3526, longitude: 32.5817 },
+  { id: "Hive A07", status: "Healthy", latitude: 0.3467, longitude: 32.5902 },
+  { id: "Hive A08", status: "Pre-swarm", latitude: 0.3419, longitude: 32.5844 },
+  { id: "Hive A09", status: "Healthy", latitude: 0.3543, longitude: 32.5768 },
+  { id: "Hive A10", status: "Healthy", latitude: 0.3485, longitude: 32.5739 },
+  { id: "Hive A11", status: "Swarm", latitude: 0.3446, longitude: 32.5916 },
+  { id: "Hive A12", status: "Healthy", latitude: 0.3504, longitude: 32.5791 },
 ];
 
 const LOCAL_ALERTS: AlertItem[] = [

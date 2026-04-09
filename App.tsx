@@ -11,7 +11,10 @@ import {
   View,
 } from "react-native";
 import { StatusBar as ExpoStatusBar } from "expo-status-bar";
-import { NavigationContainer, NavigatorScreenParams } from "@react-navigation/native";
+import {
+  NavigationContainer,
+  NavigatorScreenParams,
+} from "@react-navigation/native";
 import {
   createNativeStackNavigator,
   NativeStackScreenProps,
@@ -79,16 +82,18 @@ const STATUS_COLOR: Record<HiveStatus, string> = {
 type MapHive = Hive & { latitude: number; longitude: number };
 
 const DEFAULT_MAP_REGION = {
-  latitude: -1.2921,
-  longitude: 36.8219,
+  latitude: 0.3476,
+  longitude: 32.5825,
   latitudeDelta: 0.012,
   longitudeDelta: 0.012,
 };
 
 function hasMapCoordinates(hive: Hive): hive is MapHive {
   return (
-    typeof hive.latitude === "number" && Number.isFinite(hive.latitude) &&
-    typeof hive.longitude === "number" && Number.isFinite(hive.longitude)
+    typeof hive.latitude === "number" &&
+    Number.isFinite(hive.latitude) &&
+    typeof hive.longitude === "number" &&
+    Number.isFinite(hive.longitude)
   );
 }
 
@@ -97,8 +102,10 @@ function getMapRegion(hives: MapHive[]) {
     return DEFAULT_MAP_REGION;
   }
 
-  const latitude = hives.reduce((sum, hive) => sum + hive.latitude, 0) / hives.length;
-  const longitude = hives.reduce((sum, hive) => sum + hive.longitude, 0) / hives.length;
+  const latitude =
+    hives.reduce((sum, hive) => sum + hive.latitude, 0) / hives.length;
+  const longitude =
+    hives.reduce((sum, hive) => sum + hive.longitude, 0) / hives.length;
 
   return {
     latitude,
@@ -1192,7 +1199,9 @@ function InfoRow({
   );
 }
 
-function MapScreen({ navigation }: BottomTabScreenProps<MainTabParamList, "Map">) {
+function MapScreen({
+  navigation,
+}: BottomTabScreenProps<MainTabParamList, "Map">) {
   const [hives, setHives] = useState<Hive[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -1205,7 +1214,9 @@ function MapScreen({ navigation }: BottomTabScreenProps<MainTabParamList, "Map">
       const data = await fetchHives();
       setHives(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load hive map data");
+      setError(
+        err instanceof Error ? err.message : "Could not load hive map data",
+      );
     } finally {
       setLoading(false);
     }
@@ -1228,16 +1239,22 @@ function MapScreen({ navigation }: BottomTabScreenProps<MainTabParamList, "Map">
               {mapHives.length} mapped hives with status-based pins
             </Text>
           </View>
-          <Pressable style={styles.mapRefreshButton} onPress={() => void loadHives()}>
+          <Pressable
+            style={styles.mapRefreshButton}
+            onPress={() => void loadHives()}
+          >
             <Text style={styles.mapRefreshText}>Refresh</Text>
           </Pressable>
         </View>
 
         {Platform.OS === "web" ? (
           <View style={styles.mapFallback}>
-            <Text style={styles.mapFallbackTitle}>Interactive map preview is native-only.</Text>
+            <Text style={styles.mapFallbackTitle}>
+              Interactive map preview is native-only.
+            </Text>
             <Text style={styles.mapFallbackText}>
-              Open the app on Android or iOS to see real pins on the map. Hive rows below remain clickable.
+              Open the app on Android or iOS to see real pins on the map. Hive
+              rows below remain clickable.
             </Text>
             <View style={styles.mapFallbackList}>
               {mapHives.map((hive) => (
@@ -1254,10 +1271,16 @@ function MapScreen({ navigation }: BottomTabScreenProps<MainTabParamList, "Map">
                   <View>
                     <Text style={styles.mapFallbackRowTitle}>{hive.id}</Text>
                     <Text style={styles.mapFallbackRowSub}>
-                      {formatCoordinate(hive.latitude)}, {formatCoordinate(hive.longitude)}
+                      {formatCoordinate(hive.latitude)},{" "}
+                      {formatCoordinate(hive.longitude)}
                     </Text>
                   </View>
-                  <Text style={[styles.hiveStatus, { color: STATUS_COLOR[hive.status] }]}>
+                  <Text
+                    style={[
+                      styles.hiveStatus,
+                      { color: STATUS_COLOR[hive.status] },
+                    ]}
+                  >
                     {hive.status}
                   </Text>
                 </Pressable>
