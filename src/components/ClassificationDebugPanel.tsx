@@ -56,21 +56,21 @@ export function ClassificationDebugPanel({
   const buttonStyle = StyleSheet.create({
     container: {
       padding: 10,
-      backgroundColor: "#f5f5f5",
+      backgroundColor: "#001E37",
       borderTopWidth: 1,
-      borderTopColor: "#ddd",
+      borderTopColor: "#FFD4A8",
     },
     section: {
       marginBottom: 15,
       borderBottomWidth: 1,
-      borderBottomColor: "#ddd",
+      borderBottomColor: "#FFD4A8",
       paddingBottom: 10,
     },
     sectionTitle: {
       fontSize: 11,
       fontWeight: "700",
       marginBottom: 8,
-      color: "#333",
+      color: "#FFB268",
     },
     button: {
       paddingVertical: 10,
@@ -80,26 +80,26 @@ export function ClassificationDebugPanel({
       alignItems: "center",
     },
     primaryButton: {
-      backgroundColor: "#49B25C",
+      backgroundColor: "#FFB268",
     },
     warningButton: {
-      backgroundColor: "#F2A93B",
+      backgroundColor: "#E8873A",
     },
     criticalButton: {
-      backgroundColor: "#D45353",
+      backgroundColor: "#C0392B",
     },
     infoButton: {
-      backgroundColor: "#4B8DC4",
+      backgroundColor: "#0A2E4A",
     },
     text: {
-      color: "white",
+      color: "#001E37",
       fontWeight: "600",
       fontSize: 13,
     },
     smallText: {
       fontSize: 11,
       marginTop: 8,
-      color: "#666",
+      color: "#FFD4A8",
     },
     badge: {
       display: "flex",
@@ -107,13 +107,13 @@ export function ClassificationDebugPanel({
       alignItems: "center",
       paddingVertical: 6,
       paddingHorizontal: 10,
-      backgroundColor: "#e0e0e0",
+      backgroundColor: "#0A2E4A",
       borderRadius: 4,
       marginTop: 8,
     },
     badgeText: {
       fontSize: 11,
-      color: "#333",
+      color: "#FFB268",
     },
   });
 
@@ -223,17 +223,17 @@ export function ClassificationDebugPanel({
         <Text style={buttonStyle.sectionTitle}>Continuous Polling</Text>
 
         <Pressable
-          style={[buttonStyle.button, { backgroundColor: "#666A73" }]}
+          style={[buttonStyle.button, { backgroundColor: "#0A2E4A" }]}
           onPress={() => startFetching()}
         >
-          <Text style={buttonStyle.text}>Start Polling Predictions</Text>
+          <Text style={[buttonStyle.text, { color: "#FFB268" }]}>Start Polling Predictions</Text>
         </Pressable>
 
         <Pressable
-          style={[buttonStyle.button, { backgroundColor: "#D4756B" }]}
+          style={[buttonStyle.button, { backgroundColor: "#C0392B" }]}
           onPress={() => stopFetching()}
         >
-          <Text style={buttonStyle.text}>Stop Polling</Text>
+          <Text style={[buttonStyle.text, { color: "#FFFFFF" }]}>Stop Polling</Text>
         </Pressable>
 
         <Text style={buttonStyle.smallText}>
@@ -262,10 +262,10 @@ export function ClassificationDebugPanel({
                 borderLeftWidth: 3,
                 borderLeftColor:
                   pred.severity === "Critical"
-                    ? "#D45353"
+                    ? "#C0392B"
                     : pred.severity === "Warning"
-                      ? "#F2A93B"
-                      : "#49B25C",
+                      ? "#E8873A"
+                      : "#FFB268",
                 borderRadius: 3,
               }}
             >

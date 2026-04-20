@@ -42,6 +42,7 @@ import {
 } from "./src/api/beeswarmApi";
 import HiveMap from "./src/components/HiveMap";
 import { ClassificationDebugPanel } from "./src/components/ClassificationDebugPanel";
+import AntDesign from '@expo/vector-icons/AntDesign';
 
 const beeLogo = require("./assets/images/bee.png");
 
@@ -74,11 +75,34 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 const HivesStack = createNativeStackNavigator<HivesStackParamList>();
 const AlertsStack = createNativeStackNavigator<AlertsStackParamList>();
 
+// ─── Design Tokens ───────────────────────────────────────────────────────────
+const C = {
+  primary: "#FFB268",       // Tranquil Orange
+  primaryDark: "#E8873A",   // Darker orange for hover/active
+  primaryLight: "#FFF5EB",  // Light orange tint
+  primaryBorder: "#FFD4A8", // Orange border
+  dark: "#001E37",          // Maastricht Blue
+  darkMid: "#0A2E4A",       // Slightly lighter dark
+  darkSurface: "#0D3352",   // Card surface on dark bg
+  surface: "#FFFFFF",
+  pageBg: "#FFFFFF",        // White page background
+  text: "#001E37",          // Maastricht Blue — sharp, not dull
+  textMuted: "#3D4F60",     // Mid-tone — readable, not washed out
+  textLight: "#6B7A8D",     // Subtle labels
+  border: "#E8D5C0",
+  borderLight: "#F5EDE3",
+  // Status colours
+  statusHealthy: "#FFB268",
+  statusPreswarm: "#E8873A",
+  statusSwarm: "#C0392B",
+  statusAbscondment: "#5A6A7A",
+};
+
 const STATUS_COLOR: Record<HiveStatus, string> = {
-  Healthy: "#49B25C",
-  "Pre-swarm": "#F2A93B",
-  Swarm: "#D45353",
-  Abscondment: "#666A73",
+  Healthy: C.statusHealthy,
+  "Pre-swarm": C.statusPreswarm,
+  Swarm: C.statusSwarm,
+  Abscondment: C.statusAbscondment,
 };
 
 type MapHive = Hive & { latitude: number; longitude: number };
@@ -131,7 +155,7 @@ export default function App() {
         <RootStack.Navigator
           screenOptions={{
             headerShown: false,
-            contentStyle: { backgroundColor: "#F2F8EE" },
+            contentStyle: { backgroundColor: C.dark },
             animation: "slide_from_right",
           }}
         >
@@ -176,28 +200,29 @@ function MainTabsScreen({ onLogout }: { onLogout: () => void }) {
   return (
     <Tab.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: "#FFFFFF" },
-        headerTintColor: "#1F2A37",
+        headerStyle: { backgroundColor: C.dark },
+        headerTintColor: C.primary,
         headerTitleStyle: { fontWeight: "800" },
         tabBarStyle: {
-          backgroundColor: "#FFFFFF",
-          borderTopColor: "#DEEADB",
+          backgroundColor: C.dark,
+          borderTopColor: C.darkMid,
           height: 62,
           paddingBottom: 8,
           paddingTop: 8,
         },
-        tabBarActiveTintColor: "#57C61E",
-        tabBarInactiveTintColor: "#8A97A8",
+        tabBarActiveTintColor: C.primary,
+        tabBarInactiveTintColor: C.textMuted,
       }}
     >
       <Tab.Screen
         name="Dashboard"
         component={DashboardScreen}
         options={{
-          title: "Hive Overview",
+          title: "Dashboard",
           tabBarLabel: "Home",
           headerRight: () => (
             <Pressable style={styles.headerAction} onPress={onLogout}>
+              <AntDesign name="logout" size={14} color={C.dark} />
               <Text style={styles.headerActionText}>Logout</Text>
             </Pressable>
           ),
@@ -266,12 +291,12 @@ function LoginScreen({
       contentContainerStyle={styles.formPage}
       keyboardShouldPersistTaps="handled"
     >
-      <Pressable
+      {/* <Pressable
         onPress={() => navigation.navigate("Welcome")}
         style={styles.backChip}
       >
         <Text style={styles.backChipText}>Back</Text>
-      </Pressable>
+      </Pressable> */}
 
       <View style={styles.formCard}>
         <View style={styles.brandMark}>
@@ -405,8 +430,8 @@ function HivesStackScreen() {
   return (
     <HivesStack.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: "#FFFFFF" },
-        headerTintColor: "#1F2A37",
+        headerStyle: { backgroundColor: C.dark },
+        headerTintColor: C.primary,
         headerTitleStyle: { fontWeight: "800" },
       }}
     >
@@ -428,8 +453,8 @@ function AlertsStackScreen() {
   return (
     <AlertsStack.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: "#FFFFFF" },
-        headerTintColor: "#1F2A37",
+        headerStyle: { backgroundColor: C.dark },
+        headerTintColor: C.primary,
         headerTitleStyle: { fontWeight: "800" },
       }}
     >
@@ -474,7 +499,7 @@ function AlertsListScreen({
   if (loading) {
     return (
       <View style={styles.centerState}>
-        <ActivityIndicator size="large" color="#57C61E" />
+        <ActivityIndicator size="large" color={C.primary} />
         <Text style={styles.stateText}>Loading alerts...</Text>
       </View>
     );
@@ -577,7 +602,7 @@ function AlertDetailsScreen({
   if (loading) {
     return (
       <View style={styles.centerState}>
-        <ActivityIndicator size="large" color="#57C61E" />
+        <ActivityIndicator size="large" color={C.primary} />
         <Text style={styles.stateText}>Loading alert details...</Text>
       </View>
     );
@@ -671,12 +696,12 @@ function SeverityPill({ severity }: { severity: AlertSeverity }) {
 
 function severityColor(severity: AlertSeverity): string {
   if (severity === "Critical") {
-    return "#D45353";
+    return C.statusSwarm;
   }
   if (severity === "Warning") {
-    return "#F2A93B";
+    return C.statusPreswarm;
   }
-  return "#3B82F6";
+  return C.primary;
 }
 
 function DashboardScreen({
@@ -708,7 +733,7 @@ function DashboardScreen({
   if (loading) {
     return (
       <View style={styles.centerState}>
-        <ActivityIndicator size="large" color="#57C61E" />
+        <ActivityIndicator size="large" color={C.primary} />
         <Text style={styles.stateText}>Loading dashboard...</Text>
       </View>
     );
@@ -779,25 +804,25 @@ function DashboardScreen({
         <StatCard
           label="Normal"
           value={dashboard.statusCounts.Healthy}
-          color="#49B25C"
+          color={C.statusHealthy}
           icon="N"
         />
         <StatCard
           label="Pre-swarm"
           value={dashboard.statusCounts["Pre-swarm"]}
-          color="#F2A93B"
+          color={C.statusPreswarm}
           icon="P"
         />
         <StatCard
           label="Swarm"
           value={dashboard.statusCounts.Swarm}
-          color="#D45353"
+          color={C.statusSwarm}
           icon="S"
         />
         <StatCard
           label="Abscondment"
           value={dashboard.statusCounts.Abscondment}
-          color="#666A73"
+          color={C.statusAbscondment}
           icon="A"
         />
       </View>
@@ -942,7 +967,7 @@ function HivesListScreen({
 
       {loading && (
         <View style={styles.inlineState}>
-          <ActivityIndicator color="#57C61E" />
+          <ActivityIndicator color={C.primary} />
           <Text style={styles.stateTextSmall}>Loading hives...</Text>
         </View>
       )}
@@ -1056,7 +1081,7 @@ function HiveDetailsScreen({
   if (loading) {
     return (
       <View style={styles.centerState}>
-        <ActivityIndicator size="large" color="#57C61E" />
+        <ActivityIndicator size="large" color={C.primary} />
         <Text style={styles.stateText}>Loading hive details...</Text>
       </View>
     );
@@ -1083,10 +1108,10 @@ function HiveDetailsScreen({
     detail.metricSeries.length > 0
       ? detail.metricSeries
       : detail.metrics.map((value, index) => ({
-          timeLabel: `R${index + 1}`,
-          temperatureC: value,
-          humidityPercent: 60 + index,
-        }));
+        timeLabel: `R${index + 1}`,
+        temperatureC: value,
+        humidityPercent: 60 + index,
+      }));
 
   const temperatureValues = metricSeries.map((point) => point.temperatureC);
   const humidityValues = metricSeries.map((point) => point.humidityPercent);
@@ -1156,11 +1181,11 @@ function HiveDetailsScreen({
 
         <View style={styles.metricsLegendRow}>
           <View style={styles.metricsLegendItem}>
-            <View style={[styles.legendDot, { backgroundColor: "#63D21D" }]} />
+            <View style={[styles.legendDot, { backgroundColor: C.primary }]} />
             <Text style={styles.legendText}>Temperature</Text>
           </View>
           <View style={styles.metricsLegendItem}>
-            <View style={[styles.legendDot, { backgroundColor: "#4B8DC4" }]} />
+            <View style={[styles.legendDot, { backgroundColor: C.dark }]} />
             <Text style={styles.legendText}>Humidity</Text>
           </View>
         </View>
@@ -1385,7 +1410,7 @@ function MapScreen({
 
             {loading && (
               <View style={styles.mapOverlay}>
-                <ActivityIndicator color="#57C61E" />
+                <ActivityIndicator color={C.primary} />
                 <Text style={styles.stateTextSmall}>Loading hive map...</Text>
               </View>
             )}
@@ -1468,25 +1493,25 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
-    backgroundColor: "#F5FFEB",
+    backgroundColor: C.dark,
   },
   welcomeCard: {
     width: "100%",
     maxWidth: 360,
     minHeight: 420,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: C.darkSurface,
     borderRadius: 20,
     paddingVertical: 26,
     paddingHorizontal: 22,
     alignItems: "center",
     justifyContent: "space-between",
     shadowColor: "#000",
-    shadowOpacity: 0.16,
+    shadowOpacity: 0.3,
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 8 },
     elevation: 5,
     borderWidth: 1,
-    borderColor: "#E8F2DE",
+    borderColor: C.primaryBorder,
   },
   logoFrame: {
     marginTop: 8,
@@ -1497,9 +1522,13 @@ const styles = StyleSheet.create({
   welcomeLogo: {
     width: 168,
     height: 154,
+    // color:'#FFB268',
+    backgroundColor: '#FFB268',
+    borderRadius: 20,       // 💡 Adjust this number for more or less rounding
+    overflow: 'hidden',
   },
   tagline: {
-    color: "#6FBC34",
+    color: C.primary,
     fontSize: 15,
     fontWeight: "700",
     letterSpacing: 0.2,
@@ -1507,7 +1536,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   primaryButton: {
-    backgroundColor: "#63D21D",
+    backgroundColor: C.primary,
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: "center",
@@ -1516,7 +1545,7 @@ const styles = StyleSheet.create({
   },
   primaryButtonSmall: {
     marginTop: 12,
-    backgroundColor: "#63D21D",
+    backgroundColor: C.primary,
     borderRadius: 8,
     paddingVertical: 10,
     paddingHorizontal: 16,
@@ -1528,7 +1557,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   primaryButtonText: {
-    color: "#FFFFFF",
+    color: C.dark,
     fontWeight: "700",
     fontSize: 15,
   },
@@ -1543,7 +1572,7 @@ const styles = StyleSheet.create({
     width: 180,
     height: 180,
     borderRadius: 180,
-    backgroundColor: "rgba(112, 194, 76, 0.08)",
+    backgroundColor: "rgba(255, 178, 104, 0.08)",
   },
   backgroundOrbTwo: {
     position: "absolute",
@@ -1552,40 +1581,40 @@ const styles = StyleSheet.create({
     width: 160,
     height: 160,
     borderRadius: 160,
-    backgroundColor: "rgba(99, 210, 29, 0.1)",
+    backgroundColor: "rgba(255, 178, 104, 0.1)",
   },
   formPage: {
     flexGrow: 1,
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
-    backgroundColor: "#F7FAF7",
+    backgroundColor: C.dark,
   },
   backChip: {
     alignSelf: "flex-start",
     marginBottom: 12,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: C.darkSurface,
     borderRadius: 999,
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderWidth: 1,
-    borderColor: "#E5EBDF",
+    borderColor: C.primaryBorder,
   },
   backChipText: {
-    color: "#344054",
+    color: C.primary,
     fontWeight: "600",
   },
   formCard: {
     width: "100%",
     maxWidth: 360,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: C.darkSurface,
     borderRadius: 20,
     paddingHorizontal: 20,
     paddingVertical: 24,
     borderWidth: 1,
-    borderColor: "#EDF0EA",
+    borderColor: C.primaryBorder,
     shadowColor: "#000",
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.2,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 8 },
     elevation: 3,
@@ -1595,7 +1624,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: "#67DB2C",
+    backgroundColor: C.primary,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 6,
@@ -1606,7 +1635,7 @@ const styles = StyleSheet.create({
   },
   brandText: {
     textAlign: "center",
-    color: "#63D21D",
+    color: C.primary,
     fontWeight: "800",
     letterSpacing: 0.8,
     marginBottom: 20,
@@ -1615,19 +1644,19 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 24,
     fontWeight: "800",
-    color: "#27272A",
+    color: C.surface,
     marginBottom: 20,
   },
   input: {
     width: "100%",
     borderWidth: 1,
-    borderColor: "#E6EBF0",
+    borderColor: C.primaryBorder,
     borderRadius: 6,
     paddingHorizontal: 12,
     paddingVertical: 11,
     fontSize: 14,
-    color: "#101828",
-    backgroundColor: "#FFFFFF",
+    color: C.surface,
+    backgroundColor: C.darkMid,
     marginBottom: 14,
   },
   separatorRow: {
@@ -1638,61 +1667,66 @@ const styles = StyleSheet.create({
   separatorLine: {
     flex: 1,
     height: 1,
-    backgroundColor: "#E2E8F0",
+    backgroundColor: C.primaryBorder,
   },
   separatorText: {
     marginHorizontal: 12,
-    color: "#A0A8B6",
+    color: C.textMuted,
     fontWeight: "600",
   },
   linkAction: {
     textAlign: "center",
-    color: "#63D21D",
+    color: C.primary,
     fontWeight: "700",
     marginTop: 4,
   },
   footerPrompt: {
     textAlign: "center",
-    color: "#667085",
+    color: C.textMuted,
     marginTop: 18,
   },
   footerLink: {
-    color: "#63D21D",
+    color: C.primary,
     fontWeight: "700",
   },
   headerAction: {
-    backgroundColor: "#EFF9E8",
+    backgroundColor: C.primaryLight,
     borderRadius: 999,
     paddingVertical: 6,
     paddingHorizontal: 10,
+    marginRight: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
   },
   headerActionText: {
-    color: "#3F9E1D",
+    color: C.dark,
     fontWeight: "700",
     fontSize: 12,
+    marginLeft: 5,
   },
   appPage: {
     paddingHorizontal: 16,
     paddingTop: 14,
     paddingBottom: 26,
-    backgroundColor: "#F2F8EE",
+    backgroundColor: C.pageBg,
   },
   detailPage: {
     paddingHorizontal: 16,
     paddingTop: 14,
     paddingBottom: 26,
-    backgroundColor: "#F2F8EE",
+    backgroundColor: C.pageBg,
   },
   pageTitle: {
     fontSize: 24,
     fontWeight: "800",
-    color: "#253242",
+    color: C.text,
     marginBottom: 12,
   },
   card: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: C.surface,
     borderWidth: 1,
-    borderColor: "#E1ECD9",
+    borderColor: C.border,
     borderRadius: 14,
     padding: 14,
     marginBottom: 14,
@@ -1705,16 +1739,16 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#344054",
+    color: C.text,
   },
   healthPill: {
-    backgroundColor: "#E4F8D9",
+    backgroundColor: C.primaryLight,
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
   healthPillText: {
-    color: "#3FA94D",
+    color: C.primaryDark,
     fontSize: 12,
     fontWeight: "700",
   },
@@ -1727,21 +1761,23 @@ const styles = StyleSheet.create({
   metricBigGreen: {
     fontSize: 32,
     fontWeight: "800",
-    color: "#49B25C",
+    color: C.dark,
+    letterSpacing: -0.5,
   },
   metricBigOrange: {
     fontSize: 32,
     fontWeight: "800",
-    color: "#F2A93B",
+    color: C.dark,
+    letterSpacing: -0.5,
   },
   metricCaption: {
-    color: "#8592A3",
+    color: C.textMuted,
     fontWeight: "600",
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "800",
-    color: "#344054",
+    color: C.text,
     marginBottom: 10,
   },
   gridTwo: {
@@ -1753,9 +1789,9 @@ const styles = StyleSheet.create({
   },
   statCard: {
     width: "48.5%",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: C.surface,
     borderWidth: 1,
-    borderColor: "#E1ECD9",
+    borderColor: C.border,
     borderRadius: 12,
     padding: 12,
   },
@@ -1766,36 +1802,37 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: 28,
-    color: "#1D2939",
+    color: C.text,
     fontWeight: "800",
   },
   metricCard: {
     width: "48.5%",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: C.surface,
     borderWidth: 1,
-    borderColor: "#E1ECD9",
+    borderColor: C.border,
     borderRadius: 12,
     padding: 12,
   },
   metricTitle: {
     fontSize: 12,
-    color: "#8A97A8",
+    color: C.textLight,
     fontWeight: "700",
     marginBottom: 8,
   },
   metricValue: {
     fontSize: 32,
-    color: "#4AB85F",
+    color: C.dark,
     fontWeight: "800",
+    letterSpacing: -0.5,
   },
   metricUnit: {
     fontSize: 16,
-    color: "#4AB85F",
+    color: C.primaryDark,
     fontWeight: "700",
   },
   metricSubtitle: {
     fontSize: 11,
-    color: "#9AA6B5",
+    color: C.textLight,
     marginTop: 6,
   },
   quickActionsRow: {
@@ -1805,22 +1842,22 @@ const styles = StyleSheet.create({
   },
   quickActionButton: {
     flex: 1,
-    backgroundColor: "#63D21D",
+    backgroundColor: C.primary,
     borderRadius: 10,
     paddingVertical: 12,
     alignItems: "center",
   },
   quickActionText: {
-    color: "#FFFFFF",
+    color: C.dark,
     fontWeight: "800",
   },
   alertBanner: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: "#FFF4DF",
+    backgroundColor: C.primaryLight,
     borderWidth: 1,
-    borderColor: "#F5D8A1",
+    borderColor: C.primaryBorder,
     borderRadius: 14,
     padding: 14,
     marginBottom: 14,
@@ -1829,12 +1866,12 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 999,
-    backgroundColor: "#F2A93B",
+    backgroundColor: C.primary,
     alignItems: "center",
     justifyContent: "center",
   },
   alertBannerIconText: {
-    color: "#FFFFFF",
+    color: C.dark,
     fontWeight: "800",
     fontSize: 18,
   },
@@ -1842,33 +1879,33 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   alertBannerTitle: {
-    color: "#7A4B00",
+    color: C.dark,
     fontWeight: "800",
     fontSize: 15,
     marginBottom: 2,
   },
   alertBannerSubtitle: {
-    color: "#8A5D16",
+    color: C.primaryDark,
     fontWeight: "600",
     fontSize: 12,
   },
   alertBannerButton: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: C.surface,
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderWidth: 1,
-    borderColor: "#F5D8A1",
+    borderColor: C.primaryBorder,
   },
   alertBannerButtonText: {
-    color: "#7A4B00",
+    color: C.dark,
     fontWeight: "800",
     fontSize: 12,
   },
   alertRowCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: C.surface,
     borderWidth: 1,
-    borderColor: "#E1ECD9",
+    borderColor: C.border,
     borderRadius: 12,
     padding: 14,
     marginBottom: 10,
@@ -1880,18 +1917,18 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   alertRowArrow: {
-    color: "#98A2B3",
+    color: C.textLight,
     fontSize: 20,
     fontWeight: "700",
   },
   alertRowHive: {
-    color: "#1F2937",
+    color: C.text,
     fontSize: 18,
     fontWeight: "800",
     marginBottom: 4,
   },
   alertRowSummary: {
-    color: "#667085",
+    color: C.textMuted,
     fontSize: 13,
     lineHeight: 18,
     marginBottom: 10,
@@ -1902,12 +1939,12 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   alertRowDate: {
-    color: "#98A2B3",
+    color: C.textLight,
     fontWeight: "700",
     fontSize: 12,
   },
   alertRowAction: {
-    color: "#57C61E",
+    color: C.primary,
     fontWeight: "800",
     fontSize: 12,
   },
@@ -1923,9 +1960,9 @@ const styles = StyleSheet.create({
   searchBarWrap: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: C.surface,
     borderWidth: 1,
-    borderColor: "#D9E6D0",
+    borderColor: C.border,
     borderRadius: 10,
     paddingHorizontal: 10,
     marginBottom: 12,
@@ -1933,18 +1970,18 @@ const styles = StyleSheet.create({
   searchIcon: {
     fontSize: 14,
     marginRight: 8,
-    color: "#475467",
+    color: C.textMuted,
     fontWeight: "700",
   },
   searchInput: {
     flex: 1,
-    color: "#344054",
+    color: C.text,
     paddingVertical: 10,
   },
   hiveRowCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: C.surface,
     borderWidth: 1,
-    borderColor: "#E1ECD9",
+    borderColor: C.border,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 12,
@@ -1960,7 +1997,7 @@ const styles = StyleSheet.create({
   hiveName: {
     fontSize: 18,
     fontWeight: "800",
-    color: "#253242",
+    color: C.text,
   },
   hiveStatus: {
     marginTop: 4,
@@ -1968,22 +2005,22 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   mapChip: {
-    backgroundColor: "#F4F8F1",
+    backgroundColor: C.primaryLight,
     borderWidth: 1,
-    borderColor: "#D9E6D0",
+    borderColor: C.primaryBorder,
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
   mapChipText: {
-    color: "#344054",
+    color: C.dark,
     fontSize: 12,
     fontWeight: "700",
   },
   mapCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: C.surface,
     borderWidth: 1,
-    borderColor: "#E1ECD9",
+    borderColor: C.border,
     borderRadius: 14,
     padding: 12,
   },
@@ -1996,20 +2033,20 @@ const styles = StyleSheet.create({
   },
   mapHeaderSub: {
     marginTop: 4,
-    color: "#667085",
+    color: C.textMuted,
     fontWeight: "600",
     fontSize: 12,
   },
   mapRefreshButton: {
-    backgroundColor: "#F4F8F1",
+    backgroundColor: C.primaryLight,
     borderWidth: 1,
-    borderColor: "#D9E6D0",
+    borderColor: C.primaryBorder,
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
   mapRefreshText: {
-    color: "#344054",
+    color: C.dark,
     fontWeight: "700",
     fontSize: 12,
   },
@@ -2018,29 +2055,29 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "#D7E3D0",
-    backgroundColor: "#EDF3E8",
+    borderColor: C.border,
+    backgroundColor: C.borderLight,
   },
   realMap: {
     flex: 1,
   },
   mapOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(242, 248, 238, 0.82)",
+    backgroundColor: "rgba(247, 242, 236, 0.82)",
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
   },
   mapSelectionCard: {
     marginTop: 10,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: C.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#D9E6D0",
+    borderColor: C.border,
     padding: 12,
   },
   mapSelectionTitle: {
-    color: "#253242",
+    color: C.text,
     fontWeight: "800",
     fontSize: 14,
     flexShrink: 1,
@@ -2048,7 +2085,7 @@ const styles = StyleSheet.create({
   },
   mapSelectionMeta: {
     marginTop: 4,
-    color: "#667085",
+    color: C.textMuted,
     fontSize: 12,
     fontWeight: "600",
   },
@@ -2058,26 +2095,26 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   mapSelectionButton: {
-    backgroundColor: "#63D21D",
+    backgroundColor: C.primary,
     borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 12,
   },
   mapSelectionButtonText: {
-    color: "#FFFFFF",
+    color: C.dark,
     fontWeight: "700",
     fontSize: 12,
   },
   mapSelectionSecondaryButton: {
-    backgroundColor: "#F4F8F1",
+    backgroundColor: C.primaryLight,
     borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderWidth: 1,
-    borderColor: "#D9E6D0",
+    borderColor: C.primaryBorder,
   },
   mapSelectionSecondaryText: {
-    color: "#344054",
+    color: C.dark,
     fontWeight: "700",
     fontSize: 12,
   },
@@ -2085,18 +2122,18 @@ const styles = StyleSheet.create({
     minHeight: 320,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#D7E3D0",
-    backgroundColor: "#EDF3E8",
+    borderColor: C.border,
+    backgroundColor: C.borderLight,
     padding: 12,
   },
   mapFallbackTitle: {
-    color: "#253242",
+    color: C.text,
     fontSize: 16,
     fontWeight: "800",
   },
   mapFallbackText: {
     marginTop: 6,
-    color: "#667085",
+    color: C.textMuted,
     lineHeight: 20,
     fontWeight: "600",
   },
@@ -2105,10 +2142,10 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   mapFallbackRow: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: C.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#D9E6D0",
+    borderColor: C.border,
     paddingHorizontal: 12,
     paddingVertical: 10,
     flexDirection: "row",
@@ -2117,31 +2154,31 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   mapFallbackRowTitle: {
-    color: "#253242",
+    color: C.text,
     fontWeight: "800",
   },
   mapFallbackRowSub: {
     marginTop: 4,
-    color: "#667085",
+    color: C.textMuted,
     fontSize: 12,
     fontWeight: "600",
   },
   emptyMapState: {
     marginTop: 12,
-    backgroundColor: "#F4F8F1",
+    backgroundColor: C.primaryLight,
     borderWidth: 1,
-    borderColor: "#D9E6D0",
+    borderColor: C.primaryBorder,
     borderRadius: 12,
     padding: 12,
   },
   stateTitle: {
-    color: "#253242",
+    color: C.text,
     fontWeight: "800",
     fontSize: 15,
   },
   errorText: {
     marginTop: 12,
-    color: "#B42318",
+    color: C.statusSwarm,
     fontWeight: "700",
     lineHeight: 20,
   },
@@ -2150,8 +2187,8 @@ const styles = StyleSheet.create({
     height: 280,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#D7E3D0",
-    backgroundColor: "#EDF3E8",
+    borderColor: C.border,
+    backgroundColor: C.borderLight,
     overflow: "hidden",
     marginBottom: 12,
   },
@@ -2160,27 +2197,27 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 999,
-    backgroundColor: "#4AB85F",
+    backgroundColor: C.primary,
     borderWidth: 2,
-    borderColor: "#FFFFFF",
+    borderColor: C.surface,
   },
   mapLabel: {
     position: "absolute",
     right: 16,
     top: 84,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: C.surface,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#D9E6D0",
+    borderColor: C.border,
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
   mapLabelTitle: {
-    color: "#253242",
+    color: C.text,
     fontWeight: "800",
   },
   mapLabelSub: {
-    color: "#4AB85F",
+    color: C.primary,
     fontWeight: "700",
     fontSize: 12,
   },
@@ -2198,13 +2235,13 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   legendText: {
-    color: "#475467",
+    color: C.textMuted,
     fontWeight: "600",
   },
   detailHeroCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: C.surface,
     borderWidth: 1,
-    borderColor: "#E1ECD9",
+    borderColor: C.border,
     borderRadius: 16,
     padding: 16,
     marginBottom: 14,
@@ -2218,14 +2255,14 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 999,
-    backgroundColor: "#FFF3DE",
+    backgroundColor: C.primaryLight,
     borderWidth: 1,
-    borderColor: "#F5D8A1",
+    borderColor: C.primaryBorder,
     alignItems: "center",
     justifyContent: "center",
   },
   alertIconText: {
-    color: "#F2A93B",
+    color: C.primary,
     fontSize: 20,
     fontWeight: "900",
   },
@@ -2233,19 +2270,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   detailAlertTitle: {
-    color: "#7A4B00",
+    color: C.text,
     fontSize: 20,
     fontWeight: "900",
     marginBottom: 4,
   },
   detailAlertSubtitle: {
-    color: "#6B7280",
+    color: C.textMuted,
     fontSize: 13,
     lineHeight: 19,
   },
   heroDivider: {
     height: 1,
-    backgroundColor: "#E7EEDD",
+    backgroundColor: C.border,
     marginVertical: 14,
   },
   detailStatusRow: {
@@ -2268,18 +2305,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderWidth: 1,
-    borderColor: "#D9E6D0",
-    backgroundColor: "#F9FCF6",
+    borderColor: C.primaryBorder,
+    backgroundColor: C.primaryLight,
   },
   secondaryButtonText: {
-    color: "#344054",
+    color: C.dark,
     fontWeight: "800",
     fontSize: 12,
   },
   infoCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: C.surface,
     borderWidth: 1,
-    borderColor: "#E1ECD9",
+    borderColor: C.border,
     borderRadius: 16,
     padding: 16,
     marginBottom: 14,
@@ -2290,17 +2327,17 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingVertical: 10,
     borderTopWidth: 1,
-    borderTopColor: "#EEF3E8",
+    borderTopColor: C.borderLight,
   },
   infoLabel: {
-    color: "#667085",
+    color: C.textMuted,
     fontWeight: "700",
   },
   infoValue: {
     fontWeight: "800",
   },
   metricsSubtitle: {
-    color: "#667085",
+    color: C.textMuted,
     fontWeight: "600",
     fontSize: 12,
     marginTop: 2,
@@ -2314,21 +2351,21 @@ const styles = StyleSheet.create({
   },
   metricHighlightCard: {
     flex: 1,
-    backgroundColor: "#F7FAF5",
+    backgroundColor: C.primaryLight,
     borderWidth: 1,
-    borderColor: "#E2EBD8",
+    borderColor: C.primaryBorder,
     borderRadius: 10,
     paddingVertical: 8,
     paddingHorizontal: 10,
   },
   metricHighlightLabel: {
-    color: "#667085",
+    color: C.textMuted,
     fontSize: 11,
     fontWeight: "700",
   },
   metricHighlightValue: {
     marginTop: 4,
-    color: "#253242",
+    color: C.text,
     fontSize: 16,
     fontWeight: "800",
   },
@@ -2345,15 +2382,15 @@ const styles = StyleSheet.create({
     marginTop: 10,
     height: 186,
     borderRadius: 12,
-    backgroundColor: "#F7FAF5",
+    backgroundColor: C.primaryLight,
     borderWidth: 1,
-    borderColor: "#E2EBD8",
+    borderColor: C.primaryBorder,
     padding: 12,
     flexDirection: "row",
   },
   chartYAxis: {
     width: 1,
-    backgroundColor: "#D9E6D0",
+    backgroundColor: C.primaryBorder,
     marginRight: 10,
   },
   chartArea: {
@@ -2370,7 +2407,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   chartPointValue: {
-    color: "#344054",
+    color: C.text,
     fontSize: 10,
     fontWeight: "700",
     marginBottom: 4,
@@ -2389,19 +2426,19 @@ const styles = StyleSheet.create({
     minHeight: 12,
   },
   chartBarTemperature: {
-    backgroundColor: "#63D21D",
+    backgroundColor: C.primary,
   },
   chartBarHumidity: {
-    backgroundColor: "#4B8DC4",
+    backgroundColor: C.dark,
   },
   chartPointSubValue: {
-    color: "#667085",
+    color: C.textMuted,
     fontSize: 10,
     fontWeight: "700",
     marginTop: 3,
   },
   chartPointLabel: {
-    color: "#667085",
+    color: C.textMuted,
     fontSize: 10,
     fontWeight: "700",
     marginTop: 2,
@@ -2409,9 +2446,9 @@ const styles = StyleSheet.create({
   detailMapPreview: {
     height: 180,
     borderRadius: 12,
-    backgroundColor: "#EEF3E8",
+    backgroundColor: C.borderLight,
     borderWidth: 1,
-    borderColor: "#D9E6D0",
+    borderColor: C.border,
     position: "relative",
     overflow: "hidden",
   },
@@ -2421,7 +2458,7 @@ const styles = StyleSheet.create({
     top: 40,
     width: "84%",
     height: 2,
-    backgroundColor: "#C8D6BD",
+    backgroundColor: C.primaryBorder,
     transform: [{ rotate: "-8deg" }],
   },
   detailMapCrossTwo: {
@@ -2430,16 +2467,16 @@ const styles = StyleSheet.create({
     top: 95,
     width: "84%",
     height: 2,
-    backgroundColor: "#C8D6BD",
+    backgroundColor: C.primaryBorder,
     transform: [{ rotate: "6deg" }],
   },
   detailMapLabel: {
     position: "absolute",
     right: 16,
     top: 18,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: C.surface,
     borderWidth: 1,
-    borderColor: "#D9E6D0",
+    borderColor: C.border,
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 8,
@@ -2451,7 +2488,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   detailLongText: {
-    color: "#475467",
+    color: C.textMuted,
     lineHeight: 22,
     fontSize: 14,
   },
@@ -2460,7 +2497,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 24,
-    backgroundColor: "#F2F8EE",
+    backgroundColor: C.pageBg,
   },
   inlineState: {
     alignItems: "center",
@@ -2469,24 +2506,24 @@ const styles = StyleSheet.create({
   },
   stateText: {
     marginTop: 10,
-    color: "#667085",
+    color: C.textMuted,
     fontWeight: "600",
   },
   stateTextSmall: {
     marginTop: 8,
-    color: "#667085",
+    color: C.textMuted,
     fontWeight: "600",
   },
   errorTitle: {
     fontSize: 20,
     fontWeight: "800",
-    color: "#B42318",
+    color: C.statusSwarm,
     marginBottom: 8,
     textAlign: "center",
   },
   errorBody: {
     fontSize: 14,
-    color: "#7A271A",
+    color: C.statusSwarm,
     textAlign: "center",
   },
   errorBox: {

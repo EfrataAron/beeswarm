@@ -69,22 +69,22 @@ export function Example_AutoPollingDashboard({
             marginVertical: 8,
             backgroundColor:
               pred.severity === "Critical"
-                ? "#FFE5E5"
+                ? "#3D0A0A"
                 : pred.severity === "Warning"
-                  ? "#FFF4E5"
-                  : "#E5F5E8",
+                  ? "#3D1F00"
+                  : "#1A1000",
             borderLeftWidth: 4,
             borderLeftColor:
               pred.severity === "Critical"
-                ? "#D45353"
+                ? "#C0392B"
                 : pred.severity === "Warning"
-                  ? "#F2A93B"
-                  : "#49B25C",
+                  ? "#E8873A"
+                  : "#FFB268",
             borderRadius: 4,
           }}
         >
           <Text style={{ fontWeight: "600", fontSize: 14 }}>{pred.title}</Text>
-          <Text style={{ fontSize: 12, marginTop: 4, color: "#666" }}>
+          <Text style={{ fontSize: 12, marginTop: 4, color: "#FFD4A8" }}>
             {pred.message}
           </Text>
         </View>
@@ -95,14 +95,14 @@ export function Example_AutoPollingDashboard({
         <Pressable
           style={{
             padding: 12,
-            backgroundColor: "#49B25C",
+            backgroundColor: "#FFB268",
             borderRadius: 4,
             marginBottom: 8,
           }}
           onPress={() => startFetching()}
         >
           <Text
-            style={{ color: "white", textAlign: "center", fontWeight: "600" }}
+            style={{ color: "#001E37", textAlign: "center", fontWeight: "600" }}
           >
             Start Polling
           </Text>
@@ -111,7 +111,7 @@ export function Example_AutoPollingDashboard({
         <Pressable
           style={{
             padding: 12,
-            backgroundColor: "#D45353",
+            backgroundColor: "#C0392B",
             borderRadius: 4,
           }}
           onPress={() => stopFetching()}
@@ -179,7 +179,7 @@ export function Example_FullDashboard({
           style={{
             paddingHorizontal: 12,
             paddingVertical: 6,
-            backgroundColor: "#f0f0f0",
+            backgroundColor: "#FFF0E0",
             borderRadius: 4,
           }}
         >
@@ -197,27 +197,27 @@ export function Example_FullDashboard({
           >
             <View style={{ alignItems: "center" }}>
               <Text
-                style={{ fontSize: 24, fontWeight: "bold", color: "#49B25C" }}
+                style={{ fontSize: 24, fontWeight: "bold", color: "#FFB268" }}
               >
                 {dashboard.totalHives}
               </Text>
-              <Text style={{ fontSize: 12, color: "#666" }}>Total Hives</Text>
+              <Text style={{ fontSize: 12, color: "#5A6A7A" }}>Total Hives</Text>
             </View>
             <View style={{ alignItems: "center" }}>
               <Text
-                style={{ fontSize: 24, fontWeight: "bold", color: "#F2A93B" }}
+                style={{ fontSize: 24, fontWeight: "bold", color: "#E8873A" }}
               >
                 {dashboard.statusCounts["Pre-swarm"] || 0}
               </Text>
-              <Text style={{ fontSize: 12, color: "#666" }}>Pre-swarm</Text>
+              <Text style={{ fontSize: 12, color: "#5A6A7A" }}>Pre-swarm</Text>
             </View>
             <View style={{ alignItems: "center" }}>
               <Text
-                style={{ fontSize: 24, fontWeight: "bold", color: "#D45353" }}
+                style={{ fontSize: 24, fontWeight: "bold", color: "#C0392B" }}
               >
                 {dashboard.statusCounts.Swarm || 0}
               </Text>
-              <Text style={{ fontSize: 12, color: "#666" }}>Swarms</Text>
+              <Text style={{ fontSize: 12, color: "#5A6A7A" }}>Swarms</Text>
             </View>
           </View>
         </View>
@@ -237,24 +237,24 @@ export function Example_FullDashboard({
                 marginVertical: 6,
                 backgroundColor:
                   pred.severity === "Critical"
-                    ? "#FFE5E5"
+                    ? "#3D0A0A"
                     : pred.severity === "Warning"
-                      ? "#FFF4E5"
-                      : "#E5F5E8",
+                      ? "#3D1F00"
+                      : "#1A1000",
                 borderLeftWidth: 4,
                 borderLeftColor:
                   pred.severity === "Critical"
-                    ? "#D45353"
+                    ? "#C0392B"
                     : pred.severity === "Warning"
-                      ? "#F2A93B"
-                      : "#49B25C",
+                      ? "#E8873A"
+                      : "#FFB268",
                 borderRadius: 4,
               }}
             >
               <Text style={{ fontWeight: "600", fontSize: 13 }}>
                 {pred.title}
               </Text>
-              <Text style={{ fontSize: 11, marginTop: 4, color: "#666" }}>
+              <Text style={{ fontSize: 11, marginTop: 4, color: "#FFD4A8" }}>
                 Hive: {pred.hiveId}
               </Text>
             </View>
@@ -267,13 +267,13 @@ export function Example_FullDashboard({
         onPress={() => fetchPredictions()}
         style={{
           padding: 12,
-          backgroundColor: "#4B8DC4",
+          backgroundColor: "#FFB268",
           borderRadius: 4,
           marginBottom: 20,
         }}
       >
         <Text
-          style={{ color: "white", textAlign: "center", fontWeight: "600" }}
+          style={{ color: "#001E37", textAlign: "center", fontWeight: "600" }}
         >
           Fetch Predictions Now
         </Text>

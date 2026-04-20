@@ -12,13 +12,13 @@ type ToastType = "success" | "error" | "info" | "warning";
 function getSeverityColor(severity: AlertSeverity): string {
   switch (severity) {
     case "Critical":
-      return "#D45353"; // Red
+      return "#C0392B"; // Swarm red
     case "Warning":
-      return "#F2A93B"; // Orange
+      return "#E8873A"; // Pre-swarm orange
     case "Info":
-      return "#49B25C"; // Green
+      return "#FFB268"; // Tranquil orange
     default:
-      return "#666A73"; // Gray
+      return "#5A6A7A"; // Muted blue-grey
   }
 }
 
