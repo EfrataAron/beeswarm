@@ -863,7 +863,6 @@ function DashboardScreen({
           <Text style={styles.quickActionText}>Map</Text>
         </Pressable>
       </View>
-
     </ScrollView>
   );
 }
@@ -1192,11 +1191,15 @@ function HiveDetailsScreen({
 
         <View style={styles.metricsLegendRow}>
           <View style={styles.metricsLegendItem}>
-            <View style={[styles.legendDot, { backgroundColor: THEME.accent }]} />
+            <View
+              style={[styles.legendDot, { backgroundColor: THEME.accent }]}
+            />
             <Text style={styles.legendText}>Temperature</Text>
           </View>
           <View style={styles.metricsLegendItem}>
-            <View style={[styles.legendDot, { backgroundColor: THEME.primary }]} />
+            <View
+              style={[styles.legendDot, { backgroundColor: THEME.primary }]}
+            />
             <Text style={styles.legendText}>Humidity</Text>
           </View>
         </View>
