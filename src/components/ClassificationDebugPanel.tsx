@@ -9,6 +9,15 @@ interface ClassificationDebugPanelProps {
   visible?: boolean;
 }
 
+const PANEL_THEME = {
+  primary: "#001E37",
+  accent: "#FFB268",
+  surface: "#FFF5EA",
+  line: "#DCE2EA",
+  text: "#1F2A37",
+  textMuted: "#667085",
+};
+
 /**
  * Debug panel for testing classification alerts
  * Remove this component once model integration is complete
@@ -56,21 +65,21 @@ export function ClassificationDebugPanel({
   const buttonStyle = StyleSheet.create({
     container: {
       padding: 10,
-      backgroundColor: "#f5f5f5",
+      backgroundColor: "#F8F9FB",
       borderTopWidth: 1,
-      borderTopColor: "#ddd",
+      borderTopColor: PANEL_THEME.line,
     },
     section: {
       marginBottom: 15,
       borderBottomWidth: 1,
-      borderBottomColor: "#ddd",
+      borderBottomColor: PANEL_THEME.line,
       paddingBottom: 10,
     },
     sectionTitle: {
       fontSize: 11,
       fontWeight: "700",
       marginBottom: 8,
-      color: "#333",
+      color: PANEL_THEME.text,
     },
     button: {
       paddingVertical: 10,
@@ -80,16 +89,16 @@ export function ClassificationDebugPanel({
       alignItems: "center",
     },
     primaryButton: {
-      backgroundColor: "#49B25C",
+      backgroundColor: PANEL_THEME.primary,
     },
     warningButton: {
-      backgroundColor: "#F2A93B",
+      backgroundColor: PANEL_THEME.accent,
     },
     criticalButton: {
-      backgroundColor: "#D45353",
+      backgroundColor: PANEL_THEME.primary,
     },
     infoButton: {
-      backgroundColor: "#4B8DC4",
+      backgroundColor: PANEL_THEME.accent,
     },
     text: {
       color: "white",
@@ -99,7 +108,7 @@ export function ClassificationDebugPanel({
     smallText: {
       fontSize: 11,
       marginTop: 8,
-      color: "#666",
+      color: PANEL_THEME.textMuted,
     },
     badge: {
       display: "flex",
@@ -107,13 +116,13 @@ export function ClassificationDebugPanel({
       alignItems: "center",
       paddingVertical: 6,
       paddingHorizontal: 10,
-      backgroundColor: "#e0e0e0",
+      backgroundColor: PANEL_THEME.surface,
       borderRadius: 4,
       marginTop: 8,
     },
     badgeText: {
       fontSize: 11,
-      color: "#333",
+      color: PANEL_THEME.text,
     },
   });
 
@@ -223,14 +232,14 @@ export function ClassificationDebugPanel({
         <Text style={buttonStyle.sectionTitle}>Continuous Polling</Text>
 
         <Pressable
-          style={[buttonStyle.button, { backgroundColor: "#666A73" }]}
+          style={[buttonStyle.button, { backgroundColor: PANEL_THEME.primary }]}
           onPress={() => startFetching()}
         >
           <Text style={buttonStyle.text}>Start Polling Predictions</Text>
         </Pressable>
 
         <Pressable
-          style={[buttonStyle.button, { backgroundColor: "#D4756B" }]}
+          style={[buttonStyle.button, { backgroundColor: PANEL_THEME.accent }]}
           onPress={() => stopFetching()}
         >
           <Text style={buttonStyle.text}>Stop Polling</Text>
@@ -262,17 +271,23 @@ export function ClassificationDebugPanel({
                 borderLeftWidth: 3,
                 borderLeftColor:
                   pred.severity === "Critical"
-                    ? "#D45353"
+                    ? PANEL_THEME.primary
                     : pred.severity === "Warning"
-                      ? "#F2A93B"
-                      : "#49B25C",
+                      ? PANEL_THEME.accent
+                      : PANEL_THEME.primary,
                 borderRadius: 3,
               }}
             >
               <Text style={{ fontSize: 11, fontWeight: "600" }}>
                 {pred.title}
               </Text>
-              <Text style={{ fontSize: 10, color: "#666", marginTop: 2 }}>
+              <Text
+                style={{
+                  fontSize: 10,
+                  color: PANEL_THEME.textMuted,
+                  marginTop: 2,
+                }}
+              >
                 {pred.classification}
               </Text>
             </View>

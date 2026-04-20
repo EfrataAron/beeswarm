@@ -57,6 +57,7 @@ type MainTabParamList = {
   Hives: NavigatorScreenParams<HivesStackParamList>;
   Alerts: NavigatorScreenParams<AlertsStackParamList>;
   Map: undefined;
+  Classification: undefined;
 };
 
 type HivesStackParamList = {
@@ -75,10 +76,22 @@ const HivesStack = createNativeStackNavigator<HivesStackParamList>();
 const AlertsStack = createNativeStackNavigator<AlertsStackParamList>();
 
 const STATUS_COLOR: Record<HiveStatus, string> = {
-  Healthy: "#49B25C",
-  "Pre-swarm": "#F2A93B",
-  Swarm: "#D45353",
-  Abscondment: "#666A73",
+  Healthy: "#FFB268",
+  "Pre-swarm": "#001E37",
+  Swarm: "#001E37",
+  Abscondment: "#FFB268",
+};
+
+const THEME = {
+  primary: "#001E37",
+  accent: "#FFB268",
+  page: "#F8F9FB",
+  surface: "#FFFFFF",
+  surfaceSoft: "#FFF5EA",
+  line: "#DCE2EA",
+  text: "#1F2A37",
+  textMuted: "#667085",
+  placeholder: "#98A2B3",
 };
 
 type MapHive = Hive & { latitude: number; longitude: number };
@@ -131,7 +144,7 @@ export default function App() {
         <RootStack.Navigator
           screenOptions={{
             headerShown: false,
-            contentStyle: { backgroundColor: "#F2F8EE" },
+            contentStyle: { backgroundColor: THEME.page },
             animation: "slide_from_right",
           }}
         >
@@ -177,16 +190,16 @@ function MainTabsScreen({ onLogout }: { onLogout: () => void }) {
     <Tab.Navigator
       screenOptions={{
         headerStyle: { backgroundColor: "#FFFFFF" },
-        headerTintColor: "#1F2A37",
+        headerTintColor: THEME.primary,
         headerTitleStyle: { fontWeight: "800" },
         tabBarStyle: {
           backgroundColor: "#FFFFFF",
-          borderTopColor: "#DEEADB",
+          borderTopColor: THEME.line,
           height: 62,
           paddingBottom: 8,
           paddingTop: 8,
         },
-        tabBarActiveTintColor: "#57C61E",
+        tabBarActiveTintColor: THEME.accent,
         tabBarInactiveTintColor: "#8A97A8",
       }}
     >
@@ -217,6 +230,14 @@ function MainTabsScreen({ onLogout }: { onLogout: () => void }) {
         name="Map"
         component={MapScreen}
         options={{ title: "Map", tabBarLabel: "Map" }}
+      />
+      <Tab.Screen
+        name="Classification"
+        component={ClassificationScreen}
+        options={{
+          title: "Classification API",
+          tabBarLabel: "Classification",
+        }}
       />
     </Tab.Navigator>
   );
@@ -286,13 +307,13 @@ function LoginScreen({
 
         <TextInput
           placeholder="Email or Username"
-          placeholderTextColor="#97A1B2"
+          placeholderTextColor={THEME.placeholder}
           style={styles.input}
           autoCapitalize="none"
         />
         <TextInput
           placeholder="Password"
-          placeholderTextColor="#97A1B2"
+          placeholderTextColor={THEME.placeholder}
           secureTextEntry
           style={styles.input}
         />
@@ -353,25 +374,25 @@ function SignupScreen({
 
         <TextInput
           placeholder="John Doe"
-          placeholderTextColor="#97A1B2"
+          placeholderTextColor={THEME.placeholder}
           style={styles.input}
         />
         <TextInput
           placeholder="john.doe@example.com"
-          placeholderTextColor="#97A1B2"
+          placeholderTextColor={THEME.placeholder}
           style={styles.input}
           keyboardType="email-address"
           autoCapitalize="none"
         />
         <TextInput
           placeholder="Enter your password"
-          placeholderTextColor="#97A1B2"
+          placeholderTextColor={THEME.placeholder}
           secureTextEntry
           style={styles.input}
         />
         <TextInput
           placeholder="Confirm your password"
-          placeholderTextColor="#97A1B2"
+          placeholderTextColor={THEME.placeholder}
           secureTextEntry
           style={styles.input}
         />
@@ -406,7 +427,7 @@ function HivesStackScreen() {
     <HivesStack.Navigator
       screenOptions={{
         headerStyle: { backgroundColor: "#FFFFFF" },
-        headerTintColor: "#1F2A37",
+        headerTintColor: THEME.primary,
         headerTitleStyle: { fontWeight: "800" },
       }}
     >
@@ -429,7 +450,7 @@ function AlertsStackScreen() {
     <AlertsStack.Navigator
       screenOptions={{
         headerStyle: { backgroundColor: "#FFFFFF" },
-        headerTintColor: "#1F2A37",
+        headerTintColor: THEME.primary,
         headerTitleStyle: { fontWeight: "800" },
       }}
     >
@@ -474,7 +495,7 @@ function AlertsListScreen({
   if (loading) {
     return (
       <View style={styles.centerState}>
-        <ActivityIndicator size="large" color="#57C61E" />
+        <ActivityIndicator size="large" color={THEME.accent} />
         <Text style={styles.stateText}>Loading alerts...</Text>
       </View>
     );
@@ -577,7 +598,7 @@ function AlertDetailsScreen({
   if (loading) {
     return (
       <View style={styles.centerState}>
-        <ActivityIndicator size="large" color="#57C61E" />
+        <ActivityIndicator size="large" color={THEME.accent} />
         <Text style={styles.stateText}>Loading alert details...</Text>
       </View>
     );
@@ -671,12 +692,12 @@ function SeverityPill({ severity }: { severity: AlertSeverity }) {
 
 function severityColor(severity: AlertSeverity): string {
   if (severity === "Critical") {
-    return "#D45353";
+    return THEME.primary;
   }
   if (severity === "Warning") {
-    return "#F2A93B";
+    return THEME.accent;
   }
-  return "#3B82F6";
+  return THEME.accent;
 }
 
 function DashboardScreen({
@@ -708,7 +729,7 @@ function DashboardScreen({
   if (loading) {
     return (
       <View style={styles.centerState}>
-        <ActivityIndicator size="large" color="#57C61E" />
+        <ActivityIndicator size="large" color={THEME.accent} />
         <Text style={styles.stateText}>Loading dashboard...</Text>
       </View>
     );
@@ -730,8 +751,6 @@ function DashboardScreen({
       </View>
     );
   }
-
-  const debugHiveIds = ["Hive-001", "Hive-002", "Hive-003"];
 
   return (
     <ScrollView contentContainerStyle={styles.appPage}>
@@ -779,25 +798,25 @@ function DashboardScreen({
         <StatCard
           label="Normal"
           value={dashboard.statusCounts.Healthy}
-          color="#49B25C"
+          color={THEME.accent}
           icon="N"
         />
         <StatCard
           label="Pre-swarm"
           value={dashboard.statusCounts["Pre-swarm"]}
-          color="#F2A93B"
+          color={THEME.primary}
           icon="P"
         />
         <StatCard
           label="Swarm"
           value={dashboard.statusCounts.Swarm}
-          color="#D45353"
+          color={THEME.primary}
           icon="S"
         />
         <StatCard
           label="Abscondment"
           value={dashboard.statusCounts.Abscondment}
-          color="#666A73"
+          color={THEME.accent}
           icon="A"
         />
       </View>
@@ -843,6 +862,23 @@ function DashboardScreen({
         >
           <Text style={styles.quickActionText}>Map</Text>
         </Pressable>
+      </View>
+
+    </ScrollView>
+  );
+}
+
+function ClassificationScreen() {
+  const debugHiveIds = ["Hive-001", "Hive-002", "Hive-003"];
+
+  return (
+    <ScrollView contentContainerStyle={styles.appPage}>
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Classification API Simulator</Text>
+        <Text style={styles.metricSubtitle}>
+          Use this page to test prediction alerts without cluttering the
+          dashboard.
+        </Text>
       </View>
 
       <ClassificationDebugPanel hiveIds={debugHiveIds} visible />
@@ -936,13 +972,13 @@ function HivesListScreen({
           onChangeText={setSearchText}
           style={styles.searchInput}
           placeholder="Search hives"
-          placeholderTextColor="#95A0AE"
+          placeholderTextColor={THEME.placeholder}
         />
       </View>
 
       {loading && (
         <View style={styles.inlineState}>
-          <ActivityIndicator color="#57C61E" />
+          <ActivityIndicator color={THEME.accent} />
           <Text style={styles.stateTextSmall}>Loading hives...</Text>
         </View>
       )}
@@ -1056,7 +1092,7 @@ function HiveDetailsScreen({
   if (loading) {
     return (
       <View style={styles.centerState}>
-        <ActivityIndicator size="large" color="#57C61E" />
+        <ActivityIndicator size="large" color={THEME.accent} />
         <Text style={styles.stateText}>Loading hive details...</Text>
       </View>
     );
@@ -1156,11 +1192,11 @@ function HiveDetailsScreen({
 
         <View style={styles.metricsLegendRow}>
           <View style={styles.metricsLegendItem}>
-            <View style={[styles.legendDot, { backgroundColor: "#63D21D" }]} />
+            <View style={[styles.legendDot, { backgroundColor: THEME.accent }]} />
             <Text style={styles.legendText}>Temperature</Text>
           </View>
           <View style={styles.metricsLegendItem}>
-            <View style={[styles.legendDot, { backgroundColor: "#4B8DC4" }]} />
+            <View style={[styles.legendDot, { backgroundColor: THEME.primary }]} />
             <Text style={styles.legendText}>Humidity</Text>
           </View>
         </View>
@@ -1385,7 +1421,7 @@ function MapScreen({
 
             {loading && (
               <View style={styles.mapOverlay}>
-                <ActivityIndicator color="#57C61E" />
+                <ActivityIndicator color={THEME.accent} />
                 <Text style={styles.stateTextSmall}>Loading hive map...</Text>
               </View>
             )}
@@ -1468,7 +1504,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
-    backgroundColor: "#F5FFEB",
+    backgroundColor: THEME.page,
   },
   welcomeCard: {
     width: "100%",
@@ -1486,7 +1522,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 8 },
     elevation: 5,
     borderWidth: 1,
-    borderColor: "#E8F2DE",
+    borderColor: THEME.line,
   },
   logoFrame: {
     marginTop: 8,
@@ -1499,7 +1535,7 @@ const styles = StyleSheet.create({
     height: 154,
   },
   tagline: {
-    color: "#6FBC34",
+    color: THEME.primary,
     fontSize: 15,
     fontWeight: "700",
     letterSpacing: 0.2,
@@ -1507,7 +1543,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   primaryButton: {
-    backgroundColor: "#63D21D",
+    backgroundColor: THEME.primary,
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: "center",
@@ -1516,7 +1552,7 @@ const styles = StyleSheet.create({
   },
   primaryButtonSmall: {
     marginTop: 12,
-    backgroundColor: "#63D21D",
+    backgroundColor: THEME.primary,
     borderRadius: 8,
     paddingVertical: 10,
     paddingHorizontal: 16,
@@ -1543,7 +1579,7 @@ const styles = StyleSheet.create({
     width: 180,
     height: 180,
     borderRadius: 180,
-    backgroundColor: "rgba(112, 194, 76, 0.08)",
+    backgroundColor: "rgba(0, 30, 55, 0.08)",
   },
   backgroundOrbTwo: {
     position: "absolute",
@@ -1552,14 +1588,14 @@ const styles = StyleSheet.create({
     width: 160,
     height: 160,
     borderRadius: 160,
-    backgroundColor: "rgba(99, 210, 29, 0.1)",
+    backgroundColor: "rgba(255, 178, 104, 0.16)",
   },
   formPage: {
     flexGrow: 1,
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
-    backgroundColor: "#F7FAF7",
+    backgroundColor: THEME.page,
   },
   backChip: {
     alignSelf: "flex-start",
@@ -1569,7 +1605,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderWidth: 1,
-    borderColor: "#E5EBDF",
+    borderColor: THEME.line,
   },
   backChipText: {
     color: "#344054",
@@ -1583,7 +1619,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 24,
     borderWidth: 1,
-    borderColor: "#EDF0EA",
+    borderColor: THEME.line,
     shadowColor: "#000",
     shadowOpacity: 0.08,
     shadowRadius: 18,
@@ -1595,7 +1631,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: "#67DB2C",
+    backgroundColor: THEME.accent,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 6,
@@ -1606,7 +1642,7 @@ const styles = StyleSheet.create({
   },
   brandText: {
     textAlign: "center",
-    color: "#63D21D",
+    color: THEME.primary,
     fontWeight: "800",
     letterSpacing: 0.8,
     marginBottom: 20,
@@ -1621,7 +1657,7 @@ const styles = StyleSheet.create({
   input: {
     width: "100%",
     borderWidth: 1,
-    borderColor: "#E6EBF0",
+    borderColor: THEME.line,
     borderRadius: 6,
     paddingHorizontal: 12,
     paddingVertical: 11,
@@ -1647,7 +1683,7 @@ const styles = StyleSheet.create({
   },
   linkAction: {
     textAlign: "center",
-    color: "#63D21D",
+    color: THEME.primary,
     fontWeight: "700",
     marginTop: 4,
   },
@@ -1657,17 +1693,17 @@ const styles = StyleSheet.create({
     marginTop: 18,
   },
   footerLink: {
-    color: "#63D21D",
+    color: THEME.primary,
     fontWeight: "700",
   },
   headerAction: {
-    backgroundColor: "#EFF9E8",
+    backgroundColor: THEME.surfaceSoft,
     borderRadius: 999,
     paddingVertical: 6,
     paddingHorizontal: 10,
   },
   headerActionText: {
-    color: "#3F9E1D",
+    color: THEME.primary,
     fontWeight: "700",
     fontSize: 12,
   },
@@ -1675,13 +1711,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 14,
     paddingBottom: 26,
-    backgroundColor: "#F2F8EE",
+    backgroundColor: THEME.page,
   },
   detailPage: {
     paddingHorizontal: 16,
     paddingTop: 14,
     paddingBottom: 26,
-    backgroundColor: "#F2F8EE",
+    backgroundColor: THEME.page,
   },
   pageTitle: {
     fontSize: 24,
@@ -1692,7 +1728,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "#E1ECD9",
+    borderColor: THEME.line,
     borderRadius: 14,
     padding: 14,
     marginBottom: 14,
@@ -1708,13 +1744,13 @@ const styles = StyleSheet.create({
     color: "#344054",
   },
   healthPill: {
-    backgroundColor: "#E4F8D9",
+    backgroundColor: THEME.surfaceSoft,
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
   healthPillText: {
-    color: "#3FA94D",
+    color: THEME.primary,
     fontSize: 12,
     fontWeight: "700",
   },
@@ -1727,12 +1763,12 @@ const styles = StyleSheet.create({
   metricBigGreen: {
     fontSize: 32,
     fontWeight: "800",
-    color: "#49B25C",
+    color: THEME.accent,
   },
   metricBigOrange: {
     fontSize: 32,
     fontWeight: "800",
-    color: "#F2A93B",
+    color: THEME.primary,
   },
   metricCaption: {
     color: "#8592A3",
@@ -1755,7 +1791,7 @@ const styles = StyleSheet.create({
     width: "48.5%",
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "#E1ECD9",
+    borderColor: THEME.line,
     borderRadius: 12,
     padding: 12,
   },
@@ -1773,7 +1809,7 @@ const styles = StyleSheet.create({
     width: "48.5%",
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "#E1ECD9",
+    borderColor: THEME.line,
     borderRadius: 12,
     padding: 12,
   },
@@ -1785,12 +1821,12 @@ const styles = StyleSheet.create({
   },
   metricValue: {
     fontSize: 32,
-    color: "#4AB85F",
+    color: THEME.primary,
     fontWeight: "800",
   },
   metricUnit: {
     fontSize: 16,
-    color: "#4AB85F",
+    color: THEME.primary,
     fontWeight: "700",
   },
   metricSubtitle: {
@@ -1805,7 +1841,7 @@ const styles = StyleSheet.create({
   },
   quickActionButton: {
     flex: 1,
-    backgroundColor: "#63D21D",
+    backgroundColor: THEME.primary,
     borderRadius: 10,
     paddingVertical: 12,
     alignItems: "center",
@@ -1818,9 +1854,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: "#FFF4DF",
+    backgroundColor: THEME.surfaceSoft,
     borderWidth: 1,
-    borderColor: "#F5D8A1",
+    borderColor: THEME.line,
     borderRadius: 14,
     padding: 14,
     marginBottom: 14,
@@ -1829,7 +1865,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 999,
-    backgroundColor: "#F2A93B",
+    backgroundColor: THEME.accent,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1842,13 +1878,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   alertBannerTitle: {
-    color: "#7A4B00",
+    color: THEME.primary,
     fontWeight: "800",
     fontSize: 15,
     marginBottom: 2,
   },
   alertBannerSubtitle: {
-    color: "#8A5D16",
+    color: THEME.textMuted,
     fontWeight: "600",
     fontSize: 12,
   },
@@ -1858,17 +1894,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderWidth: 1,
-    borderColor: "#F5D8A1",
+    borderColor: THEME.line,
   },
   alertBannerButtonText: {
-    color: "#7A4B00",
+    color: THEME.primary,
     fontWeight: "800",
     fontSize: 12,
   },
   alertRowCard: {
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "#E1ECD9",
+    borderColor: THEME.line,
     borderRadius: 12,
     padding: 14,
     marginBottom: 10,
@@ -1907,7 +1943,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   alertRowAction: {
-    color: "#57C61E",
+    color: THEME.primary,
     fontWeight: "800",
     fontSize: 12,
   },
@@ -1925,7 +1961,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "#D9E6D0",
+    borderColor: THEME.line,
     borderRadius: 10,
     paddingHorizontal: 10,
     marginBottom: 12,
@@ -1944,7 +1980,7 @@ const styles = StyleSheet.create({
   hiveRowCard: {
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "#E1ECD9",
+    borderColor: THEME.line,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 12,
@@ -1968,9 +2004,9 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   mapChip: {
-    backgroundColor: "#F4F8F1",
+    backgroundColor: THEME.surfaceSoft,
     borderWidth: 1,
-    borderColor: "#D9E6D0",
+    borderColor: THEME.line,
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -1983,7 +2019,7 @@ const styles = StyleSheet.create({
   mapCard: {
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "#E1ECD9",
+    borderColor: THEME.line,
     borderRadius: 14,
     padding: 12,
   },
@@ -2001,9 +2037,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   mapRefreshButton: {
-    backgroundColor: "#F4F8F1",
+    backgroundColor: THEME.surfaceSoft,
     borderWidth: 1,
-    borderColor: "#D9E6D0",
+    borderColor: THEME.line,
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -2018,15 +2054,15 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "#D7E3D0",
-    backgroundColor: "#EDF3E8",
+    borderColor: THEME.line,
+    backgroundColor: THEME.surfaceSoft,
   },
   realMap: {
     flex: 1,
   },
   mapOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(242, 248, 238, 0.82)",
+    backgroundColor: "rgba(248, 249, 251, 0.88)",
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
@@ -2036,7 +2072,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#D9E6D0",
+    borderColor: THEME.line,
     padding: 12,
   },
   mapSelectionTitle: {
@@ -2058,7 +2094,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   mapSelectionButton: {
-    backgroundColor: "#63D21D",
+    backgroundColor: THEME.primary,
     borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 12,
@@ -2069,12 +2105,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   mapSelectionSecondaryButton: {
-    backgroundColor: "#F4F8F1",
+    backgroundColor: THEME.surfaceSoft,
     borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderWidth: 1,
-    borderColor: "#D9E6D0",
+    borderColor: THEME.line,
   },
   mapSelectionSecondaryText: {
     color: "#344054",
@@ -2085,8 +2121,8 @@ const styles = StyleSheet.create({
     minHeight: 320,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#D7E3D0",
-    backgroundColor: "#EDF3E8",
+    borderColor: THEME.line,
+    backgroundColor: THEME.surfaceSoft,
     padding: 12,
   },
   mapFallbackTitle: {
@@ -2108,7 +2144,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#D9E6D0",
+    borderColor: THEME.line,
     paddingHorizontal: 12,
     paddingVertical: 10,
     flexDirection: "row",
@@ -2128,9 +2164,9 @@ const styles = StyleSheet.create({
   },
   emptyMapState: {
     marginTop: 12,
-    backgroundColor: "#F4F8F1",
+    backgroundColor: THEME.surfaceSoft,
     borderWidth: 1,
-    borderColor: "#D9E6D0",
+    borderColor: THEME.line,
     borderRadius: 12,
     padding: 12,
   },
@@ -2160,7 +2196,7 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 999,
-    backgroundColor: "#4AB85F",
+    backgroundColor: THEME.accent,
     borderWidth: 2,
     borderColor: "#FFFFFF",
   },
@@ -2171,7 +2207,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#D9E6D0",
+    borderColor: THEME.line,
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
@@ -2180,7 +2216,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   mapLabelSub: {
-    color: "#4AB85F",
+    color: THEME.primary,
     fontWeight: "700",
     fontSize: 12,
   },
@@ -2204,7 +2240,7 @@ const styles = StyleSheet.create({
   detailHeroCard: {
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "#E1ECD9",
+    borderColor: THEME.line,
     borderRadius: 16,
     padding: 16,
     marginBottom: 14,
@@ -2218,14 +2254,14 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 999,
-    backgroundColor: "#FFF3DE",
+    backgroundColor: THEME.surfaceSoft,
     borderWidth: 1,
-    borderColor: "#F5D8A1",
+    borderColor: THEME.line,
     alignItems: "center",
     justifyContent: "center",
   },
   alertIconText: {
-    color: "#F2A93B",
+    color: THEME.accent,
     fontSize: 20,
     fontWeight: "900",
   },
@@ -2233,7 +2269,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   detailAlertTitle: {
-    color: "#7A4B00",
+    color: THEME.primary,
     fontSize: 20,
     fontWeight: "900",
     marginBottom: 4,
@@ -2245,7 +2281,7 @@ const styles = StyleSheet.create({
   },
   heroDivider: {
     height: 1,
-    backgroundColor: "#E7EEDD",
+    backgroundColor: THEME.line,
     marginVertical: 14,
   },
   detailStatusRow: {
@@ -2268,8 +2304,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderWidth: 1,
-    borderColor: "#D9E6D0",
-    backgroundColor: "#F9FCF6",
+    borderColor: THEME.line,
+    backgroundColor: THEME.surfaceSoft,
   },
   secondaryButtonText: {
     color: "#344054",
@@ -2279,7 +2315,7 @@ const styles = StyleSheet.create({
   infoCard: {
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "#E1ECD9",
+    borderColor: THEME.line,
     borderRadius: 16,
     padding: 16,
     marginBottom: 14,
@@ -2290,7 +2326,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingVertical: 10,
     borderTopWidth: 1,
-    borderTopColor: "#EEF3E8",
+    borderTopColor: THEME.line,
   },
   infoLabel: {
     color: "#667085",
@@ -2314,9 +2350,9 @@ const styles = StyleSheet.create({
   },
   metricHighlightCard: {
     flex: 1,
-    backgroundColor: "#F7FAF5",
+    backgroundColor: THEME.surfaceSoft,
     borderWidth: 1,
-    borderColor: "#E2EBD8",
+    borderColor: THEME.line,
     borderRadius: 10,
     paddingVertical: 8,
     paddingHorizontal: 10,
@@ -2345,15 +2381,15 @@ const styles = StyleSheet.create({
     marginTop: 10,
     height: 186,
     borderRadius: 12,
-    backgroundColor: "#F7FAF5",
+    backgroundColor: THEME.surfaceSoft,
     borderWidth: 1,
-    borderColor: "#E2EBD8",
+    borderColor: THEME.line,
     padding: 12,
     flexDirection: "row",
   },
   chartYAxis: {
     width: 1,
-    backgroundColor: "#D9E6D0",
+    backgroundColor: THEME.line,
     marginRight: 10,
   },
   chartArea: {
@@ -2389,10 +2425,10 @@ const styles = StyleSheet.create({
     minHeight: 12,
   },
   chartBarTemperature: {
-    backgroundColor: "#63D21D",
+    backgroundColor: THEME.accent,
   },
   chartBarHumidity: {
-    backgroundColor: "#4B8DC4",
+    backgroundColor: THEME.primary,
   },
   chartPointSubValue: {
     color: "#667085",
@@ -2409,9 +2445,9 @@ const styles = StyleSheet.create({
   detailMapPreview: {
     height: 180,
     borderRadius: 12,
-    backgroundColor: "#EEF3E8",
+    backgroundColor: THEME.surfaceSoft,
     borderWidth: 1,
-    borderColor: "#D9E6D0",
+    borderColor: THEME.line,
     position: "relative",
     overflow: "hidden",
   },
@@ -2421,7 +2457,7 @@ const styles = StyleSheet.create({
     top: 40,
     width: "84%",
     height: 2,
-    backgroundColor: "#C8D6BD",
+    backgroundColor: THEME.line,
     transform: [{ rotate: "-8deg" }],
   },
   detailMapCrossTwo: {
@@ -2430,7 +2466,7 @@ const styles = StyleSheet.create({
     top: 95,
     width: "84%",
     height: 2,
-    backgroundColor: "#C8D6BD",
+    backgroundColor: THEME.line,
     transform: [{ rotate: "6deg" }],
   },
   detailMapLabel: {
@@ -2439,7 +2475,7 @@ const styles = StyleSheet.create({
     top: 18,
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "#D9E6D0",
+    borderColor: THEME.line,
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 8,
@@ -2460,7 +2496,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 24,
-    backgroundColor: "#F2F8EE",
+    backgroundColor: THEME.page,
   },
   inlineState: {
     alignItems: "center",

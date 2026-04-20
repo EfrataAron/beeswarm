@@ -110,7 +110,7 @@ export default function HiveMap({
       markerEl.style.height = "16px";
       markerEl.style.borderRadius = "999px";
       markerEl.style.border = "2px solid #FFFFFF";
-      markerEl.style.background = statusColor[hive.status] ?? "#49B25C";
+      markerEl.style.background = statusColor[hive.status] ?? "#FFB268";
       markerEl.style.cursor = "pointer";
       markerEl.style.boxShadow = "0 2px 6px rgba(0, 0, 0, 0.35)";
       markerEl.title = `${hive.id} (${hive.status})`;

@@ -63,7 +63,7 @@ function buildMapHtml(
         margin: 0;
         width: 100%;
         height: 100%;
-        background: #edf3e8;
+        background: #fff5ea;
         overflow: hidden;
       }
       .marker {
@@ -117,7 +117,7 @@ function buildMapHtml(
       payload.hives.forEach((hive) => {
         const marker = document.createElement("button");
         marker.className = "marker";
-        marker.style.background = payload.statusColor[hive.status] || "#49B25C";
+        marker.style.background = payload.statusColor[hive.status] || "#FFB268";
         marker.title = hive.id + " (" + hive.status + ")";
         marker.addEventListener("click", () => {
           postMessage({ type: "markerPress", hiveId: hive.id });
