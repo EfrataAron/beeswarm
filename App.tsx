@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { StatusBar as ExpoStatusBar } from "expo-status-bar";
+import Toast from "react-native-toast-message";
 import {
   NavigationContainer,
   NavigatorScreenParams,
@@ -40,6 +41,7 @@ import {
   fetchHives,
 } from "./src/api/beeswarmApi";
 import HiveMap from "./src/components/HiveMap";
+import { ClassificationDebugPanel } from "./src/components/ClassificationDebugPanel";
 
 const beeLogo = require("./assets/images/bee.png");
 
@@ -123,47 +125,50 @@ export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   return (
-    <NavigationContainer>
-      <ExpoStatusBar style="dark" />
-      <RootStack.Navigator
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: "#F2F8EE" },
-          animation: "slide_from_right",
-        }}
-      >
-        {!isAuthenticated ? (
-          <>
-            <RootStack.Screen name="Welcome" component={WelcomeScreen} />
-            <RootStack.Screen name="Login">
+    <>
+      <NavigationContainer>
+        <ExpoStatusBar style="dark" />
+        <RootStack.Navigator
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: "#F2F8EE" },
+            animation: "slide_from_right",
+          }}
+        >
+          {!isAuthenticated ? (
+            <>
+              <RootStack.Screen name="Welcome" component={WelcomeScreen} />
+              <RootStack.Screen name="Login">
+                {(props) => (
+                  <LoginScreen
+                    {...props}
+                    onAuthSuccess={() => setIsAuthenticated(true)}
+                  />
+                )}
+              </RootStack.Screen>
+              <RootStack.Screen name="Signup">
+                {(props) => (
+                  <SignupScreen
+                    {...props}
+                    onAuthSuccess={() => setIsAuthenticated(true)}
+                  />
+                )}
+              </RootStack.Screen>
+            </>
+          ) : (
+            <RootStack.Screen name="MainTabs">
               {(props) => (
-                <LoginScreen
+                <MainTabsScreen
                   {...props}
-                  onAuthSuccess={() => setIsAuthenticated(true)}
+                  onLogout={() => setIsAuthenticated(false)}
                 />
               )}
             </RootStack.Screen>
-            <RootStack.Screen name="Signup">
-              {(props) => (
-                <SignupScreen
-                  {...props}
-                  onAuthSuccess={() => setIsAuthenticated(true)}
-                />
-              )}
-            </RootStack.Screen>
-          </>
-        ) : (
-          <RootStack.Screen name="MainTabs">
-            {(props) => (
-              <MainTabsScreen
-                {...props}
-                onLogout={() => setIsAuthenticated(false)}
-              />
-            )}
-          </RootStack.Screen>
-        )}
-      </RootStack.Navigator>
-    </NavigationContainer>
+          )}
+        </RootStack.Navigator>
+      </NavigationContainer>
+      <Toast />
+    </>
   );
 }
 
@@ -726,6 +731,12 @@ function DashboardScreen({
     );
   }
 
+  const debugHiveIds = [
+    "Hive-001",
+    "Hive-002",
+    "Hive-003",
+  ];
+
   return (
     <ScrollView contentContainerStyle={styles.appPage}>
       <View style={styles.card}>
@@ -837,6 +848,8 @@ function DashboardScreen({
           <Text style={styles.quickActionText}>Map</Text>
         </Pressable>
       </View>
+
+      <ClassificationDebugPanel hiveIds={debugHiveIds} visible />
     </ScrollView>
   );
 }
@@ -1070,8 +1083,21 @@ function HiveDetailsScreen({
     );
   }
 
-  const chartMax = Math.max(...detail.metrics, 1);
+  const metricSeries =
+    detail.metricSeries.length > 0
+      ? detail.metricSeries
+      : detail.metrics.map((value, index) => ({
+          timeLabel: `R${index + 1}`,
+          temperatureC: value,
+          humidityPercent: 60 + index,
+        }));
+
+  const temperatureValues = metricSeries.map((point) => point.temperatureC);
+  const humidityValues = metricSeries.map((point) => point.humidityPercent);
+  const chartMax = Math.max(...temperatureValues, ...humidityValues, 1);
   const chartHeight = 120;
+  const latestTemperature = temperatureValues[temperatureValues.length - 1] ?? 0;
+  const latestHumidity = humidityValues[humidityValues.length - 1] ?? 0;
 
   return (
     <ScrollView contentContainerStyle={styles.detailPage}>
@@ -1112,19 +1138,68 @@ function HiveDetailsScreen({
 
       <View style={styles.infoCard}>
         <Text style={styles.sectionTitle}>Metrics</Text>
+        <Text style={styles.metricsSubtitle}>
+          Temperature and humidity against time
+        </Text>
+
+        <View style={styles.metricsHighlightsRow}>
+          <View style={styles.metricHighlightCard}>
+            <Text style={styles.metricHighlightLabel}>Latest Temp</Text>
+            <Text style={styles.metricHighlightValue}>
+              {latestTemperature.toFixed(1)} C
+            </Text>
+          </View>
+          <View style={styles.metricHighlightCard}>
+            <Text style={styles.metricHighlightLabel}>Latest Humidity</Text>
+            <Text style={styles.metricHighlightValue}>
+              {latestHumidity.toFixed(0)}%
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.metricsLegendRow}>
+          <View style={styles.metricsLegendItem}>
+            <View style={[styles.legendDot, { backgroundColor: "#63D21D" }]} />
+            <Text style={styles.legendText}>Temperature</Text>
+          </View>
+          <View style={styles.metricsLegendItem}>
+            <View style={[styles.legendDot, { backgroundColor: "#4B8DC4" }]} />
+            <Text style={styles.legendText}>Humidity</Text>
+          </View>
+        </View>
+
         <View style={styles.chartWrap}>
           <View style={styles.chartYAxis} />
           <View style={styles.chartArea}>
-            {detail.metrics.map((point, index) => (
+            {metricSeries.map((point, index) => (
               <View
                 key={`${detail.id}-metric-${index}`}
-                style={[
-                  styles.chartBar,
-                  {
-                    height: Math.max(12, (point / chartMax) * chartHeight),
-                  },
-                ]}
-              />
+                style={styles.chartColumn}
+              >
+                <Text style={styles.chartPointValue}>{point.temperatureC.toFixed(1)} C</Text>
+                <View style={styles.chartBarPair}>
+                  <View
+                    style={[
+                      styles.chartBar,
+                      styles.chartBarTemperature,
+                      {
+                        height: Math.max(12, (point.temperatureC / chartMax) * chartHeight),
+                      },
+                    ]}
+                  />
+                  <View
+                    style={[
+                      styles.chartBar,
+                      styles.chartBarHumidity,
+                      {
+                        height: Math.max(12, (point.humidityPercent / chartMax) * chartHeight),
+                      },
+                    ]}
+                  />
+                </View>
+                <Text style={styles.chartPointSubValue}>{point.humidityPercent.toFixed(0)}%</Text>
+                <Text style={styles.chartPointLabel}>{point.timeLabel}</Text>
+              </View>
             ))}
           </View>
         </View>
@@ -1203,6 +1278,7 @@ function MapScreen({
   navigation,
 }: BottomTabScreenProps<MainTabParamList, "Map">) {
   const [hives, setHives] = useState<Hive[]>([]);
+  const [selectedHiveId, setSelectedHiveId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -1228,6 +1304,10 @@ function MapScreen({
 
   const mapHives = useMemo(() => hives.filter(hasMapCoordinates), [hives]);
   const region = useMemo(() => getMapRegion(mapHives), [mapHives]);
+  const selectedHive = useMemo(
+    () => mapHives.find((hive) => hive.id === selectedHiveId) ?? null,
+    [mapHives, selectedHiveId],
+  );
 
   return (
     <ScrollView contentContainerStyle={styles.appPage}>
@@ -1293,12 +1373,7 @@ function MapScreen({
               mapHives={mapHives}
               region={region}
               statusColor={STATUS_COLOR}
-              onMarkerPress={(hiveId: string) =>
-                navigation.navigate("Hives", {
-                  screen: "HiveDetails",
-                  params: { hiveId },
-                })
-              }
+              onMarkerPress={(hiveId: string) => setSelectedHiveId(hiveId)}
             />
 
             {loading && (
@@ -1307,6 +1382,45 @@ function MapScreen({
                 <Text style={styles.stateTextSmall}>Loading hive map...</Text>
               </View>
             )}
+          </View>
+        )}
+
+        {!!selectedHive && (
+          <View style={styles.mapSelectionCard}>
+            <View style={styles.rowBetween}>
+              <Text style={styles.mapSelectionTitle}>{selectedHive.id}</Text>
+              <Text
+                style={[
+                  styles.hiveStatus,
+                  { color: STATUS_COLOR[selectedHive.status] },
+                ]}
+              >
+                {selectedHive.status}
+              </Text>
+            </View>
+            <Text style={styles.mapSelectionMeta}>
+              {formatCoordinate(selectedHive.latitude)}, {" "}
+              {formatCoordinate(selectedHive.longitude)}
+            </Text>
+            <View style={styles.mapSelectionActions}>
+              <Pressable
+                style={styles.mapSelectionButton}
+                onPress={() =>
+                  navigation.navigate("Hives", {
+                    screen: "HiveDetails",
+                    params: { hiveId: selectedHive.id },
+                  })
+                }
+              >
+                <Text style={styles.mapSelectionButtonText}>Open Details</Text>
+              </Pressable>
+              <Pressable
+                style={styles.mapSelectionSecondaryButton}
+                onPress={() => setSelectedHiveId(null)}
+              >
+                <Text style={styles.mapSelectionSecondaryText}>Close</Text>
+              </Pressable>
+            </View>
           </View>
         )}
 
@@ -1910,6 +2024,56 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 10,
   },
+  mapSelectionCard: {
+    marginTop: 10,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#D9E6D0",
+    padding: 12,
+  },
+  mapSelectionTitle: {
+    color: "#253242",
+    fontWeight: "800",
+    fontSize: 14,
+    flexShrink: 1,
+    marginRight: 8,
+  },
+  mapSelectionMeta: {
+    marginTop: 4,
+    color: "#667085",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  mapSelectionActions: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 10,
+  },
+  mapSelectionButton: {
+    backgroundColor: "#63D21D",
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  mapSelectionButtonText: {
+    color: "#FFFFFF",
+    fontWeight: "700",
+    fontSize: 12,
+  },
+  mapSelectionSecondaryButton: {
+    backgroundColor: "#F4F8F1",
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: "#D9E6D0",
+  },
+  mapSelectionSecondaryText: {
+    color: "#344054",
+    fontWeight: "700",
+    fontSize: 12,
+  },
   mapFallback: {
     minHeight: 320,
     borderRadius: 12,
@@ -2128,9 +2292,51 @@ const styles = StyleSheet.create({
   infoValue: {
     fontWeight: "800",
   },
+  metricsSubtitle: {
+    color: "#667085",
+    fontWeight: "600",
+    fontSize: 12,
+    marginTop: 2,
+    marginBottom: 10,
+  },
+  metricsHighlightsRow: {
+    flexDirection: "row",
+    flexWrap: "nowrap",
+    gap: 8,
+    marginBottom: 10,
+  },
+  metricHighlightCard: {
+    flex: 1,
+    backgroundColor: "#F7FAF5",
+    borderWidth: 1,
+    borderColor: "#E2EBD8",
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+  },
+  metricHighlightLabel: {
+    color: "#667085",
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  metricHighlightValue: {
+    marginTop: 4,
+    color: "#253242",
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  metricsLegendRow: {
+    flexDirection: "row",
+    gap: 14,
+    marginBottom: 8,
+  },
+  metricsLegendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
   chartWrap: {
     marginTop: 10,
-    height: 156,
+    height: 186,
     borderRadius: 12,
     backgroundColor: "#F7FAF5",
     borderWidth: 1,
@@ -2145,18 +2351,53 @@ const styles = StyleSheet.create({
   },
   chartArea: {
     flex: 1,
-    height: 120,
+    height: 150,
     flexDirection: "row",
     alignItems: "flex-end",
     justifyContent: "space-between",
     gap: 8,
   },
+  chartColumn: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "flex-end",
+  },
+  chartPointValue: {
+    color: "#344054",
+    fontSize: 10,
+    fontWeight: "700",
+    marginBottom: 4,
+  },
+  chartBarPair: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    gap: 3,
+  },
   chartBar: {
     flex: 1,
     borderTopLeftRadius: 8,
     borderTopRightRadius: 8,
-    backgroundColor: "#63D21D",
     minHeight: 12,
+  },
+  chartBarTemperature: {
+    backgroundColor: "#63D21D",
+  },
+  chartBarHumidity: {
+    backgroundColor: "#4B8DC4",
+  },
+  chartPointSubValue: {
+    color: "#667085",
+    fontSize: 10,
+    fontWeight: "700",
+    marginTop: 3,
+  },
+  chartPointLabel: {
+    color: "#667085",
+    fontSize: 10,
+    fontWeight: "700",
+    marginTop: 2,
   },
   detailMapPreview: {
     height: 180,

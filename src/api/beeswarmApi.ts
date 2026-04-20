@@ -27,6 +27,11 @@ export type HiveDetailData = {
   alertTitle: string;
   alertMessage: string;
   metrics: number[];
+  metricSeries: Array<{
+    timeLabel: string;
+    temperatureC: number;
+    humidityPercent: number;
+  }>;
   mapLabel: string;
   acknowledged: boolean;
 };
@@ -282,6 +287,16 @@ export async function fetchHives(search = ""): Promise<Hive[]> {
 }
 
 function buildLocalHiveDetail(hiveId: string): HiveDetailData {
+  const metricSeries = [
+    { timeLabel: "09:00", temperatureC: 32.4, humidityPercent: 63 },
+    { timeLabel: "10:00", temperatureC: 33.1, humidityPercent: 64 },
+    { timeLabel: "11:00", temperatureC: 33.8, humidityPercent: 66 },
+    { timeLabel: "12:00", temperatureC: 34.5, humidityPercent: 68 },
+    { timeLabel: "13:00", temperatureC: 35.2, humidityPercent: 69 },
+    { timeLabel: "14:00", temperatureC: 34.8, humidityPercent: 67 },
+    { timeLabel: "15:00", temperatureC: 34.1, humidityPercent: 65 },
+  ];
+
   return {
     id: hiveId,
     name: hiveId,
@@ -290,7 +305,8 @@ function buildLocalHiveDetail(hiveId: string): HiveDetailData {
     alertTitle: "Pre-swarm risk",
     alertMessage:
       "Activity and space usage indicate a pre-swarm pattern. Review frames and queen status.",
-    metrics: [18, 22, 28, 30, 35, 40, 47],
+    metrics: metricSeries.map((point) => point.temperatureC),
+    metricSeries,
     mapLabel: hiveId,
     acknowledged: false,
   };
@@ -303,6 +319,36 @@ export async function fetchHiveDetail(hiveId: string): Promise<HiveDetailData> {
 
   const raw = await requestJson<any>(`/hives/${encodeURIComponent(hiveId)}`);
   const status = normalizeStatus(String(raw.status ?? raw.state ?? "Pre-swarm"));
+  const rawMetricSeries = Array.isArray(raw.metricSeries)
+    ? raw.metricSeries
+    : Array.isArray(raw.metric_series)
+      ? raw.metric_series
+      : Array.isArray(raw.history)
+        ? raw.history
+        : [];
+
+  const metricSeries =
+    rawMetricSeries.length > 0
+      ? rawMetricSeries.map((point: any, index: number) => ({
+          timeLabel: String(
+            point.timeLabel ?? point.time_label ?? point.time ?? `R${index + 1}`
+          ),
+          temperatureC: Number(
+            point.temperatureC ?? point.temperature_c ?? point.temp ?? 0
+          ),
+          humidityPercent: Number(
+            point.humidityPercent ?? point.humidity_percent ?? point.humidity ?? 0
+          ),
+        }))
+      : [
+          { timeLabel: "09:00", temperatureC: 32.4, humidityPercent: 63 },
+          { timeLabel: "10:00", temperatureC: 33.1, humidityPercent: 64 },
+          { timeLabel: "11:00", temperatureC: 33.8, humidityPercent: 66 },
+          { timeLabel: "12:00", temperatureC: 34.5, humidityPercent: 68 },
+          { timeLabel: "13:00", temperatureC: 35.2, humidityPercent: 69 },
+          { timeLabel: "14:00", temperatureC: 34.8, humidityPercent: 67 },
+          { timeLabel: "15:00", temperatureC: 34.1, humidityPercent: 65 },
+        ];
 
   return {
     id: String(raw.id ?? raw.name ?? hiveId),
@@ -318,7 +364,8 @@ export async function fetchHiveDetail(hiveId: string): Promise<HiveDetailData> {
     ),
     metrics: Array.isArray(raw.metrics)
       ? raw.metrics.map((value: unknown) => Number(value) || 0)
-      : [18, 22, 28, 30, 35, 40, 47],
+      : metricSeries.map((point) => point.temperatureC),
+    metricSeries,
     mapLabel: String(raw.mapLabel ?? raw.map_label ?? hiveId),
     acknowledged: Boolean(raw.acknowledged ?? raw.isAcknowledged ?? false),
   };

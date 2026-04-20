@@ -55,3 +55,8 @@
 - Run full device testing on Android.
 - Finalize app icon, splash screen, and branding assets.
 - Set up environment configs (dev/staging/prod).
+
+
+# next ef
+ integrating push with Expo Notifications + FCM/APNs.
+
