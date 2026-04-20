@@ -41,7 +41,7 @@ export function ClassificationDebugPanel({
     try {
       const prediction = await fetchSinglePredictionForClassification(
         effectiveHiveIds[0],
-        classification
+        classification,
       );
       console.log("Fetched prediction:", prediction);
     } catch (error) {
@@ -153,7 +153,9 @@ export function ClassificationDebugPanel({
 
         <Pressable
           style={[buttonStyle.button, buttonStyle.criticalButton]}
-          onPress={() => handleFetchSpecificPrediction(CLASSIFICATION_TYPES.SWARM)}
+          onPress={() =>
+            handleFetchSpecificPrediction(CLASSIFICATION_TYPES.SWARM)
+          }
         >
           <Text style={buttonStyle.text}>Swarm Alert</Text>
         </Pressable>
@@ -181,7 +183,9 @@ export function ClassificationDebugPanel({
 
         <Pressable
           style={[buttonStyle.button, buttonStyle.infoButton]}
-          onPress={() => handleFetchSpecificPrediction(CLASSIFICATION_TYPES.HEALTHY)}
+          onPress={() =>
+            handleFetchSpecificPrediction(CLASSIFICATION_TYPES.HEALTHY)
+          }
           disabled={isApiFetching}
         >
           <Text style={buttonStyle.text}>Get Healthy Prediction</Text>
@@ -189,7 +193,9 @@ export function ClassificationDebugPanel({
 
         <Pressable
           style={[buttonStyle.button, buttonStyle.warningButton]}
-          onPress={() => handleFetchSpecificPrediction(CLASSIFICATION_TYPES.PRESSWARM)}
+          onPress={() =>
+            handleFetchSpecificPrediction(CLASSIFICATION_TYPES.PRESSWARM)
+          }
           disabled={isApiFetching}
         >
           <Text style={buttonStyle.text}>Get Pre-swarm Prediction</Text>
@@ -197,7 +203,9 @@ export function ClassificationDebugPanel({
 
         <Pressable
           style={[buttonStyle.button, buttonStyle.criticalButton]}
-          onPress={() => handleFetchSpecificPrediction(CLASSIFICATION_TYPES.SWARM)}
+          onPress={() =>
+            handleFetchSpecificPrediction(CLASSIFICATION_TYPES.SWARM)
+          }
           disabled={isApiFetching}
         >
           <Text style={buttonStyle.text}>Get Swarm Prediction</Text>
@@ -205,7 +213,8 @@ export function ClassificationDebugPanel({
 
         <View style={buttonStyle.badge}>
           <Text style={buttonStyle.badgeText}>
-            API Status: {mockApiEnabled ? "Mock (Testing)" : "Real (Production)"}
+            API Status:{" "}
+            {mockApiEnabled ? "Mock (Testing)" : "Real (Production)"}
           </Text>
         </View>
       </View>
@@ -227,7 +236,9 @@ export function ClassificationDebugPanel({
           <Text style={buttonStyle.text}>Stop Polling</Text>
         </Pressable>
 
-        <Text style={buttonStyle.smallText}>Fetches predictions every 15 seconds</Text>
+        <Text style={buttonStyle.smallText}>
+          Fetches predictions every 15 seconds
+        </Text>
       </View>
 
       <View style={buttonStyle.section}>
@@ -237,7 +248,8 @@ export function ClassificationDebugPanel({
 
         {predictions.length === 0 ? (
           <Text style={buttonStyle.smallText}>
-            No predictions yet. Tap "Fetch All Predictions" or any specific prediction button.
+            No predictions yet. Tap "Fetch All Predictions" or any specific
+            prediction button.
           </Text>
         ) : (
           predictions.slice(0, 3).map((pred) => (
@@ -257,7 +269,9 @@ export function ClassificationDebugPanel({
                 borderRadius: 3,
               }}
             >
-              <Text style={{ fontSize: 11, fontWeight: "600" }}>{pred.title}</Text>
+              <Text style={{ fontSize: 11, fontWeight: "600" }}>
+                {pred.title}
+              </Text>
               <Text style={{ fontSize: 10, color: "#666", marginTop: 2 }}>
                 {pred.classification}
               </Text>

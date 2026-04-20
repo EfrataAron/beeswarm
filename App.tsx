@@ -731,11 +731,7 @@ function DashboardScreen({
     );
   }
 
-  const debugHiveIds = [
-    "Hive-001",
-    "Hive-002",
-    "Hive-003",
-  ];
+  const debugHiveIds = ["Hive-001", "Hive-002", "Hive-003"];
 
   return (
     <ScrollView contentContainerStyle={styles.appPage}>
@@ -1096,7 +1092,8 @@ function HiveDetailsScreen({
   const humidityValues = metricSeries.map((point) => point.humidityPercent);
   const chartMax = Math.max(...temperatureValues, ...humidityValues, 1);
   const chartHeight = 120;
-  const latestTemperature = temperatureValues[temperatureValues.length - 1] ?? 0;
+  const latestTemperature =
+    temperatureValues[temperatureValues.length - 1] ?? 0;
   const latestHumidity = humidityValues[humidityValues.length - 1] ?? 0;
 
   return (
@@ -1176,14 +1173,19 @@ function HiveDetailsScreen({
                 key={`${detail.id}-metric-${index}`}
                 style={styles.chartColumn}
               >
-                <Text style={styles.chartPointValue}>{point.temperatureC.toFixed(1)} C</Text>
+                <Text style={styles.chartPointValue}>
+                  {point.temperatureC.toFixed(1)} C
+                </Text>
                 <View style={styles.chartBarPair}>
                   <View
                     style={[
                       styles.chartBar,
                       styles.chartBarTemperature,
                       {
-                        height: Math.max(12, (point.temperatureC / chartMax) * chartHeight),
+                        height: Math.max(
+                          12,
+                          (point.temperatureC / chartMax) * chartHeight,
+                        ),
                       },
                     ]}
                   />
@@ -1192,12 +1194,17 @@ function HiveDetailsScreen({
                       styles.chartBar,
                       styles.chartBarHumidity,
                       {
-                        height: Math.max(12, (point.humidityPercent / chartMax) * chartHeight),
+                        height: Math.max(
+                          12,
+                          (point.humidityPercent / chartMax) * chartHeight,
+                        ),
                       },
                     ]}
                   />
                 </View>
-                <Text style={styles.chartPointSubValue}>{point.humidityPercent.toFixed(0)}%</Text>
+                <Text style={styles.chartPointSubValue}>
+                  {point.humidityPercent.toFixed(0)}%
+                </Text>
                 <Text style={styles.chartPointLabel}>{point.timeLabel}</Text>
               </View>
             ))}
@@ -1399,7 +1406,7 @@ function MapScreen({
               </Text>
             </View>
             <Text style={styles.mapSelectionMeta}>
-              {formatCoordinate(selectedHive.latitude)}, {" "}
+              {formatCoordinate(selectedHive.latitude)},{" "}
               {formatCoordinate(selectedHive.longitude)}
             </Text>
             <View style={styles.mapSelectionActions}>

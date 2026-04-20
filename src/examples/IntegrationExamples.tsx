@@ -1,6 +1,6 @@
 /**
  * EXAMPLE: How to use prediction alerts in your Dashboard
- * 
+ *
  * This is example code - copy the patterns to your actual screens
  */
 
@@ -71,21 +71,19 @@ export function Example_AutoPollingDashboard({
               pred.severity === "Critical"
                 ? "#FFE5E5"
                 : pred.severity === "Warning"
-                ? "#FFF4E5"
-                : "#E5F5E8",
+                  ? "#FFF4E5"
+                  : "#E5F5E8",
             borderLeftWidth: 4,
             borderLeftColor:
               pred.severity === "Critical"
                 ? "#D45353"
                 : pred.severity === "Warning"
-                ? "#F2A93B"
-                : "#49B25C",
+                  ? "#F2A93B"
+                  : "#49B25C",
             borderRadius: 4,
           }}
         >
-          <Text style={{ fontWeight: "600", fontSize: 14 }}>
-            {pred.title}
-          </Text>
+          <Text style={{ fontWeight: "600", fontSize: 14 }}>{pred.title}</Text>
           <Text style={{ fontSize: 12, marginTop: 4, color: "#666" }}>
             {pred.message}
           </Text>
@@ -103,7 +101,9 @@ export function Example_AutoPollingDashboard({
           }}
           onPress={() => startFetching()}
         >
-          <Text style={{ color: "white", textAlign: "center", fontWeight: "600" }}>
+          <Text
+            style={{ color: "white", textAlign: "center", fontWeight: "600" }}
+          >
             Start Polling
           </Text>
         </Pressable>
@@ -116,7 +116,9 @@ export function Example_AutoPollingDashboard({
           }}
           onPress={() => stopFetching()}
         >
-          <Text style={{ color: "white", textAlign: "center", fontWeight: "600" }}>
+          <Text
+            style={{ color: "white", textAlign: "center", fontWeight: "600" }}
+          >
             Stop Polling
           </Text>
         </Pressable>
@@ -171,9 +173,7 @@ export function Example_FullDashboard({
           marginBottom: 20,
         }}
       >
-        <Text style={{ fontSize: 20, fontWeight: "bold" }}>
-          Hive Overview
-        </Text>
+        <Text style={{ fontSize: 20, fontWeight: "bold" }}>Hive Overview</Text>
         <Pressable
           onPress={() => setShowDebugPanel(!showDebugPanel)}
           style={{
@@ -192,21 +192,29 @@ export function Example_FullDashboard({
       {/* Dashboard metrics */}
       {dashboard && (
         <View style={{ marginBottom: 20 }}>
-          <View style={{ flexDirection: "row", justifyContent: "space-around" }}>
+          <View
+            style={{ flexDirection: "row", justifyContent: "space-around" }}
+          >
             <View style={{ alignItems: "center" }}>
-              <Text style={{ fontSize: 24, fontWeight: "bold", color: "#49B25C" }}>
+              <Text
+                style={{ fontSize: 24, fontWeight: "bold", color: "#49B25C" }}
+              >
                 {dashboard.totalHives}
               </Text>
               <Text style={{ fontSize: 12, color: "#666" }}>Total Hives</Text>
             </View>
             <View style={{ alignItems: "center" }}>
-              <Text style={{ fontSize: 24, fontWeight: "bold", color: "#F2A93B" }}>
+              <Text
+                style={{ fontSize: 24, fontWeight: "bold", color: "#F2A93B" }}
+              >
                 {dashboard.statusCounts["Pre-swarm"] || 0}
               </Text>
               <Text style={{ fontSize: 12, color: "#666" }}>Pre-swarm</Text>
             </View>
             <View style={{ alignItems: "center" }}>
-              <Text style={{ fontSize: 24, fontWeight: "bold", color: "#D45353" }}>
+              <Text
+                style={{ fontSize: 24, fontWeight: "bold", color: "#D45353" }}
+              >
                 {dashboard.statusCounts.Swarm || 0}
               </Text>
               <Text style={{ fontSize: 12, color: "#666" }}>Swarms</Text>
@@ -231,15 +239,15 @@ export function Example_FullDashboard({
                   pred.severity === "Critical"
                     ? "#FFE5E5"
                     : pred.severity === "Warning"
-                    ? "#FFF4E5"
-                    : "#E5F5E8",
+                      ? "#FFF4E5"
+                      : "#E5F5E8",
                 borderLeftWidth: 4,
                 borderLeftColor:
                   pred.severity === "Critical"
                     ? "#D45353"
                     : pred.severity === "Warning"
-                    ? "#F2A93B"
-                    : "#49B25C",
+                      ? "#F2A93B"
+                      : "#49B25C",
                 borderRadius: 4,
               }}
             >
@@ -264,7 +272,9 @@ export function Example_FullDashboard({
           marginBottom: 20,
         }}
       >
-        <Text style={{ color: "white", textAlign: "center", fontWeight: "600" }}>
+        <Text
+          style={{ color: "white", textAlign: "center", fontWeight: "600" }}
+        >
           Fetch Predictions Now
         </Text>
       </Pressable>
