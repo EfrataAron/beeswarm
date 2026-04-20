@@ -24,6 +24,7 @@ import {
   BottomTabScreenProps,
   createBottomTabNavigator,
 } from "@react-navigation/bottom-tabs";
+import { Ionicons } from "@expo/vector-icons";
 import {
   AlertDetailData,
   AlertItem,
@@ -192,6 +193,9 @@ function MainTabsScreen({ onLogout }: { onLogout: () => void }) {
         headerStyle: { backgroundColor: "#FFFFFF" },
         headerTintColor: THEME.primary,
         headerTitleStyle: { fontWeight: "800" },
+        tabBarShowLabel: true,
+        tabBarIconStyle: { marginBottom: -2 },
+        tabBarLabelStyle: { fontSize: 11, fontWeight: "700" },
         tabBarStyle: {
           backgroundColor: "#FFFFFF",
           borderTopColor: THEME.line,
@@ -209,6 +213,13 @@ function MainTabsScreen({ onLogout }: { onLogout: () => void }) {
         options={{
           title: "Hive Overview",
           tabBarLabel: "Home",
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? "home" : "home-outline"}
+              size={size}
+              color={color}
+            />
+          ),
           headerRight: () => (
             <Pressable style={styles.headerAction} onPress={onLogout}>
               <Text style={styles.headerActionText}>Logout</Text>
@@ -219,17 +230,47 @@ function MainTabsScreen({ onLogout }: { onLogout: () => void }) {
       <Tab.Screen
         name="Hives"
         component={HivesStackScreen}
-        options={{ title: "All Hives", tabBarLabel: "Hives" }}
+        options={{
+          headerShown: false,
+          tabBarLabel: "Hives",
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? "leaf" : "leaf-outline"}
+              size={size}
+              color={color}
+            />
+          ),
+        }}
       />
       <Tab.Screen
         name="Alerts"
         component={AlertsStackScreen}
-        options={{ title: "Alerts", tabBarLabel: "Alerts" }}
+        options={{
+          headerShown: false,
+          tabBarLabel: "Alerts",
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? "notifications" : "notifications-outline"}
+              size={size}
+              color={color}
+            />
+          ),
+        }}
       />
       <Tab.Screen
         name="Map"
         component={MapScreen}
-        options={{ title: "Map", tabBarLabel: "Map" }}
+        options={{
+          title: "Map",
+          tabBarLabel: "Map",
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? "map" : "map-outline"}
+              size={size}
+              color={color}
+            />
+          ),
+        }}
       />
       <Tab.Screen
         name="Classification"
@@ -237,6 +278,13 @@ function MainTabsScreen({ onLogout }: { onLogout: () => void }) {
         options={{
           title: "Classification API",
           tabBarLabel: "Classification",
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? "flask" : "flask-outline"}
+              size={size}
+              color={color}
+            />
+          ),
         }}
       />
     </Tab.Navigator>
@@ -518,8 +566,6 @@ function AlertsListScreen({
 
   return (
     <ScrollView contentContainerStyle={styles.appPage}>
-      <Text style={styles.pageTitle}>Recent Alerts</Text>
-
       {alerts.map((alert) => (
         <Pressable
           key={alert.id}
@@ -841,12 +887,6 @@ function DashboardScreen({
           unit="k bees"
           subtitle="Across all hives"
         />
-        <MetricCard
-          title="Avg. Nectar Flow"
-          value={dashboard.keyMetrics.nectarFlowKgPerDay.toFixed(1)}
-          unit="kg/day"
-          subtitle="Based on hive weight"
-        />
       </View>
 
       <View style={styles.quickActionsRow}>
@@ -958,12 +998,8 @@ function HivesListScreen({
     return () => clearTimeout(timeout);
   }, [searchText, loadHives]);
 
-  const title = useMemo(() => `All Hives (${hives.length})`, [hives.length]);
-
   return (
     <ScrollView contentContainerStyle={styles.appPage}>
-      <Text style={styles.pageTitle}>{title}</Text>
-
       <View style={styles.searchBarWrap}>
         <Text style={styles.searchIcon}>Q</Text>
         <TextInput
