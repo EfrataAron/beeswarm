@@ -6,6 +6,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   View,
@@ -48,7 +49,6 @@ import HiveMap from "./src/components/HiveMap";
 import { ClassificationDebugPanel } from "./src/components/ClassificationDebugPanel";
 import { HeaderOverflowMenu } from "./src/components/HeaderOverflowMenu";
 
-
 const beeLogo = require("./assets/images/bee.png");
 
 type RootStackParamList = {
@@ -56,6 +56,7 @@ type RootStackParamList = {
   Login: undefined;
   Signup: undefined;
   MainTabs: undefined;
+  Settings: undefined;
 };
 
 type MainTabParamList = {
@@ -175,14 +176,27 @@ export default function App() {
               </RootStack.Screen>
             </>
           ) : (
-            <RootStack.Screen name="MainTabs">
-              {(props) => (
-                <MainTabsScreen
-                  {...props}
-                  onLogout={() => setIsAuthenticated(false)}
-                />
-              )}
-            </RootStack.Screen>
+            <>
+              <RootStack.Screen name="MainTabs">
+                {(props) => (
+                  <MainTabsScreen
+                    {...props}
+                    onLogout={() => setIsAuthenticated(false)}
+                  />
+                )}
+              </RootStack.Screen>
+              <RootStack.Screen
+                name="Settings"
+                component={SettingsScreen}
+                options={{
+                  headerShown: true,
+                  title: "Settings",
+                  headerStyle: { backgroundColor: "#FFFFFF" },
+                  headerTintColor: THEME.primary,
+                  headerTitleStyle: { fontWeight: "800" },
+                }}
+              />
+            </>
           )}
         </RootStack.Navigator>
       </NavigationContainer>
@@ -191,7 +205,14 @@ export default function App() {
   );
 }
 
-function MainTabsScreen({ onLogout }: { onLogout: () => void }) {
+function MainTabsScreen({
+  navigation,
+  onLogout,
+}: NativeStackScreenProps<RootStackParamList, "MainTabs"> & {
+  onLogout: () => void;
+}) {
+  const openSettingsPage = () => navigation.navigate("Settings");
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -222,7 +243,9 @@ function MainTabsScreen({ onLogout }: { onLogout: () => void }) {
         },
         tabBarActiveTintColor: THEME.accent,
         tabBarInactiveTintColor: "#8A97A8",
-        headerRight: () => <HeaderOverflowMenu onLogout={onLogout} />,
+        headerRight: () => (
+          <HeaderOverflowMenu onOpenSettings={openSettingsPage} onLogout={onLogout} />
+        ),
       }}
     >
       <Tab.Screen
@@ -254,7 +277,9 @@ function MainTabsScreen({ onLogout }: { onLogout: () => void }) {
           ),
         }}
       >
-        {() => <HivesStackScreen onLogout={onLogout} />}
+        {() => (
+          <HivesStackScreen onOpenSettings={openSettingsPage} onLogout={onLogout} />
+        )}
       </Tab.Screen>
       <Tab.Screen
         name="Alerts"
@@ -270,7 +295,9 @@ function MainTabsScreen({ onLogout }: { onLogout: () => void }) {
           ),
         }}
       >
-        {() => <AlertsStackScreen onLogout={onLogout} />}
+        {() => (
+          <AlertsStackScreen onOpenSettings={openSettingsPage} onLogout={onLogout} />
+        )}
       </Tab.Screen>
       <Tab.Screen
         name="Map"
@@ -306,6 +333,145 @@ function MainTabsScreen({ onLogout }: { onLogout: () => void }) {
   );
 }
 
+function SettingsScreen({
+  navigation,
+}: NativeStackScreenProps<RootStackParamList, "Settings">) {
+  const [pushNotificationsEnabled, setPushNotificationsEnabled] =
+    useState(true);
+  const [criticalAlertsOnly, setCriticalAlertsOnly] = useState(false);
+  const [satelliteMapEnabled, setSatelliteMapEnabled] = useState(false);
+  const [biometricLoginEnabled, setBiometricLoginEnabled] = useState(false);
+  const [temperatureUnit, setTemperatureUnit] = useState<"C" | "F">("C");
+
+  const closeSettings = () => navigation.goBack();
+
+  return (
+    <ScrollView
+      style={{ flex: 1, backgroundColor: THEME.page }}
+      contentContainerStyle={styles.settingsPage}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={styles.settingsSection}>
+        <Text style={styles.settingsSectionTitle}>Account</Text>
+        <View style={styles.settingsAccountCard}>
+          <View style={styles.settingsAvatar}>
+            <Ionicons name="person" size={20} color={THEME.primary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.settingsAccountName}>Beekeeper</Text>
+            <Text style={styles.settingsAccountEmail}>beekeeper@bsads.app</Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.settingsSection}>
+        <Text style={styles.settingsSectionTitle}>Notifications</Text>
+        <View style={styles.settingsRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.settingsRowLabel}>Push Notifications</Text>
+            <Text style={styles.settingsRowHint}>Receive hive status updates and alerts</Text>
+          </View>
+          <Switch
+            value={pushNotificationsEnabled}
+            onValueChange={setPushNotificationsEnabled}
+            trackColor={{ false: "#D0D5DD", true: THEME.accent }}
+            thumbColor="#FFFFFF"
+          />
+        </View>
+        <View style={styles.settingsDivider} />
+        <View style={styles.settingsRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.settingsRowLabel}>Critical Alerts Only</Text>
+            <Text style={styles.settingsRowHint}>Reduce noise and notify only high-risk events</Text>
+          </View>
+          <Switch
+            value={criticalAlertsOnly}
+            onValueChange={setCriticalAlertsOnly}
+            trackColor={{ false: "#D0D5DD", true: THEME.accent }}
+            thumbColor="#FFFFFF"
+          />
+        </View>
+      </View>
+
+      <View style={styles.settingsSection}>
+        <Text style={styles.settingsSectionTitle}>App Preferences</Text>
+        <View style={styles.settingsRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.settingsRowLabel}>Biometric Login</Text>
+            <Text style={styles.settingsRowHint}>Use fingerprint or face unlock on launch</Text>
+          </View>
+          <Switch
+            value={biometricLoginEnabled}
+            onValueChange={setBiometricLoginEnabled}
+            trackColor={{ false: "#D0D5DD", true: THEME.accent }}
+            thumbColor="#FFFFFF"
+          />
+        </View>
+        <View style={styles.settingsDivider} />
+        <View style={styles.settingsRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.settingsRowLabel}>Satellite Map View</Text>
+            <Text style={styles.settingsRowHint}>Default to satellite style in the map tab</Text>
+          </View>
+          <Switch
+            value={satelliteMapEnabled}
+            onValueChange={setSatelliteMapEnabled}
+            trackColor={{ false: "#D0D5DD", true: THEME.accent }}
+            thumbColor="#FFFFFF"
+          />
+        </View>
+        <View style={styles.settingsDivider} />
+        <View style={styles.settingsRowColumn}>
+          <Text style={styles.settingsRowLabel}>Temperature Unit</Text>
+          <View style={styles.segmentedControl}>
+            <Pressable
+              style={[
+                styles.segmentButton,
+                temperatureUnit === "C" && styles.segmentButtonActive,
+              ]}
+              onPress={() => setTemperatureUnit("C")}
+            >
+              <Text
+                style={[
+                  styles.segmentText,
+                  temperatureUnit === "C" && styles.segmentTextActive,
+                ]}
+              >
+                Celsius
+              </Text>
+            </Pressable>
+            <Pressable
+              style={[
+                styles.segmentButton,
+                temperatureUnit === "F" && styles.segmentButtonActive,
+              ]}
+              onPress={() => setTemperatureUnit("F")}
+            >
+              <Text
+                style={[
+                  styles.segmentText,
+                  temperatureUnit === "F" && styles.segmentTextActive,
+                ]}
+              >
+                Fahrenheit
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.settingsActionsRow}>
+        <Pressable style={styles.settingsSecondaryButton} onPress={closeSettings}>
+          <Text style={styles.settingsSecondaryButtonText}>Back</Text>
+        </Pressable>
+        <Pressable style={styles.settingsPrimaryButton} onPress={closeSettings}>
+          <Text style={styles.settingsPrimaryButtonText}>Save Preferences</Text>
+        </Pressable>
+      </View>
+    </ScrollView>
+  );
+}
+
 function WelcomeScreen({
   navigation,
 }: NativeStackScreenProps<RootStackParamList, "Welcome">) {
@@ -319,21 +485,33 @@ function WelcomeScreen({
       {/* Logo area */}
       <View style={styles.welcomeLogoWrap}>
         <View style={styles.welcomeLogoRing}>
-          <Image source={beeLogo} style={styles.welcomeLogo} resizeMode="contain" />
+          <Image
+            source={beeLogo}
+            style={styles.welcomeLogo}
+            resizeMode="contain"
+          />
         </View>
         <Text style={styles.welcomeAppName}>BSADS</Text>
-        <Text style={styles.welcomeAppSub}>Bee Swarm & Abscondment Detection</Text>
+        <Text style={styles.welcomeAppSub}>
+          Bee Swarm & Abscondment Detection
+        </Text>
       </View>
 
       {/* Bottom card */}
       <View style={styles.welcomeBottomCard}>
-        <Text style={styles.welcomeHeadline}>Smart Beekeeping,{"\n"}Healthier Hives.</Text>
+        <Text style={styles.welcomeHeadline}>
+          Smart Beekeeping,{"\n"}Healthier Hives.
+        </Text>
         <Text style={styles.welcomeSubtitle}>
-          Monitor your hives in real-time. Get instant alerts before swarms happen.
+          Monitor your hives in real-time. Get instant alerts before swarms
+          happen.
         </Text>
 
         <Pressable
-          style={({ pressed }) => [styles.welcomePrimaryBtn, pressed && styles.pressed]}
+          style={({ pressed }) => [
+            styles.welcomePrimaryBtn,
+            pressed && styles.pressed,
+          ]}
           onPress={() => navigation.navigate("Login")}
         >
           <Ionicons name="log-in-outline" size={18} color={THEME.primary} />
@@ -357,7 +535,11 @@ function LoginScreen({
 
       <View style={styles.formCard}>
         <View style={styles.brandMark}>
-          <Image source={beeLogo} style={styles.brandLogo} resizeMode="contain" />
+          <Image
+            source={beeLogo}
+            style={styles.brandLogo}
+            resizeMode="contain"
+          />
         </View>
         <Text style={styles.brandText}>BSADS</Text>
         <Text style={styles.heading}>Welcome</Text>
@@ -376,7 +558,11 @@ function LoginScreen({
         />
 
         <Pressable
-          style={({ pressed }) => [styles.primaryButton, styles.primaryButtonWide, pressed && styles.pressed]}
+          style={({ pressed }) => [
+            styles.primaryButton,
+            styles.primaryButtonWide,
+            pressed && styles.pressed,
+          ]}
           onPress={onAuthSuccess}
         >
           <Text style={styles.primaryButtonText}>Login</Text>
@@ -387,9 +573,7 @@ function LoginScreen({
           <Text style={styles.separatorText}>or</Text>
           <View style={styles.separatorLine} />
         </View>
-        <Text style={styles.authTextPrompt}>
-          Don't have an account ?{" "}
-        </Text>
+        <Text style={styles.authTextPrompt}>Don't have an account ? </Text>
         <Pressable onPress={() => navigation.navigate("Signup")}>
           <Text style={styles.linkAction}>Create an Account</Text>
         </Pressable>
@@ -405,7 +589,6 @@ function SignupScreen({
   onAuthSuccess: () => void;
 }) {
   return (
-
     <View style={styles.authShell}>
       <View style={styles.backgroundOrbOne} />
       <View style={styles.backgroundOrbTwo} />
@@ -471,14 +654,25 @@ function SignupScreen({
   );
 }
 
-function HivesStackScreen({ onLogout }: { onLogout: () => void }) {
+function HivesStackScreen({
+  onOpenSettings,
+  onLogout,
+}: {
+  onOpenSettings: () => void;
+  onLogout: () => void;
+}) {
   return (
     <HivesStack.Navigator
       screenOptions={{
         headerStyle: { backgroundColor: "#FFFFFF" },
         headerTintColor: THEME.primary,
         headerTitleStyle: { fontWeight: "800" },
-        headerRight: () => <HeaderOverflowMenu onLogout={onLogout} />,
+        headerRight: () => (
+          <HeaderOverflowMenu
+            onOpenSettings={onOpenSettings}
+            onLogout={onLogout}
+          />
+        ),
       }}
     >
       <HivesStack.Screen
@@ -495,14 +689,25 @@ function HivesStackScreen({ onLogout }: { onLogout: () => void }) {
   );
 }
 
-function AlertsStackScreen({ onLogout }: { onLogout: () => void }) {
+function AlertsStackScreen({
+  onOpenSettings,
+  onLogout,
+}: {
+  onOpenSettings: () => void;
+  onLogout: () => void;
+}) {
   return (
     <AlertsStack.Navigator
       screenOptions={{
         headerStyle: { backgroundColor: "#FFFFFF" },
         headerTintColor: THEME.primary,
         headerTitleStyle: { fontWeight: "800" },
-        headerRight: () => <HeaderOverflowMenu onLogout={onLogout} />,
+        headerRight: () => (
+          <HeaderOverflowMenu
+            onOpenSettings={onOpenSettings}
+            onLogout={onLogout}
+          />
+        ),
       }}
     >
       <AlertsStack.Screen
@@ -540,7 +745,9 @@ function AlertsListScreen({
     }
   }, []);
 
-  useEffect(() => { void loadAlerts(); }, [loadAlerts]);
+  useEffect(() => {
+    void loadAlerts();
+  }, [loadAlerts]);
 
   const SEVERITY_COLOR: Record<AlertSeverity, string> = {
     Critical: "#DC2626",
@@ -559,7 +766,8 @@ function AlertsListScreen({
   };
 
   const ALL_SEVERITIES: AlertSeverity[] = ["Critical", "Warning", "Info"];
-  const filtered = filter === "All" ? alerts : alerts.filter(a => a.severity === filter);
+  const filtered =
+    filter === "All" ? alerts : alerts.filter((a) => a.severity === filter);
 
   if (loading) {
     return (
@@ -575,7 +783,10 @@ function AlertsListScreen({
       <View style={styles.centerState}>
         <Text style={styles.errorTitle}>Failed to load alerts</Text>
         <Text style={styles.errorBody}>{error}</Text>
-        <Pressable style={styles.primaryButtonSmall} onPress={() => void loadAlerts()}>
+        <Pressable
+          style={styles.primaryButtonSmall}
+          onPress={() => void loadAlerts()}
+        >
           <Text style={styles.primaryButtonText}>Retry</Text>
         </Pressable>
       </View>
@@ -590,25 +801,49 @@ function AlertsListScreen({
       {/* Filter pills */}
       <View style={styles.hiveSummaryStrip}>
         <Pressable
-          style={[styles.hiveSummaryPill, filter === "All" && styles.hiveSummaryPillActive]}
+          style={[
+            styles.hiveSummaryPill,
+            filter === "All" && styles.hiveSummaryPillActive,
+          ]}
           onPress={() => setFilter("All")}
         >
-          <Text style={[styles.hiveSummaryPillText, filter === "All" && styles.hiveSummaryPillTextActive]}>
+          <Text
+            style={[
+              styles.hiveSummaryPillText,
+              filter === "All" && styles.hiveSummaryPillTextActive,
+            ]}
+          >
             All {alerts.length}
           </Text>
         </Pressable>
         {ALL_SEVERITIES.map((s) => {
-          const count = alerts.filter(a => a.severity === s).length;
+          const count = alerts.filter((a) => a.severity === s).length;
           if (count === 0) return null;
           const active = filter === s;
           return (
             <Pressable
               key={s}
-              style={[styles.hiveSummaryPill, { borderColor: SEVERITY_COLOR[s] }, active && { backgroundColor: SEVERITY_BG[s] }]}
+              style={[
+                styles.hiveSummaryPill,
+                { borderColor: SEVERITY_COLOR[s] },
+                active && { backgroundColor: SEVERITY_BG[s] },
+              ]}
               onPress={() => setFilter(active ? "All" : s)}
             >
-              <View style={[styles.hiveSummaryDot, { backgroundColor: SEVERITY_COLOR[s] }]} />
-              <Text style={[styles.hiveSummaryPillText, { color: SEVERITY_COLOR[s] }]}>{s} {count}</Text>
+              <View
+                style={[
+                  styles.hiveSummaryDot,
+                  { backgroundColor: SEVERITY_COLOR[s] },
+                ]}
+              />
+              <Text
+                style={[
+                  styles.hiveSummaryPillText,
+                  { color: SEVERITY_COLOR[s] },
+                ]}
+              >
+                {s} {count}
+              </Text>
             </Pressable>
           );
         })}
@@ -616,7 +851,8 @@ function AlertsListScreen({
 
       {/* Count */}
       <Text style={styles.hiveListCount}>
-        {filtered.length} {filter === "All" ? "alerts" : filter.toLowerCase() + " alerts"}
+        {filtered.length}{" "}
+        {filter === "All" ? "alerts" : filter.toLowerCase() + " alerts"}
       </Text>
 
       {filtered.length === 0 && (
@@ -629,26 +865,45 @@ function AlertsListScreen({
       {filtered.map((alert) => (
         <Pressable
           key={alert.id}
-          style={({ pressed }) => [styles.alertCard, pressed && styles.pressedRow]}
-          onPress={() => navigation.navigate("AlertDetails", { alertId: alert.id })}
+          style={({ pressed }) => [
+            styles.alertCard,
+            pressed && styles.pressedRow,
+          ]}
+          onPress={() =>
+            navigation.navigate("AlertDetails", { alertId: alert.id })
+          }
         >
           <View style={styles.alertCardBody}>
             <View style={styles.alertCardTopRow}>
               <View style={styles.alertCardIconWrap}>
-                <Ionicons name={SEVERITY_ICON[alert.severity]} size={20} color={SEVERITY_COLOR[alert.severity]} />
+                <Ionicons
+                  name={SEVERITY_ICON[alert.severity]}
+                  size={20}
+                  color={SEVERITY_COLOR[alert.severity]}
+                />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.alertCardTitle}>{alert.title}</Text>
                 <View style={styles.alertCardMeta}>
-                  <Ionicons name="cube-outline" size={11} color={THEME.textMuted} />
+                  <Ionicons
+                    name="cube-outline"
+                    size={11}
+                    color={THEME.textMuted}
+                  />
                   <Text style={styles.alertCardMetaText}>{alert.hiveId}</Text>
                   <Text style={styles.alertCardMetaDot}>·</Text>
                   <Text style={styles.alertCardMetaText}>{alert.date}</Text>
                 </View>
               </View>
-              <Ionicons name="chevron-forward" size={16} color={THEME.placeholder} />
+              <Ionicons
+                name="chevron-forward"
+                size={16}
+                color={THEME.placeholder}
+              />
             </View>
-            <Text style={styles.alertCardSummary} numberOfLines={2}>{alert.summary}</Text>
+            <Text style={styles.alertCardSummary} numberOfLines={2}>
+              {alert.summary}
+            </Text>
           </View>
         </Pressable>
       ))}
@@ -679,24 +934,32 @@ function AlertDetailsScreen({
       setDetail(data);
       setAdvisory(adv);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load alert details");
+      setError(
+        err instanceof Error ? err.message : "Could not load alert details",
+      );
     } finally {
       setLoading(false);
     }
   }, [alertId]);
 
-  useEffect(() => { void loadDetail(); }, [loadDetail]);
+  useEffect(() => {
+    void loadDetail();
+  }, [loadDetail]);
 
   const handleAcknowledge = useCallback(async () => {
     if (!detail || acknowledging) return;
     setAcknowledging(true);
     try {
       await acknowledgeAlert(detail.id);
-      setDetail((current) => current ? { ...current, acknowledged: true } : current);
+      setDetail((current) =>
+        current ? { ...current, acknowledged: true } : current,
+      );
       // Navigate back after short delay so user sees the closed state
       setTimeout(() => navigation.goBack(), 800);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not acknowledge alert");
+      setError(
+        err instanceof Error ? err.message : "Could not acknowledge alert",
+      );
     } finally {
       setAcknowledging(false);
     }
@@ -725,8 +988,13 @@ function AlertDetailsScreen({
     return (
       <View style={styles.centerState}>
         <Text style={styles.errorTitle}>Failed to load alert</Text>
-        <Text style={styles.errorBody}>{error ?? "No detail returned from API"}</Text>
-        <Pressable style={styles.primaryButtonSmall} onPress={() => void loadDetail()}>
+        <Text style={styles.errorBody}>
+          {error ?? "No detail returned from API"}
+        </Text>
+        <Pressable
+          style={styles.primaryButtonSmall}
+          onPress={() => void loadDetail()}
+        >
           <Text style={styles.primaryButtonText}>Retry</Text>
         </Pressable>
       </View>
@@ -743,21 +1011,31 @@ function AlertDetailsScreen({
       contentContainerStyle={styles.detailPage}
     >
       {/* ── Hero ── */}
-      <View style={[styles.detailHeroCard, detail.acknowledged && { opacity: 0.7 }]}>
+      <View
+        style={[styles.detailHeroCard, detail.acknowledged && { opacity: 0.7 }]}
+      >
         <View style={styles.detailHeroTopRow}>
           <View style={styles.detailHiveIconWrap}>
-            <Ionicons name="alert-circle-outline" size={26} color={THEME.accent} />
+            <Ionicons
+              name="alert-circle-outline"
+              size={26}
+              color={THEME.accent}
+            />
           </View>
           <View style={styles.detailHeroTextWrap}>
             <Text style={styles.detailHiveName}>{detail.title}</Text>
-            <Text style={styles.detailHeroMeta}>{detail.hiveId} · {detail.time}</Text>
+            <Text style={styles.detailHeroMeta}>
+              {detail.hiveId} · {detail.time}
+            </Text>
           </View>
           <SeverityPill severity={detail.severity} />
         </View>
         {detail.acknowledged && (
           <View style={styles.alertClosedBanner}>
             <Ionicons name="checkmark-circle" size={14} color="#16A34A" />
-            <Text style={styles.alertClosedText}>This alert has been acknowledged and closed</Text>
+            <Text style={styles.alertClosedText}>
+              This alert has been acknowledged and closed
+            </Text>
           </View>
         )}
       </View>
@@ -765,10 +1043,18 @@ function AlertDetailsScreen({
       {/* ── Alert Info ── */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Alert Information</Text>
-        <InfoRow label="Severity" value={detail.severity} valueColor={severityColor(detail.severity)} />
+        <InfoRow
+          label="Severity"
+          value={detail.severity}
+          valueColor={severityColor(detail.severity)}
+        />
         <InfoRow label="Hive" value={detail.hiveId} />
         <InfoRow label="Time" value={detail.time} />
-        <InfoRow label="Status" value={detail.acknowledged ? "Closed" : "Open"} valueColor={detail.acknowledged ? "#16A34A" : "#D97706"} />
+        <InfoRow
+          label="Status"
+          value={detail.acknowledged ? "Closed" : "Open"}
+          valueColor={detail.acknowledged ? "#16A34A" : "#D97706"}
+        />
       </View>
 
       <View style={styles.card}>
@@ -784,10 +1070,23 @@ function AlertDetailsScreen({
               <Ionicons name="bulb-outline" size={18} color={THEME.accent} />
               <Text style={styles.cardTitle}>Advisory</Text>
             </View>
-            <View style={[styles.advisoryTypeBadge,
-              { backgroundColor: advisory.type === "Reactive" ? "#FEF2F2" : "#F0FDF4" }]}>
-              <Text style={[styles.advisoryTypeText,
-                { color: advisory.type === "Reactive" ? "#DC2626" : "#16A34A" }]}>
+            <View
+              style={[
+                styles.advisoryTypeBadge,
+                {
+                  backgroundColor:
+                    advisory.type === "Reactive" ? "#FEF2F2" : "#F0FDF4",
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.advisoryTypeText,
+                  {
+                    color: advisory.type === "Reactive" ? "#DC2626" : "#16A34A",
+                  },
+                ]}
+              >
                 {advisory.type}
               </Text>
             </View>
@@ -796,7 +1095,8 @@ function AlertDetailsScreen({
           <Text style={styles.advisorySummary}>{advisory.summary}</Text>
 
           <Text style={styles.advisoryActionsTitle}>
-            Recommended Actions ({checkedActions.size}/{advisory.actions.length} completed)
+            Recommended Actions ({checkedActions.size}/{advisory.actions.length}{" "}
+            completed)
           </Text>
 
           {advisory.actions.map((action) => {
@@ -804,30 +1104,57 @@ function AlertDetailsScreen({
             return (
               <Pressable
                 key={action.id}
-                style={[styles.advisoryActionRow, checked && styles.advisoryActionRowDone]}
+                style={[
+                  styles.advisoryActionRow,
+                  checked && styles.advisoryActionRowDone,
+                ]}
                 onPress={() => toggleAction(action.id)}
               >
-                <View style={[styles.advisoryCheckbox, checked && styles.advisoryCheckboxDone]}>
-                  {checked && <Ionicons name="checkmark" size={12} color="#fff" />}
+                <View
+                  style={[
+                    styles.advisoryCheckbox,
+                    checked && styles.advisoryCheckboxDone,
+                  ]}
+                >
+                  {checked && (
+                    <Ionicons name="checkmark" size={12} color="#fff" />
+                  )}
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.advisoryActionText, checked && styles.advisoryActionTextDone]}>
+                  <Text
+                    style={[
+                      styles.advisoryActionText,
+                      checked && styles.advisoryActionTextDone,
+                    ]}
+                  >
                     {action.description}
                   </Text>
                 </View>
-                <View style={[styles.advisoryPriorityDot, { backgroundColor: PRIORITY_COLOR[action.priority] }]} />
+                <View
+                  style={[
+                    styles.advisoryPriorityDot,
+                    { backgroundColor: PRIORITY_COLOR[action.priority] },
+                  ]}
+                />
               </Pressable>
             );
           })}
 
           {/* Progress bar */}
           <View style={styles.advisoryProgressTrack}>
-            <View style={[styles.advisoryProgressFill, {
-              width: `${Math.round((checkedActions.size / advisory.actions.length) * 100)}%` as any,
-            }]} />
+            <View
+              style={[
+                styles.advisoryProgressFill,
+                {
+                  width:
+                    `${Math.round((checkedActions.size / advisory.actions.length) * 100)}%` as any,
+                },
+              ]}
+            />
           </View>
           <Text style={styles.advisoryProgressLabel}>
-            {Math.round((checkedActions.size / advisory.actions.length) * 100)}% of actions completed
+            {Math.round((checkedActions.size / advisory.actions.length) * 100)}%
+            of actions completed
           </Text>
         </View>
       )}
@@ -837,7 +1164,11 @@ function AlertDetailsScreen({
         <View style={styles.card}>
           {!allActionsChecked && (
             <View style={styles.advisoryWarningRow}>
-              <Ionicons name="information-circle-outline" size={14} color="#D97706" />
+              <Ionicons
+                name="information-circle-outline"
+                size={14}
+                color="#D97706"
+              />
               <Text style={styles.advisoryWarningText}>
                 Review and check off all advisory actions before acknowledging
               </Text>
@@ -853,8 +1184,17 @@ function AlertDetailsScreen({
             onPress={handleAcknowledge}
             disabled={acknowledging || !allActionsChecked}
           >
-            <Ionicons name="checkmark-circle-outline" size={18} color={allActionsChecked ? THEME.primary : THEME.textMuted} />
-            <Text style={[styles.primaryButtonText, !allActionsChecked && { color: THEME.textMuted }]}>
+            <Ionicons
+              name="checkmark-circle-outline"
+              size={18}
+              color={allActionsChecked ? THEME.primary : THEME.textMuted}
+            />
+            <Text
+              style={[
+                styles.primaryButtonText,
+                !allActionsChecked && { color: THEME.textMuted },
+              ]}
+            >
               {acknowledging ? "Acknowledging..." : "Acknowledge & Close Alert"}
             </Text>
           </Pressable>
@@ -905,13 +1245,17 @@ function DashboardScreen({
       const data = await fetchDashboard();
       setDashboard(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load dashboard data");
+      setError(
+        err instanceof Error ? err.message : "Could not load dashboard data",
+      );
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => { void loadDashboard(); }, [loadDashboard]);
+  useEffect(() => {
+    void loadDashboard();
+  }, [loadDashboard]);
 
   if (loading) {
     return (
@@ -926,8 +1270,13 @@ function DashboardScreen({
     return (
       <View style={styles.centerState}>
         <Text style={styles.errorTitle}>Failed to load dashboard</Text>
-        <Text style={styles.errorBody}>{error ?? "No data returned from API"}</Text>
-        <Pressable style={styles.primaryButtonSmall} onPress={() => void loadDashboard()}>
+        <Text style={styles.errorBody}>
+          {error ?? "No data returned from API"}
+        </Text>
+        <Pressable
+          style={styles.primaryButtonSmall}
+          onPress={() => void loadDashboard()}
+        >
           <Text style={styles.primaryButtonText}>Retry</Text>
         </Pressable>
       </View>
@@ -935,22 +1284,51 @@ function DashboardScreen({
   }
 
   const total = dashboard.totalHives || 1;
-  const donutSegments: { pct: number; color: string; label: string; count: number }[] = [
-    { pct: dashboard.statusCounts.Healthy / total, color: "#22C55E", label: "Healthy", count: dashboard.statusCounts.Healthy },
-    { pct: dashboard.statusCounts["Pre-swarm"] / total, color: THEME.accent, label: "Pre-swarm", count: dashboard.statusCounts["Pre-swarm"] },
-    { pct: dashboard.statusCounts.Swarm / total, color: "#EF4444", label: "Swarm", count: dashboard.statusCounts.Swarm },
-    { pct: dashboard.statusCounts.Abscondment / total, color: "#94A3B8", label: "Abscondment", count: dashboard.statusCounts.Abscondment },
+  const donutSegments: {
+    pct: number;
+    color: string;
+    label: string;
+    count: number;
+  }[] = [
+    {
+      pct: dashboard.statusCounts.Healthy / total,
+      color: "#22C55E",
+      label: "Healthy",
+      count: dashboard.statusCounts.Healthy,
+    },
+    {
+      pct: dashboard.statusCounts["Pre-swarm"] / total,
+      color: THEME.accent,
+      label: "Pre-swarm",
+      count: dashboard.statusCounts["Pre-swarm"],
+    },
+    {
+      pct: dashboard.statusCounts.Swarm / total,
+      color: "#EF4444",
+      label: "Swarm",
+      count: dashboard.statusCounts.Swarm,
+    },
+    {
+      pct: dashboard.statusCounts.Abscondment / total,
+      color: "#94A3B8",
+      label: "Abscondment",
+      count: dashboard.statusCounts.Abscondment,
+    },
   ];
 
-  const alertResponseRate = dashboard.pendingAlerts + dashboard.acknowledgedAlerts > 0
-    ? Math.round((dashboard.acknowledgedAlerts / (dashboard.pendingAlerts + dashboard.acknowledgedAlerts)) * 100)
-    : 0;
+  const alertResponseRate =
+    dashboard.pendingAlerts + dashboard.acknowledgedAlerts > 0
+      ? Math.round(
+          (dashboard.acknowledgedAlerts /
+            (dashboard.pendingAlerts + dashboard.acknowledgedAlerts)) *
+            100,
+        )
+      : 0;
 
   const trendMax = Math.max(...dashboard.preSwarmTrend.map((d) => d.count), 1);
 
   return (
     <ScrollView contentContainerStyle={styles.appPage}>
-
       {/* ── Overview row ── */}
       <View style={styles.overviewCardRow}>
         <View style={[styles.overviewTile, { backgroundColor: THEME.primary }]}>
@@ -965,13 +1343,19 @@ function DashboardScreen({
         </View>
         <View style={[styles.overviewTile, { backgroundColor: "#EF4444" }]}>
           <Ionicons name="alert-circle-outline" size={20} color="#fff" />
-          <Text style={styles.overviewTileValue}>{dashboard.pendingAlerts}</Text>
+          <Text style={styles.overviewTileValue}>
+            {dashboard.pendingAlerts}
+          </Text>
           <Text style={styles.overviewTileLabel}>Pending Alerts</Text>
         </View>
         <View style={[styles.overviewTile, { backgroundColor: THEME.accent }]}>
           <Ionicons name="warning-outline" size={20} color={THEME.primary} />
-          <Text style={[styles.overviewTileValue, { color: THEME.primary }]}>{dashboard.statusCounts["Pre-swarm"]}</Text>
-          <Text style={[styles.overviewTileLabel, { color: THEME.primary }]}>Pre-swarm</Text>
+          <Text style={[styles.overviewTileValue, { color: THEME.primary }]}>
+            {dashboard.statusCounts["Pre-swarm"]}
+          </Text>
+          <Text style={[styles.overviewTileLabel, { color: THEME.primary }]}>
+            Pre-swarm
+          </Text>
         </View>
       </View>
 
@@ -983,7 +1367,12 @@ function DashboardScreen({
           <View style={styles.donutLegend}>
             {donutSegments.map((seg) => (
               <View key={seg.label} style={styles.donutLegendItem}>
-                <View style={[styles.donutLegendDot, { backgroundColor: seg.color }]} />
+                <View
+                  style={[
+                    styles.donutLegendDot,
+                    { backgroundColor: seg.color },
+                  ]}
+                />
                 <Text style={styles.donutLegendLabel}>{seg.label}</Text>
                 <Text style={styles.donutLegendCount}>{seg.count}</Text>
               </View>
@@ -1003,7 +1392,15 @@ function DashboardScreen({
             <View key={d.day} style={styles.barCol}>
               <Text style={styles.barValue}>{d.count}</Text>
               <View style={styles.barTrack}>
-                <View style={[styles.barFill, { height: `${Math.round((d.count / trendMax) * 100)}%` as any }]} />
+                <View
+                  style={[
+                    styles.barFill,
+                    {
+                      height:
+                        `${Math.round((d.count / trendMax) * 100)}%` as any,
+                    },
+                  ]}
+                />
               </View>
               <Text style={styles.barLabel}>{d.day}</Text>
             </View>
@@ -1016,13 +1413,19 @@ function DashboardScreen({
       <View style={styles.gridTwo}>
         <View style={styles.infoCard}>
           <Ionicons name="flame-outline" size={22} color="#EF4444" />
-          <Text style={styles.infoCardValue}>{dashboard.mostAtRiskHive.hiveId}</Text>
+          <Text style={styles.infoCardValue}>
+            {dashboard.mostAtRiskHive.hiveId}
+          </Text>
           <Text style={styles.infoCardLabel}>Most At-Risk Hive</Text>
-          <Text style={styles.infoCardSub}>{dashboard.mostAtRiskHive.alertCount} alerts triggered</Text>
+          <Text style={styles.infoCardSub}>
+            {dashboard.mostAtRiskHive.alertCount} alerts triggered
+          </Text>
         </View>
         <View style={styles.infoCard}>
           <Ionicons name="time-outline" size={22} color={THEME.accent} />
-          <Text style={styles.infoCardValue}>{dashboard.avgAcknowledgeTimeMinutes}m</Text>
+          <Text style={styles.infoCardValue}>
+            {dashboard.avgAcknowledgeTimeMinutes}m
+          </Text>
           <Text style={styles.infoCardLabel}>Avg. Acknowledge Time</Text>
           <Text style={styles.infoCardSub}>Time to respond</Text>
         </View>
@@ -1032,22 +1435,35 @@ function DashboardScreen({
       <View style={styles.card}>
         <View style={styles.rowBetween}>
           <Text style={styles.cardTitle}>Alert Response Rate</Text>
-          <Text style={[styles.cardSubtitle, { color: alertResponseRate >= 70 ? "#22C55E" : "#EF4444" }]}>
+          <Text
+            style={[
+              styles.cardSubtitle,
+              { color: alertResponseRate >= 70 ? "#22C55E" : "#EF4444" },
+            ]}
+          >
             {alertResponseRate}%
           </Text>
         </View>
         <View style={styles.progressTrack}>
-          <View style={[styles.progressFill, {
-            width: `${alertResponseRate}%` as any,
-            backgroundColor: alertResponseRate >= 70 ? "#22C55E" : "#EF4444"
-          }]} />
+          <View
+            style={[
+              styles.progressFill,
+              {
+                width: `${alertResponseRate}%` as any,
+                backgroundColor:
+                  alertResponseRate >= 70 ? "#22C55E" : "#EF4444",
+              },
+            ]}
+          />
         </View>
         <View style={styles.rowBetween}>
           <Text style={styles.progressLabel}>
-            <Text style={{ color: "#22C55E" }}>● </Text>Acknowledged: {dashboard.acknowledgedAlerts}
+            <Text style={{ color: "#22C55E" }}>● </Text>Acknowledged:{" "}
+            {dashboard.acknowledgedAlerts}
           </Text>
           <Text style={styles.progressLabel}>
-            <Text style={{ color: "#EF4444" }}>● </Text>Pending: {dashboard.pendingAlerts}
+            <Text style={{ color: "#EF4444" }}>● </Text>Pending:{" "}
+            {dashboard.pendingAlerts}
           </Text>
         </View>
       </View>
@@ -1064,8 +1480,18 @@ function DashboardScreen({
       {/* ── Key Metrics ── */}
       <Text style={styles.sectionTitle}>Key Metrics</Text>
       <View style={styles.gridTwo}>
-        <MetricCard title="Avg Temperature" value={dashboard.keyMetrics.temperatureC.toFixed(1)} unit="°C" subtitle="Last 24 hours" />
-        <MetricCard title="Avg Humidity" value={dashboard.keyMetrics.humidityPercent.toFixed(0)} unit="%" subtitle="Last 24 hours" />
+        <MetricCard
+          title="Avg Temperature"
+          value={dashboard.keyMetrics.temperatureC.toFixed(1)}
+          unit="°C"
+          subtitle="Last 24 hours"
+        />
+        <MetricCard
+          title="Avg Humidity"
+          value={dashboard.keyMetrics.humidityPercent.toFixed(0)}
+          unit="%"
+          subtitle="Last 24 hours"
+        />
       </View>
 
       {/* ── Audio Ingestion ── */}
@@ -1077,9 +1503,25 @@ function DashboardScreen({
           <Text style={styles.infoCardLabel}>Recordings Today</Text>
           <Text style={styles.infoCardSub}>Across all hives</Text>
         </View>
-        <View style={[styles.infoCard, dashboard.silentHives.length > 0 && styles.infoCardWarn]}>
-          <Ionicons name="volume-mute-outline" size={22} color={dashboard.silentHives.length > 0 ? "#EF4444" : "#22C55E"} />
-          <Text style={[styles.infoCardValue, { color: dashboard.silentHives.length > 0 ? "#EF4444" : "#22C55E" }]}>
+        <View
+          style={[
+            styles.infoCard,
+            dashboard.silentHives.length > 0 && styles.infoCardWarn,
+          ]}
+        >
+          <Ionicons
+            name="volume-mute-outline"
+            size={22}
+            color={dashboard.silentHives.length > 0 ? "#EF4444" : "#22C55E"}
+          />
+          <Text
+            style={[
+              styles.infoCardValue,
+              {
+                color: dashboard.silentHives.length > 0 ? "#EF4444" : "#22C55E",
+              },
+            ]}
+          >
             {dashboard.silentHives.length}
           </Text>
           <Text style={styles.infoCardLabel}>Silent Hives</Text>
@@ -1090,9 +1532,15 @@ function DashboardScreen({
         <View style={styles.silentHivesList}>
           {dashboard.silentHives.map((h) => (
             <View key={h.hiveId} style={styles.silentHiveRow}>
-              <Ionicons name="radio-button-off-outline" size={14} color="#EF4444" />
+              <Ionicons
+                name="radio-button-off-outline"
+                size={14}
+                color="#EF4444"
+              />
               <Text style={styles.silentHiveText}>{h.hiveId}</Text>
-              <Text style={styles.silentHiveTime}>Last seen {h.lastSeenHoursAgo}h ago</Text>
+              <Text style={styles.silentHiveTime}>
+                Last seen {h.lastSeenHoursAgo}h ago
+              </Text>
             </View>
           ))}
         </View>
@@ -1103,14 +1551,24 @@ function DashboardScreen({
         <>
           <Text style={styles.sectionTitle}>⚠ High Temp + Pre-swarm</Text>
           <View style={styles.card}>
-            <Text style={styles.cardSubtitle}>Hives showing elevated temperature alongside pre-swarm state</Text>
+            <Text style={styles.cardSubtitle}>
+              Hives showing elevated temperature alongside pre-swarm state
+            </Text>
             {dashboard.highTempPreSwarmHives.map((h) => (
               <View key={h.hiveId} style={styles.corrRow}>
                 <View style={styles.corrHiveChip}>
                   <Text style={styles.corrHiveChipText}>{h.hiveId}</Text>
                 </View>
                 <View style={styles.corrTempBar}>
-                  <View style={[styles.corrTempFill, { width: `${Math.min(((h.temperatureC - 30) / 15) * 100, 100)}%` as any }]} />
+                  <View
+                    style={[
+                      styles.corrTempFill,
+                      {
+                        width:
+                          `${Math.min(((h.temperatureC - 30) / 15) * 100, 100)}%` as any,
+                      },
+                    ]}
+                  />
                 </View>
                 <Text style={styles.corrTempValue}>{h.temperatureC}°C</Text>
               </View>
@@ -1122,17 +1580,57 @@ function DashboardScreen({
       {/* ── ML & Advisory ── */}
       <Text style={styles.sectionTitle}>System Health</Text>
       <View style={styles.gridTwo}>
-        <View style={[styles.infoCard, dashboard.lowConfidenceInferences > 0 && styles.infoCardWarn]}>
-          <Ionicons name="help-circle-outline" size={22} color={dashboard.lowConfidenceInferences > 0 ? "#EF4444" : "#22C55E"} />
-          <Text style={[styles.infoCardValue, { color: dashboard.lowConfidenceInferences > 0 ? "#EF4444" : "#22C55E" }]}>
+        <View
+          style={[
+            styles.infoCard,
+            dashboard.lowConfidenceInferences > 0 && styles.infoCardWarn,
+          ]}
+        >
+          <Ionicons
+            name="help-circle-outline"
+            size={22}
+            color={
+              dashboard.lowConfidenceInferences > 0 ? "#EF4444" : "#22C55E"
+            }
+          />
+          <Text
+            style={[
+              styles.infoCardValue,
+              {
+                color:
+                  dashboard.lowConfidenceInferences > 0 ? "#EF4444" : "#22C55E",
+              },
+            ]}
+          >
             {dashboard.lowConfidenceInferences}
           </Text>
           <Text style={styles.infoCardLabel}>Low-Confidence Inferences</Text>
           <Text style={styles.infoCardSub}>Score &lt; 0.6</Text>
         </View>
-        <View style={[styles.infoCard, dashboard.pendingAdvisoryActions > 0 && styles.infoCardWarn]}>
-          <Ionicons name="clipboard-outline" size={22} color={dashboard.pendingAdvisoryActions > 0 ? THEME.accent : "#22C55E"} />
-          <Text style={[styles.infoCardValue, { color: dashboard.pendingAdvisoryActions > 0 ? THEME.accent : "#22C55E" }]}>
+        <View
+          style={[
+            styles.infoCard,
+            dashboard.pendingAdvisoryActions > 0 && styles.infoCardWarn,
+          ]}
+        >
+          <Ionicons
+            name="clipboard-outline"
+            size={22}
+            color={
+              dashboard.pendingAdvisoryActions > 0 ? THEME.accent : "#22C55E"
+            }
+          />
+          <Text
+            style={[
+              styles.infoCardValue,
+              {
+                color:
+                  dashboard.pendingAdvisoryActions > 0
+                    ? THEME.accent
+                    : "#22C55E",
+              },
+            ]}
+          >
             {dashboard.pendingAdvisoryActions}
           </Text>
           <Text style={styles.infoCardLabel}>Pending Advisory Actions</Text>
@@ -1185,41 +1683,70 @@ function DonutChart({
   });
 
   return (
-    <View style={{ width: SIZE, height: SIZE, position: "relative", alignItems: "center", justifyContent: "center" }}>
+    <View
+      style={{
+        width: SIZE,
+        height: SIZE,
+        position: "relative",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
       {/* Background ring */}
-      <View style={{
-        width: SIZE, height: SIZE, borderRadius: SIZE / 2,
-        borderWidth: STROKE, borderColor: "#F1F5F9", position: "absolute",
-      }} />
+      <View
+        style={{
+          width: SIZE,
+          height: SIZE,
+          borderRadius: SIZE / 2,
+          borderWidth: STROKE,
+          borderColor: "#F1F5F9",
+          position: "absolute",
+        }}
+      />
       {/* Colored segments via conic-gradient simulation: stacked rings with rotation */}
       {arcs.map((arc, i) => {
         const deg = arc.pct * 360;
         const rotateDeg = arc.start * 360;
         if (deg < 1) return null;
         return (
-          <View key={i} style={{
-            width: SIZE, height: SIZE, borderRadius: SIZE / 2,
-            position: "absolute",
-            overflow: "hidden",
-          }}>
-            <View style={{
-              width: SIZE, height: SIZE, borderRadius: SIZE / 2,
-              borderWidth: STROKE,
-              borderColor: "transparent",
-              borderTopColor: arc.color,
-              borderRightColor: deg > 90 ? arc.color : "transparent",
-              borderBottomColor: deg > 180 ? arc.color : "transparent",
-              borderLeftColor: deg > 270 ? arc.color : "transparent",
-              transform: [{ rotate: `${rotateDeg - 90}deg` }],
+          <View
+            key={i}
+            style={{
+              width: SIZE,
+              height: SIZE,
+              borderRadius: SIZE / 2,
               position: "absolute",
-            }} />
+              overflow: "hidden",
+            }}
+          >
+            <View
+              style={{
+                width: SIZE,
+                height: SIZE,
+                borderRadius: SIZE / 2,
+                borderWidth: STROKE,
+                borderColor: "transparent",
+                borderTopColor: arc.color,
+                borderRightColor: deg > 90 ? arc.color : "transparent",
+                borderBottomColor: deg > 180 ? arc.color : "transparent",
+                borderLeftColor: deg > 270 ? arc.color : "transparent",
+                transform: [{ rotate: `${rotateDeg - 90}deg` }],
+                position: "absolute",
+              }}
+            />
           </View>
         );
       })}
       {/* Center label */}
       <View style={{ alignItems: "center" }}>
-        <Text style={{ fontSize: 22, fontWeight: "800", color: THEME.primary }}>{total}</Text>
-        <Text style={{ fontSize: 10, color: THEME.textMuted, fontWeight: "600" }}>Hives</Text>
+        <Text style={{ fontSize: 22, fontWeight: "800", color: THEME.primary }}>
+          {total}
+        </Text>
+        <Text
+          style={{ fontSize: 10, color: THEME.textMuted, fontWeight: "600" }}
+        >
+          Hives
+        </Text>
       </View>
     </View>
   );
@@ -1294,7 +1821,9 @@ function HivesListScreen({
   }, []);
 
   useEffect(() => {
-    const timeout = setTimeout(() => { void loadHives(searchText); }, 250);
+    const timeout = setTimeout(() => {
+      void loadHives(searchText);
+    }, 250);
     return () => clearTimeout(timeout);
   }, [searchText, loadHives]);
 
@@ -1312,26 +1841,39 @@ function HivesListScreen({
     Abscondment: "#F9FAFB",
   };
 
-  const ALL_STATUSES: HiveStatus[] = ["Healthy", "Pre-swarm", "Swarm", "Abscondment"];
+  const ALL_STATUSES: HiveStatus[] = [
+    "Healthy",
+    "Pre-swarm",
+    "Swarm",
+    "Abscondment",
+  ];
 
-  const filtered = filterStatus === "All"
-    ? hives
-    : hives.filter((h) => h.status === filterStatus);
+  const filtered =
+    filterStatus === "All"
+      ? hives
+      : hives.filter((h) => h.status === filterStatus);
 
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: THEME.page }}
       contentContainerStyle={[styles.appPage, { flexGrow: 1 }]}
     >
-
       {/* Status summary pills */}
       {!loading && !error && hives.length > 0 && (
         <View style={styles.hiveSummaryStrip}>
           <Pressable
-            style={[styles.hiveSummaryPill, filterStatus === "All" && styles.hiveSummaryPillActive]}
+            style={[
+              styles.hiveSummaryPill,
+              filterStatus === "All" && styles.hiveSummaryPillActive,
+            ]}
             onPress={() => setFilterStatus("All")}
           >
-            <Text style={[styles.hiveSummaryPillText, filterStatus === "All" && styles.hiveSummaryPillTextActive]}>
+            <Text
+              style={[
+                styles.hiveSummaryPillText,
+                filterStatus === "All" && styles.hiveSummaryPillTextActive,
+              ]}
+            >
               All {hives.length}
             </Text>
           </Pressable>
@@ -1349,8 +1891,18 @@ function HivesListScreen({
                 ]}
                 onPress={() => setFilterStatus(active ? "All" : s)}
               >
-                <View style={[styles.hiveSummaryDot, { backgroundColor: STATUS_COLOR[s] }]} />
-                <Text style={[styles.hiveSummaryPillText, { color: STATUS_COLOR[s] }]}>
+                <View
+                  style={[
+                    styles.hiveSummaryDot,
+                    { backgroundColor: STATUS_COLOR[s] },
+                  ]}
+                />
+                <Text
+                  style={[
+                    styles.hiveSummaryPillText,
+                    { color: STATUS_COLOR[s] },
+                  ]}
+                >
                   {s} {count}
                 </Text>
               </Pressable>
@@ -1362,7 +1914,12 @@ function HivesListScreen({
       {/* Search + view toggle row */}
       <View style={styles.hiveToolbarRow}>
         <View style={[styles.searchBarWrap, { flex: 1, marginBottom: 0 }]}>
-          <Ionicons name="search-outline" size={16} color={THEME.textMuted} style={{ marginRight: 8 }} />
+          <Ionicons
+            name="search-outline"
+            size={16}
+            color={THEME.textMuted}
+            style={{ marginRight: 8 }}
+          />
           <TextInput
             value={searchText}
             onChangeText={setSearchText}
@@ -1378,16 +1935,30 @@ function HivesListScreen({
         </View>
         <View style={styles.viewToggle}>
           <Pressable
-            style={[styles.viewToggleBtn, viewMode === "list" && styles.viewToggleBtnActive]}
+            style={[
+              styles.viewToggleBtn,
+              viewMode === "list" && styles.viewToggleBtnActive,
+            ]}
             onPress={() => setViewMode("list")}
           >
-            <Ionicons name="list-outline" size={18} color={viewMode === "list" ? THEME.primary : THEME.textMuted} />
+            <Ionicons
+              name="list-outline"
+              size={18}
+              color={viewMode === "list" ? THEME.primary : THEME.textMuted}
+            />
           </Pressable>
           <Pressable
-            style={[styles.viewToggleBtn, viewMode === "tile" && styles.viewToggleBtnActive]}
+            style={[
+              styles.viewToggleBtn,
+              viewMode === "tile" && styles.viewToggleBtnActive,
+            ]}
             onPress={() => setViewMode("tile")}
           >
-            <Ionicons name="grid-outline" size={18} color={viewMode === "tile" ? THEME.primary : THEME.textMuted} />
+            <Ionicons
+              name="grid-outline"
+              size={18}
+              color={viewMode === "tile" ? THEME.primary : THEME.textMuted}
+            />
           </Pressable>
         </View>
       </View>
@@ -1395,7 +1966,8 @@ function HivesListScreen({
       {/* Result count */}
       {!loading && !error && (
         <Text style={[styles.hiveListCount, { marginTop: 10 }]}>
-          {filtered.length} {filterStatus === "All" ? "hives" : filterStatus + " hives"}
+          {filtered.length}{" "}
+          {filterStatus === "All" ? "hives" : filterStatus + " hives"}
         </Text>
       )}
 
@@ -1409,7 +1981,10 @@ function HivesListScreen({
       {!!error && (
         <View style={styles.errorBox}>
           <Text style={styles.errorBody}>{error}</Text>
-          <Pressable style={styles.primaryButtonSmall} onPress={() => void loadHives(searchText)}>
+          <Pressable
+            style={styles.primaryButtonSmall}
+            onPress={() => void loadHives(searchText)}
+          >
             <Text style={styles.primaryButtonText}>Retry</Text>
           </Pressable>
         </View>
@@ -1427,15 +2002,41 @@ function HivesListScreen({
           {filtered.map((hive) => (
             <Pressable
               key={hive.id}
-              style={({ pressed }) => [styles.hiveTileCard, pressed && styles.pressedRow]}
-              onPress={() => navigation.navigate("HiveDetails", { hiveId: hive.id })}
+              style={({ pressed }) => [
+                styles.hiveTileCard,
+                pressed && styles.pressedRow,
+              ]}
+              onPress={() =>
+                navigation.navigate("HiveDetails", { hiveId: hive.id })
+              }
             >
-              <View style={[styles.hiveTileIconWrap, { backgroundColor: STATUS_BG[hive.status] }]}>
-                <Ionicons name="cube-outline" size={26} color={STATUS_COLOR[hive.status]} />
+              <View
+                style={[
+                  styles.hiveTileIconWrap,
+                  { backgroundColor: STATUS_BG[hive.status] },
+                ]}
+              >
+                <Ionicons
+                  name="cube-outline"
+                  size={26}
+                  color={STATUS_COLOR[hive.status]}
+                />
               </View>
-              <Text style={styles.hiveTileName} numberOfLines={1}>{hive.id}</Text>
-              <View style={[styles.hiveStatusBadge, { backgroundColor: STATUS_BG[hive.status] }]}>
-                <Text style={[styles.hiveStatusBadgeText, { color: STATUS_COLOR[hive.status] }]}>
+              <Text style={styles.hiveTileName} numberOfLines={1}>
+                {hive.id}
+              </Text>
+              <View
+                style={[
+                  styles.hiveStatusBadge,
+                  { backgroundColor: STATUS_BG[hive.status] },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.hiveStatusBadgeText,
+                    { color: STATUS_COLOR[hive.status] },
+                  ]}
+                >
                   {hive.status}
                 </Text>
               </View>
@@ -1445,38 +2046,72 @@ function HivesListScreen({
       )}
 
       {/* List view */}
-      {!error && viewMode === "list" && filtered.map((hive) => (
-        <Pressable
-          key={hive.id}
-          style={({ pressed }) => [styles.hiveRowCard, pressed && styles.pressedRow]}
-          onPress={() => navigation.navigate("HiveDetails", { hiveId: hive.id })}
-        >
-          {/* Icon */}
-          <View style={[styles.hiveRowIconWrap, { backgroundColor: STATUS_BG[hive.status] }]}>
-            <Ionicons name="cube-outline" size={22} color={STATUS_COLOR[hive.status]} />
-          </View>
-
-          {/* Info */}
-          <View style={styles.hiveRowInfo}>
-            <Text style={styles.hiveName}>{hive.id}</Text>
-            <View style={styles.hiveRowMeta}>
-              <Ionicons name="location-outline" size={11} color={THEME.textMuted} />
-              <Text style={styles.hiveRowMetaText}>North Yard</Text>
+      {!error &&
+        viewMode === "list" &&
+        filtered.map((hive) => (
+          <Pressable
+            key={hive.id}
+            style={({ pressed }) => [
+              styles.hiveRowCard,
+              pressed && styles.pressedRow,
+            ]}
+            onPress={() =>
+              navigation.navigate("HiveDetails", { hiveId: hive.id })
+            }
+          >
+            {/* Icon */}
+            <View
+              style={[
+                styles.hiveRowIconWrap,
+                { backgroundColor: STATUS_BG[hive.status] },
+              ]}
+            >
+              <Ionicons
+                name="cube-outline"
+                size={22}
+                color={STATUS_COLOR[hive.status]}
+              />
             </View>
-          </View>
 
-          {/* Status badge + arrow */}
-          <View style={styles.hiveRowRight}>
-            <View style={[styles.hiveStatusBadge, { backgroundColor: STATUS_BG[hive.status] }]}>
-              <Text style={[styles.hiveStatusBadgeText, { color: STATUS_COLOR[hive.status] }]}>
-                {hive.status}
-              </Text>
+            {/* Info */}
+            <View style={styles.hiveRowInfo}>
+              <Text style={styles.hiveName}>{hive.id}</Text>
+              <View style={styles.hiveRowMeta}>
+                <Ionicons
+                  name="location-outline"
+                  size={11}
+                  color={THEME.textMuted}
+                />
+                <Text style={styles.hiveRowMetaText}>North Yard</Text>
+              </View>
             </View>
-            <Ionicons name="chevron-forward" size={16} color={THEME.placeholder} style={{ marginTop: 6 }} />
-          </View>
-        </Pressable>
-      ))}
 
+            {/* Status badge + arrow */}
+            <View style={styles.hiveRowRight}>
+              <View
+                style={[
+                  styles.hiveStatusBadge,
+                  { backgroundColor: STATUS_BG[hive.status] },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.hiveStatusBadgeText,
+                    { color: STATUS_COLOR[hive.status] },
+                  ]}
+                >
+                  {hive.status}
+                </Text>
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={16}
+                color={THEME.placeholder}
+                style={{ marginTop: 6 }}
+              />
+            </View>
+          </Pressable>
+        ))}
     </ScrollView>
   );
 }
@@ -1491,7 +2126,9 @@ function HiveDetailsScreen({
   const [detail, setDetail] = useState<HiveDetailData | null>(null);
   const [acknowledging, setAcknowledging] = useState(false);
   const [hiveAlerts, setHiveAlerts] = useState<AlertItem[]>([]);
-  const [acknowledgedIds, setAcknowledgedIds] = useState<Set<string>>(new Set());
+  const [acknowledgedIds, setAcknowledgedIds] = useState<Set<string>>(
+    new Set(),
+  );
   const [acknowledgingId, setAcknowledgingId] = useState<string | null>(null);
 
   const loadDetail = useCallback(async () => {
@@ -1567,10 +2204,10 @@ function HiveDetailsScreen({
     detail.metricSeries.length > 0
       ? detail.metricSeries
       : detail.metrics.map((value, index) => ({
-        timeLabel: `R${index + 1}`,
-        temperatureC: value,
-        humidityPercent: 60 + index,
-      }));
+          timeLabel: `R${index + 1}`,
+          temperatureC: value,
+          humidityPercent: 60 + index,
+        }));
 
   const temperatureValues = metricSeries.map((point) => point.temperatureC);
   const humidityValues = metricSeries.map((point) => point.humidityPercent);
@@ -1594,7 +2231,11 @@ function HiveDetailsScreen({
           <View style={styles.detailHeroTextWrap}>
             <Text style={styles.detailHiveName}>{detail.name}</Text>
             <View style={styles.detailHeroMetaRow}>
-              <Ionicons name="location-outline" size={12} color={THEME.textMuted} />
+              <Ionicons
+                name="location-outline"
+                size={12}
+                color={THEME.textMuted}
+              />
               <Text style={styles.detailHeroMeta}>{detail.location}</Text>
             </View>
           </View>
@@ -1609,7 +2250,9 @@ function HiveDetailsScreen({
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.detailAlertTitle}>{detail.alertTitle}</Text>
-            <Text style={styles.detailAlertSubtitle}>{detail.alertMessage}</Text>
+            <Text style={styles.detailAlertSubtitle}>
+              {detail.alertMessage}
+            </Text>
           </View>
         </View>
       </View>
@@ -1619,28 +2262,59 @@ function HiveDetailsScreen({
         <Text style={styles.cardTitle}>Hive Information</Text>
         <InfoRow label="Hive ID" value={detail.id} />
         <InfoRow label="Location" value={detail.location} />
-        <InfoRow label="Status" value={detail.status} valueColor={
-          detail.status === "Healthy" ? "#16A34A" :
-            detail.status === "Pre-swarm" ? "#D97706" :
-              detail.status === "Swarm" ? "#DC2626" : "#6B7280"
-        } />
-        <InfoRow label="Alert" value={detail.acknowledged ? "Acknowledged" : "Pending"} />
+        <InfoRow
+          label="Status"
+          value={detail.status}
+          valueColor={
+            detail.status === "Healthy"
+              ? "#16A34A"
+              : detail.status === "Pre-swarm"
+                ? "#D97706"
+                : detail.status === "Swarm"
+                  ? "#DC2626"
+                  : "#6B7280"
+          }
+        />
+        <InfoRow
+          label="Alert"
+          value={detail.acknowledged ? "Acknowledged" : "Pending"}
+        />
       </View>
 
       {/* ── Metrics Highlights ── */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Latest Readings</Text>
-        <Text style={styles.metricsSubtitle}>Temperature & humidity over time</Text>
+        <Text style={styles.metricsSubtitle}>
+          Temperature & humidity over time
+        </Text>
 
         <View style={styles.metricsHighlightsRow}>
-          <View style={[styles.metricHighlightCard, { borderLeftColor: THEME.accent, borderLeftWidth: 3 }]}>
-            <Ionicons name="thermometer-outline" size={16} color={THEME.accent} />
-            <Text style={styles.metricHighlightValue}>{latestTemperature.toFixed(1)}°C</Text>
+          <View
+            style={[
+              styles.metricHighlightCard,
+              { borderLeftColor: THEME.accent, borderLeftWidth: 3 },
+            ]}
+          >
+            <Ionicons
+              name="thermometer-outline"
+              size={16}
+              color={THEME.accent}
+            />
+            <Text style={styles.metricHighlightValue}>
+              {latestTemperature.toFixed(1)}°C
+            </Text>
             <Text style={styles.metricHighlightLabel}>Temperature</Text>
           </View>
-          <View style={[styles.metricHighlightCard, { borderLeftColor: THEME.primary, borderLeftWidth: 3 }]}>
+          <View
+            style={[
+              styles.metricHighlightCard,
+              { borderLeftColor: THEME.primary, borderLeftWidth: 3 },
+            ]}
+          >
             <Ionicons name="water-outline" size={16} color={THEME.primary} />
-            <Text style={styles.metricHighlightValue}>{latestHumidity.toFixed(0)}%</Text>
+            <Text style={styles.metricHighlightValue}>
+              {latestHumidity.toFixed(0)}%
+            </Text>
             <Text style={styles.metricHighlightLabel}>Humidity</Text>
           </View>
         </View>
@@ -1648,11 +2322,15 @@ function HiveDetailsScreen({
         {/* Legend */}
         <View style={styles.metricsLegendRow}>
           <View style={styles.metricsLegendItem}>
-            <View style={[styles.legendDot, { backgroundColor: THEME.accent }]} />
+            <View
+              style={[styles.legendDot, { backgroundColor: THEME.accent }]}
+            />
             <Text style={styles.legendText}>Temperature</Text>
           </View>
           <View style={styles.metricsLegendItem}>
-            <View style={[styles.legendDot, { backgroundColor: THEME.primary }]} />
+            <View
+              style={[styles.legendDot, { backgroundColor: THEME.primary }]}
+            />
             <Text style={styles.legendText}>Humidity</Text>
           </View>
         </View>
@@ -1662,15 +2340,38 @@ function HiveDetailsScreen({
           <View style={styles.chartYAxis} />
           <View style={styles.chartArea}>
             {metricSeries.map((point, index) => (
-              <View key={`${detail.id}-metric-${index}`} style={styles.chartColumn}>
-                <Text style={styles.chartPointValue}>{point.temperatureC.toFixed(0)}°</Text>
+              <View
+                key={`${detail.id}-metric-${index}`}
+                style={styles.chartColumn}
+              >
+                <Text style={styles.chartPointValue}>
+                  {point.temperatureC.toFixed(0)}°
+                </Text>
                 <View style={styles.chartBarPair}>
-                  <View style={[styles.chartBar, styles.chartBarTemperature, {
-                    height: Math.max(12, (point.temperatureC / chartMax) * chartHeight),
-                  }]} />
-                  <View style={[styles.chartBar, styles.chartBarHumidity, {
-                    height: Math.max(12, (point.humidityPercent / chartMax) * chartHeight),
-                  }]} />
+                  <View
+                    style={[
+                      styles.chartBar,
+                      styles.chartBarTemperature,
+                      {
+                        height: Math.max(
+                          12,
+                          (point.temperatureC / chartMax) * chartHeight,
+                        ),
+                      },
+                    ]}
+                  />
+                  <View
+                    style={[
+                      styles.chartBar,
+                      styles.chartBarHumidity,
+                      {
+                        height: Math.max(
+                          12,
+                          (point.humidityPercent / chartMax) * chartHeight,
+                        ),
+                      },
+                    ]}
+                  />
                 </View>
                 <Text style={styles.chartPointLabel}>{point.timeLabel}</Text>
               </View>
@@ -1685,15 +2386,22 @@ function HiveDetailsScreen({
           <Text style={styles.cardTitle}>Notifications</Text>
           <View style={styles.hiveAlertCountBadge}>
             <Text style={styles.hiveAlertCountText}>
-              {hiveAlerts.filter(a => !acknowledgedIds.has(a.id)).length} active
+              {hiveAlerts.filter((a) => !acknowledgedIds.has(a.id)).length}{" "}
+              active
             </Text>
           </View>
         </View>
 
         {hiveAlerts.length === 0 && (
           <View style={styles.hiveAlertEmpty}>
-            <Ionicons name="checkmark-circle-outline" size={28} color="#16A34A" />
-            <Text style={styles.hiveAlertEmptyText}>No notifications for this hive</Text>
+            <Ionicons
+              name="checkmark-circle-outline"
+              size={28}
+              color="#16A34A"
+            />
+            <Text style={styles.hiveAlertEmptyText}>
+              No notifications for this hive
+            </Text>
           </View>
         )}
 
@@ -1719,13 +2427,28 @@ function HiveDetailsScreen({
               style={[styles.hiveAlertRow, isAcked && styles.hiveAlertRowAcked]}
             >
               {/* Severity indicator */}
-              <View style={[styles.hiveAlertSeverityBar, { backgroundColor: isAcked ? THEME.line : color }]} />
+              <View
+                style={[
+                  styles.hiveAlertSeverityBar,
+                  { backgroundColor: isAcked ? THEME.line : color },
+                ]}
+              />
 
               <View style={styles.hiveAlertContent}>
                 {/* Header */}
                 <View style={styles.hiveAlertHeader}>
-                  <View style={[styles.hiveAlertSeverityBadge, { backgroundColor: isAcked ? "#F9FAFB" : bg }]}>
-                    <Text style={[styles.hiveAlertSeverityText, { color: isAcked ? THEME.textMuted : color }]}>
+                  <View
+                    style={[
+                      styles.hiveAlertSeverityBadge,
+                      { backgroundColor: isAcked ? "#F9FAFB" : bg },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.hiveAlertSeverityText,
+                        { color: isAcked ? THEME.textMuted : color },
+                      ]}
+                    >
                       {alert.severity}
                     </Text>
                   </View>
@@ -1733,20 +2456,30 @@ function HiveDetailsScreen({
                 </View>
 
                 {/* Title + summary */}
-                <Text style={[styles.hiveAlertTitle, isAcked && styles.hiveAlertTitleAcked]}>
+                <Text
+                  style={[
+                    styles.hiveAlertTitle,
+                    isAcked && styles.hiveAlertTitleAcked,
+                  ]}
+                >
                   {alert.title}
                 </Text>
                 <Text style={styles.hiveAlertSummary}>{alert.summary}</Text>
 
                 {/* Acknowledge button */}
                 <Pressable
-                  style={[styles.hiveAlertAckBtn, isAcked && styles.hiveAlertAckBtnDone]}
+                  style={[
+                    styles.hiveAlertAckBtn,
+                    isAcked && styles.hiveAlertAckBtnDone,
+                  ]}
                   onPress={async () => {
                     if (isAcked || isAcking) return;
                     setAcknowledgingId(alert.id);
                     try {
                       await acknowledgeAlert(alert.id);
-                      setAcknowledgedIds(prev => new Set([...prev, alert.id]));
+                      setAcknowledgedIds(
+                        (prev) => new Set([...prev, alert.id]),
+                      );
                     } finally {
                       setAcknowledgingId(null);
                     }
@@ -1754,12 +2487,23 @@ function HiveDetailsScreen({
                   disabled={isAcked || isAcking}
                 >
                   <Ionicons
-                    name={isAcked ? "checkmark-circle" : "checkmark-circle-outline"}
+                    name={
+                      isAcked ? "checkmark-circle" : "checkmark-circle-outline"
+                    }
                     size={14}
                     color={isAcked ? "#16A34A" : THEME.primary}
                   />
-                  <Text style={[styles.hiveAlertAckText, isAcked && { color: "#16A34A" }]}>
-                    {isAcked ? "Acknowledged" : isAcking ? "Acknowledging..." : "Acknowledge"}
+                  <Text
+                    style={[
+                      styles.hiveAlertAckText,
+                      isAcked && { color: "#16A34A" },
+                    ]}
+                  >
+                    {isAcked
+                      ? "Acknowledged"
+                      : isAcking
+                        ? "Acknowledging..."
+                        : "Acknowledge"}
                   </Text>
                 </Pressable>
               </View>
@@ -1782,16 +2526,28 @@ function HiveDetailsScreen({
           disabled={acknowledging || detail.acknowledged}
         >
           <Ionicons
-            name={detail.acknowledged ? "checkmark-circle" : "checkmark-circle-outline"}
+            name={
+              detail.acknowledged
+                ? "checkmark-circle"
+                : "checkmark-circle-outline"
+            }
             size={18}
             color={detail.acknowledged ? THEME.textMuted : THEME.primary}
           />
-          <Text style={[styles.primaryButtonText, detail.acknowledged && { color: THEME.textMuted }]}>
-            {detail.acknowledged ? "Alert Acknowledged" : acknowledging ? "Acknowledging..." : "Acknowledge Alert"}
+          <Text
+            style={[
+              styles.primaryButtonText,
+              detail.acknowledged && { color: THEME.textMuted },
+            ]}
+          >
+            {detail.acknowledged
+              ? "Alert Acknowledged"
+              : acknowledging
+                ? "Acknowledging..."
+                : "Acknowledge Alert"}
           </Text>
         </Pressable>
       </View>
-
     </ScrollView>
   );
 }
@@ -2226,7 +2982,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     tintColor: THEME.accent,
-
   },
   brandText: {
     textAlign: "center",
@@ -2288,6 +3043,134 @@ const styles = StyleSheet.create({
   footerLink: {
     color: THEME.primary,
     fontWeight: "700",
+  },
+  settingsPage: {
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 26,
+    backgroundColor: THEME.page,
+    gap: 12,
+  },
+  settingsSection: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: THEME.line,
+    borderRadius: 12,
+    padding: 12,
+  },
+  settingsSectionTitle: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: THEME.primary,
+    marginBottom: 10,
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+  },
+  settingsAccountCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  settingsAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: THEME.surfaceSoft,
+    borderWidth: 1,
+    borderColor: THEME.line,
+  },
+  settingsAccountName: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: THEME.text,
+  },
+  settingsAccountEmail: {
+    marginTop: 2,
+    fontSize: 12,
+    color: THEME.textMuted,
+  },
+  settingsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  settingsRowColumn: {
+    gap: 10,
+  },
+  settingsRowLabel: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: THEME.text,
+  },
+  settingsRowHint: {
+    marginTop: 2,
+    fontSize: 12,
+    color: THEME.textMuted,
+    lineHeight: 18,
+  },
+  settingsDivider: {
+    marginVertical: 10,
+    height: 1,
+    backgroundColor: THEME.line,
+  },
+  segmentedControl: {
+    flexDirection: "row",
+    backgroundColor: "#F5F7FA",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: THEME.line,
+    padding: 3,
+  },
+  segmentButton: {
+    flex: 1,
+    borderRadius: 8,
+    alignItems: "center",
+    paddingVertical: 8,
+  },
+  segmentButtonActive: {
+    backgroundColor: THEME.primary,
+  },
+  segmentText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: THEME.textMuted,
+  },
+  segmentTextActive: {
+    color: "#FFFFFF",
+  },
+  settingsActionsRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  settingsSecondaryButton: {
+    flex: 1,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: THEME.line,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+  },
+  settingsSecondaryButtonText: {
+    color: THEME.text,
+    fontWeight: "700",
+    fontSize: 13,
+  },
+  settingsPrimaryButton: {
+    flex: 1,
+    borderRadius: 10,
+    backgroundColor: THEME.accent,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+  },
+  settingsPrimaryButtonText: {
+    color: THEME.primary,
+    fontWeight: "800",
+    fontSize: 13,
   },
   appPage: {
     paddingHorizontal: 16,
@@ -2556,7 +3439,6 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     // color: THEME.primary,
     color: THEME.accent,
-
   },
   metricCaption: {
     color: "#8592A3",
@@ -2703,11 +3585,30 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 10,
   },
-  alertRowHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 },
+  alertRowHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
   alertRowArrow: { color: "#98A2B3", fontSize: 20, fontWeight: "700" },
-  alertRowHive: { color: "#1F2937", fontSize: 18, fontWeight: "800", marginBottom: 4 },
-  alertRowSummary: { color: "#667085", fontSize: 13, lineHeight: 18, marginBottom: 10 },
-  alertRowFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  alertRowHive: {
+    color: "#1F2937",
+    fontSize: 18,
+    fontWeight: "800",
+    marginBottom: 4,
+  },
+  alertRowSummary: {
+    color: "#667085",
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 10,
+  },
+  alertRowFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
   alertRowDate: { color: "#98A2B3", fontWeight: "700", fontSize: 12 },
   alertRowAction: { color: THEME.primary, fontWeight: "800", fontSize: 12 },
   alertCard: {
@@ -2722,13 +3623,34 @@ const styles = StyleSheet.create({
   alertCardBar: { width: 4 },
   alertCardBody: { flex: 1, padding: 14, gap: 8 },
   alertCardTopRow: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
-  alertCardIconWrap: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: THEME.surfaceSoft },
-  alertCardTitle: { fontSize: 14, fontWeight: "800", color: THEME.primary, marginBottom: 3 },
+  alertCardIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: THEME.surfaceSoft,
+  },
+  alertCardTitle: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: THEME.primary,
+    marginBottom: 3,
+  },
   alertCardMeta: { flexDirection: "row", alignItems: "center", gap: 4 },
-  alertCardMetaText: { fontSize: 11, color: THEME.textMuted, fontWeight: "500" },
+  alertCardMetaText: {
+    fontSize: 11,
+    color: THEME.textMuted,
+    fontWeight: "500",
+  },
   alertCardMetaDot: { color: THEME.textMuted, fontSize: 11 },
   alertCardSummary: { fontSize: 12, color: THEME.textMuted, lineHeight: 17 },
-  alertCardBadge: { alignSelf: "flex-start", borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 },
+  alertCardBadge: {
+    alignSelf: "flex-start",
+    borderRadius: 999,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+  },
   alertCardBadgeText: { fontSize: 10, fontWeight: "800" },
   severityPill: {
     borderRadius: 999,
