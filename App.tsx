@@ -43,6 +43,8 @@ import {
 } from "./src/api/beeswarmApi";
 import HiveMap from "./src/components/HiveMap";
 import { ClassificationDebugPanel } from "./src/components/ClassificationDebugPanel";
+import AntDesign from '@expo/vector-icons/AntDesign';
+
 
 const beeLogo = require("./assets/images/bee.png");
 
@@ -211,7 +213,7 @@ function MainTabsScreen({ onLogout }: { onLogout: () => void }) {
         name="Dashboard"
         component={DashboardScreen}
         options={{
-          title: "Hive Overview",
+          title: "Dashboard",
           tabBarLabel: "Home",
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
@@ -222,6 +224,7 @@ function MainTabsScreen({ onLogout }: { onLogout: () => void }) {
           ),
           headerRight: () => (
             <Pressable style={styles.headerAction} onPress={onLogout}>
+              <Ionicons name="log-out-outline" size={18} color={THEME.primary} />
               <Text style={styles.headerActionText}>Logout</Text>
             </Pressable>
           ),
@@ -335,12 +338,12 @@ function LoginScreen({
       contentContainerStyle={styles.formPage}
       keyboardShouldPersistTaps="handled"
     >
-      <Pressable
+      {/* <Pressable
         onPress={() => navigation.navigate("Welcome")}
         style={styles.backChip}
       >
         <Text style={styles.backChipText}>Back</Text>
-      </Pressable>
+      </Pressable> */}
 
       <View style={styles.formCard}>
         <View style={styles.brandMark}>
@@ -938,7 +941,7 @@ function StatCard({
 }) {
   return (
     <View style={styles.statCard}>
-      <Text style={[styles.statLabel, { color }]}>
+      <Text style={styles.statLabel}>
         {icon} {label}
       </Text>
       <Text style={styles.statValue}>{value}</Text>
@@ -1154,10 +1157,10 @@ function HiveDetailsScreen({
     detail.metricSeries.length > 0
       ? detail.metricSeries
       : detail.metrics.map((value, index) => ({
-          timeLabel: `R${index + 1}`,
-          temperatureC: value,
-          humidityPercent: 60 + index,
-        }));
+        timeLabel: `R${index + 1}`,
+        temperatureC: value,
+        humidityPercent: 60 + index,
+      }));
 
   const temperatureValues = metricSeries.map((point) => point.temperatureC);
   const humidityValues = metricSeries.map((point) => point.humidityPercent);
@@ -1736,10 +1739,14 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   headerAction: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
     backgroundColor: THEME.surfaceSoft,
     borderRadius: 999,
     paddingVertical: 6,
     paddingHorizontal: 10,
+    marginRight: 12,
   },
   headerActionText: {
     color: THEME.primary,
@@ -1838,10 +1845,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
     marginBottom: 6,
+    color: THEME.accent,
   },
   statValue: {
     fontSize: 28,
-    color: "#1D2939",
+    color: THEME.primary,
     fontWeight: "800",
   },
   metricCard: {
@@ -1854,7 +1862,7 @@ const styles = StyleSheet.create({
   },
   metricTitle: {
     fontSize: 12,
-    color: "#8A97A8",
+    color: THEME.accent,
     fontWeight: "700",
     marginBottom: 8,
   },
