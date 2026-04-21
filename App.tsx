@@ -39,6 +39,7 @@ import {
   fetchAlerts,
   fetchDashboard,
   fetchHiveDetail,
+  fetchHiveAlerts,
   fetchHives,
 } from "./src/api/beeswarmApi";
 import HiveMap from "./src/components/HiveMap";
@@ -235,11 +236,20 @@ function MainTabsScreen({ onLogout }: { onLogout: () => void }) {
             />
           ),
           headerRight: () => (
-            <Pressable style={styles.headerAction} onPress={onLogout}>
-              <Ionicons name="log-out-outline" size={18} color={THEME.primary} />
-              <Text style={styles.headerActionText}>Logout</Text>
-            </Pressable>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              {/* Notification Icon */}
+              <Pressable style={styles.headerAction} onPress={() => {/* handle notifications */ }}>
+                <Ionicons name="notifications-outline" size={18} color={THEME.primary} />
+              </Pressable>
+
+              {/* 3 vertical dots on click the  Logout Button option appears*/}
+              <Pressable style={styles.headerAction} onPress={onLogout}>
+                <Ionicons name="log-out-outline" size={18} color={THEME.primary} />
+                <Text style={styles.headerActionText}>Logout</Text>
+              </Pressable>
+            </View>
           ),
+
         }}
       />
       <Tab.Screen
@@ -669,53 +679,60 @@ function AlertDetailsScreen({
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.detailPage}>
+    <ScrollView
+      style={{ flex: 1, backgroundColor: THEME.page }}
+      contentContainerStyle={styles.detailPage}
+    >
+      {/* Hero */}
       <View style={styles.detailHeroCard}>
         <View style={styles.detailHeroTopRow}>
-          <View style={styles.alertIconCircle}>
-            <Text style={styles.alertIconText}>!</Text>
+          <View style={styles.detailHiveIconWrap}>
+            <Ionicons name="alert-circle-outline" size={26} color={THEME.accent} />
           </View>
           <View style={styles.detailHeroTextWrap}>
-            <Text style={styles.detailAlertTitle}>{detail.title}</Text>
-            <Text style={styles.detailAlertSubtitle}>{detail.hiveId}</Text>
+            <Text style={styles.detailHiveName}>{detail.title}</Text>
+            <Text style={styles.detailHeroMeta}>{detail.hiveId}</Text>
           </View>
+          <SeverityPill severity={detail.severity} />
         </View>
       </View>
 
-      <View style={styles.infoCard}>
-        <Text style={styles.sectionTitle}>Alert Information</Text>
-        <InfoRow
-          label="Severity"
-          value={detail.severity}
-          valueColor={severityColor(detail.severity)}
-        />
+      {/* Info */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Alert Information</Text>
+        <InfoRow label="Severity" value={detail.severity} valueColor={severityColor(detail.severity)} />
         <InfoRow label="Hive" value={detail.hiveId} />
         <InfoRow label="Time" value={detail.time} />
+        <InfoRow label="Status" value={detail.acknowledged ? "Acknowledged" : "Pending"} />
       </View>
 
-      <View style={styles.infoCard}>
-        <Text style={styles.sectionTitle}>Details</Text>
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Details</Text>
         <Text style={styles.detailLongText}>{detail.details}</Text>
       </View>
 
-      <Pressable
-        style={({ pressed }) => [
-          styles.primaryButton,
-          styles.actionButton,
-          pressed && styles.pressed,
-          detail.acknowledged && styles.actionButtonDisabled,
-        ]}
-        onPress={handleAcknowledge}
-        disabled={acknowledging || detail.acknowledged}
-      >
-        <Text style={styles.primaryButtonText}>
-          {detail.acknowledged
-            ? "Alert acknowledged"
-            : acknowledging
-              ? "Acknowledging..."
-              : "Acknowledge Alert"}
-        </Text>
-      </Pressable>
+      {/* Action */}
+      <View style={styles.card}>
+        <Pressable
+          style={({ pressed }) => [
+            styles.primaryButton,
+            styles.actionButton,
+            pressed && styles.pressed,
+            detail.acknowledged && styles.actionButtonDisabled,
+          ]}
+          onPress={handleAcknowledge}
+          disabled={acknowledging || detail.acknowledged}
+        >
+          <Ionicons
+            name={detail.acknowledged ? "checkmark-circle" : "checkmark-circle-outline"}
+            size={18}
+            color={detail.acknowledged ? THEME.textMuted : THEME.primary}
+          />
+          <Text style={[styles.primaryButtonText, detail.acknowledged && { color: THEME.textMuted }]}>
+            {detail.acknowledged ? "Alert Acknowledged" : acknowledging ? "Acknowledging..." : "Acknowledge Alert"}
+          </Text>
+        </Pressable>
+      </View>
     </ScrollView>
   );
 }
@@ -1175,7 +1192,10 @@ function HivesListScreen({
     : hives.filter((h) => h.status === filterStatus);
 
   return (
-    <ScrollView contentContainerStyle={styles.appPage}>
+    <ScrollView
+      style={{ flex: 1, backgroundColor: THEME.page }}
+      contentContainerStyle={[styles.appPage, { flexGrow: 1 }]}
+    >
 
       {/* Status summary pills */}
       {!loading && !error && hives.length > 0 && (
@@ -1183,6 +1203,7 @@ function HivesListScreen({
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.hiveSummaryStrip}
+          style={{ height: 38 }}
         >
           <Pressable
             style={[styles.hiveSummaryPill, filterStatus === "All" && styles.hiveSummaryPillActive]}
@@ -1347,13 +1368,20 @@ function HiveDetailsScreen({
   const [error, setError] = useState<string | null>(null);
   const [detail, setDetail] = useState<HiveDetailData | null>(null);
   const [acknowledging, setAcknowledging] = useState(false);
+  const [hiveAlerts, setHiveAlerts] = useState<AlertItem[]>([]);
+  const [acknowledgedIds, setAcknowledgedIds] = useState<Set<string>>(new Set());
+  const [acknowledgingId, setAcknowledgingId] = useState<string | null>(null);
 
   const loadDetail = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchHiveDetail(hiveId);
+      const [data, alerts] = await Promise.all([
+        fetchHiveDetail(hiveId),
+        fetchHiveAlerts(hiveId),
+      ]);
       setDetail(data);
+      setHiveAlerts(alerts);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Could not load hive details",
@@ -1431,118 +1459,97 @@ function HiveDetailsScreen({
   const latestHumidity = humidityValues[humidityValues.length - 1] ?? 0;
 
   return (
-    <ScrollView contentContainerStyle={styles.detailPage}>
+    <ScrollView
+      style={{ flex: 1, backgroundColor: THEME.page }}
+      contentContainerStyle={styles.detailPage}
+    >
+      {/* ── Hero Header ── */}
       <View style={styles.detailHeroCard}>
         <View style={styles.detailHeroTopRow}>
-          <View style={styles.alertIconCircle}>
-            <Text style={styles.alertIconText}>!</Text>
+          <View style={styles.detailHiveIconWrap}>
+            <Ionicons name="cube-outline" size={28} color={THEME.accent} />
           </View>
           <View style={styles.detailHeroTextWrap}>
+            <Text style={styles.detailHiveName}>{detail.name}</Text>
+            <View style={styles.detailHeroMetaRow}>
+              <Ionicons name="location-outline" size={12} color={THEME.textMuted} />
+              <Text style={styles.detailHeroMeta}>{detail.location}</Text>
+            </View>
+          </View>
+          <StatusPill status={detail.status} />
+        </View>
+
+        <View style={styles.heroDivider} />
+
+        <View style={styles.detailAlertBanner}>
+          <View style={styles.detailAlertIconWrap}>
+            <Ionicons name="warning-outline" size={18} color={THEME.accent} />
+          </View>
+          <View style={{ flex: 1 }}>
             <Text style={styles.detailAlertTitle}>{detail.alertTitle}</Text>
-            <Text style={styles.detailAlertSubtitle}>
-              {detail.alertMessage}
-            </Text>
+            <Text style={styles.detailAlertSubtitle}>{detail.alertMessage}</Text>
           </View>
         </View>
-        <View style={styles.heroDivider} />
-        <View style={styles.detailStatusRow}>
-          <StatusPill status={detail.status} />
-          <Pressable
-            style={styles.secondaryButton}
-            onPress={() => navigation.navigate("HiveList")}
-          >
-            <Text style={styles.secondaryButtonText}>Back to list</Text>
-          </Pressable>
-        </View>
       </View>
 
-      <View style={styles.infoCard}>
-        <Text style={styles.sectionTitle}>Hive Information</Text>
-        <InfoRow label="Name" value={detail.name} />
+      {/* ── Hive Info ── */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Hive Information</Text>
+        <InfoRow label="Hive ID" value={detail.id} />
         <InfoRow label="Location" value={detail.location} />
-        <InfoRow
-          label="Status"
-          value={detail.status}
-          valueColor={STATUS_COLOR[detail.status]}
-        />
+        <InfoRow label="Status" value={detail.status} valueColor={
+          detail.status === "Healthy" ? "#16A34A" :
+            detail.status === "Pre-swarm" ? "#D97706" :
+              detail.status === "Swarm" ? "#DC2626" : "#6B7280"
+        } />
+        <InfoRow label="Alert" value={detail.acknowledged ? "Acknowledged" : "Pending"} />
       </View>
 
-      <View style={styles.infoCard}>
-        <Text style={styles.sectionTitle}>Metrics</Text>
-        <Text style={styles.metricsSubtitle}>
-          Temperature and humidity against time
-        </Text>
+      {/* ── Metrics Highlights ── */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Latest Readings</Text>
+        <Text style={styles.metricsSubtitle}>Temperature & humidity over time</Text>
 
         <View style={styles.metricsHighlightsRow}>
-          <View style={styles.metricHighlightCard}>
-            <Text style={styles.metricHighlightLabel}>Latest Temp</Text>
-            <Text style={styles.metricHighlightValue}>
-              {latestTemperature.toFixed(1)} C
-            </Text>
+          <View style={[styles.metricHighlightCard, { borderLeftColor: THEME.accent, borderLeftWidth: 3 }]}>
+            <Ionicons name="thermometer-outline" size={16} color={THEME.accent} />
+            <Text style={styles.metricHighlightValue}>{latestTemperature.toFixed(1)}°C</Text>
+            <Text style={styles.metricHighlightLabel}>Temperature</Text>
           </View>
-          <View style={styles.metricHighlightCard}>
-            <Text style={styles.metricHighlightLabel}>Latest Humidity</Text>
-            <Text style={styles.metricHighlightValue}>
-              {latestHumidity.toFixed(0)}%
-            </Text>
+          <View style={[styles.metricHighlightCard, { borderLeftColor: THEME.primary, borderLeftWidth: 3 }]}>
+            <Ionicons name="water-outline" size={16} color={THEME.primary} />
+            <Text style={styles.metricHighlightValue}>{latestHumidity.toFixed(0)}%</Text>
+            <Text style={styles.metricHighlightLabel}>Humidity</Text>
           </View>
         </View>
 
+        {/* Legend */}
         <View style={styles.metricsLegendRow}>
           <View style={styles.metricsLegendItem}>
-            <View
-              style={[styles.legendDot, { backgroundColor: THEME.accent }]}
-            />
+            <View style={[styles.legendDot, { backgroundColor: THEME.accent }]} />
             <Text style={styles.legendText}>Temperature</Text>
           </View>
           <View style={styles.metricsLegendItem}>
-            <View
-              style={[styles.legendDot, { backgroundColor: THEME.primary }]}
-            />
+            <View style={[styles.legendDot, { backgroundColor: THEME.primary }]} />
             <Text style={styles.legendText}>Humidity</Text>
           </View>
         </View>
 
+        {/* Chart */}
         <View style={styles.chartWrap}>
           <View style={styles.chartYAxis} />
           <View style={styles.chartArea}>
             {metricSeries.map((point, index) => (
-              <View
-                key={`${detail.id}-metric-${index}`}
-                style={styles.chartColumn}
-              >
-                <Text style={styles.chartPointValue}>
-                  {point.temperatureC.toFixed(1)} C
-                </Text>
+              <View key={`${detail.id}-metric-${index}`} style={styles.chartColumn}>
+                <Text style={styles.chartPointValue}>{point.temperatureC.toFixed(0)}°</Text>
                 <View style={styles.chartBarPair}>
-                  <View
-                    style={[
-                      styles.chartBar,
-                      styles.chartBarTemperature,
-                      {
-                        height: Math.max(
-                          12,
-                          (point.temperatureC / chartMax) * chartHeight,
-                        ),
-                      },
-                    ]}
-                  />
-                  <View
-                    style={[
-                      styles.chartBar,
-                      styles.chartBarHumidity,
-                      {
-                        height: Math.max(
-                          12,
-                          (point.humidityPercent / chartMax) * chartHeight,
-                        ),
-                      },
-                    ]}
-                  />
+                  <View style={[styles.chartBar, styles.chartBarTemperature, {
+                    height: Math.max(12, (point.temperatureC / chartMax) * chartHeight),
+                  }]} />
+                  <View style={[styles.chartBar, styles.chartBarHumidity, {
+                    height: Math.max(12, (point.humidityPercent / chartMax) * chartHeight),
+                  }]} />
                 </View>
-                <Text style={styles.chartPointSubValue}>
-                  {point.humidityPercent.toFixed(0)}%
-                </Text>
                 <Text style={styles.chartPointLabel}>{point.timeLabel}</Text>
               </View>
             ))}
@@ -1550,20 +1557,98 @@ function HiveDetailsScreen({
         </View>
       </View>
 
-      <View style={styles.infoCard}>
-        <Text style={styles.sectionTitle}>Map</Text>
-        <View style={styles.detailMapPreview}>
-          <View style={styles.detailMapCrossOne} />
-          <View style={styles.detailMapCrossTwo} />
-          <View style={styles.detailMapLabel}>
-            <Text style={styles.mapLabelTitle}>{detail.mapLabel}</Text>
-            <Text style={styles.mapLabelSub}>{detail.status}</Text>
+      {/* ── Notifications ── */}
+      <View style={styles.card}>
+        <View style={styles.rowBetween}>
+          <Text style={styles.cardTitle}>Notifications</Text>
+          <View style={styles.hiveAlertCountBadge}>
+            <Text style={styles.hiveAlertCountText}>
+              {hiveAlerts.filter(a => !acknowledgedIds.has(a.id)).length} active
+            </Text>
           </View>
         </View>
+
+        {hiveAlerts.length === 0 && (
+          <View style={styles.hiveAlertEmpty}>
+            <Ionicons name="checkmark-circle-outline" size={28} color="#16A34A" />
+            <Text style={styles.hiveAlertEmptyText}>No notifications for this hive</Text>
+          </View>
+        )}
+
+        {hiveAlerts.map((alert) => {
+          const isAcked = acknowledgedIds.has(alert.id);
+          const isAcking = acknowledgingId === alert.id;
+          const severityColors: Record<AlertSeverity, string> = {
+            Critical: "#DC2626",
+            Warning: "#D97706",
+            Info: "#2563EB",
+          };
+          const severityBg: Record<AlertSeverity, string> = {
+            Critical: "#FEF2F2",
+            Warning: "#FFFBEB",
+            Info: "#EFF6FF",
+          };
+          const color = severityColors[alert.severity];
+          const bg = severityBg[alert.severity];
+
+          return (
+            <View
+              key={alert.id}
+              style={[styles.hiveAlertRow, isAcked && styles.hiveAlertRowAcked]}
+            >
+              {/* Severity indicator */}
+              <View style={[styles.hiveAlertSeverityBar, { backgroundColor: isAcked ? THEME.line : color }]} />
+
+              <View style={styles.hiveAlertContent}>
+                {/* Header */}
+                <View style={styles.hiveAlertHeader}>
+                  <View style={[styles.hiveAlertSeverityBadge, { backgroundColor: isAcked ? "#F9FAFB" : bg }]}>
+                    <Text style={[styles.hiveAlertSeverityText, { color: isAcked ? THEME.textMuted : color }]}>
+                      {alert.severity}
+                    </Text>
+                  </View>
+                  <Text style={styles.hiveAlertDate}>{alert.date}</Text>
+                </View>
+
+                {/* Title + summary */}
+                <Text style={[styles.hiveAlertTitle, isAcked && styles.hiveAlertTitleAcked]}>
+                  {alert.title}
+                </Text>
+                <Text style={styles.hiveAlertSummary}>{alert.summary}</Text>
+
+                {/* Acknowledge button */}
+                <Pressable
+                  style={[styles.hiveAlertAckBtn, isAcked && styles.hiveAlertAckBtnDone]}
+                  onPress={async () => {
+                    if (isAcked || isAcking) return;
+                    setAcknowledgingId(alert.id);
+                    try {
+                      await acknowledgeAlert(alert.id);
+                      setAcknowledgedIds(prev => new Set([...prev, alert.id]));
+                    } finally {
+                      setAcknowledgingId(null);
+                    }
+                  }}
+                  disabled={isAcked || isAcking}
+                >
+                  <Ionicons
+                    name={isAcked ? "checkmark-circle" : "checkmark-circle-outline"}
+                    size={14}
+                    color={isAcked ? "#16A34A" : THEME.primary}
+                  />
+                  <Text style={[styles.hiveAlertAckText, isAcked && { color: "#16A34A" }]}>
+                    {isAcked ? "Acknowledged" : isAcking ? "Acknowledging..." : "Mark as acknowledged"}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          );
+        })}
       </View>
 
-      <View style={styles.infoCard}>
-        <Text style={styles.sectionTitle}>Actions</Text>
+      {/* ── Action ── */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Actions</Text>
         <Pressable
           style={({ pressed }) => [
             styles.primaryButton,
@@ -1574,15 +1659,17 @@ function HiveDetailsScreen({
           onPress={handleAcknowledge}
           disabled={acknowledging || detail.acknowledged}
         >
-          <Text style={styles.primaryButtonText}>
-            {detail.acknowledged
-              ? "Alert acknowledged"
-              : acknowledging
-                ? "Acknowledging..."
-                : "Acknowledge alert"}
+          <Ionicons
+            name={detail.acknowledged ? "checkmark-circle" : "checkmark-circle-outline"}
+            size={18}
+            color={detail.acknowledged ? THEME.textMuted : THEME.primary}
+          />
+          <Text style={[styles.primaryButtonText, detail.acknowledged && { color: THEME.textMuted }]}>
+            {detail.acknowledged ? "Alert Acknowledged" : acknowledging ? "Acknowledging..." : "Acknowledge Alert"}
           </Text>
         </Pressable>
       </View>
+
     </ScrollView>
   );
 }
@@ -2582,12 +2669,13 @@ const styles = StyleSheet.create({
   hiveSummaryPill: {
     flexDirection: "row",
     alignItems: "center",
+    alignSelf: "flex-start",
     gap: 5,
     borderWidth: 1,
     borderColor: THEME.line,
     borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     backgroundColor: "#FFFFFF",
   },
   hiveSummaryPillActive: {
@@ -2946,11 +3034,9 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   detailHeroCard: {
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: THEME.line,
+    backgroundColor: THEME.primary,
     borderRadius: 16,
-    padding: 16,
+    padding: 18,
     marginBottom: 14,
   },
   detailHeroTopRow: {
@@ -2958,38 +3044,65 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
   },
-  alertIconCircle: {
-    width: 42,
-    height: 42,
-    borderRadius: 999,
-    backgroundColor: THEME.surfaceSoft,
+  detailHiveIconWrap: {
+    width: 50,
+    height: 50,
+    borderRadius: 14,
+    backgroundColor: "rgba(255,178,104,0.15)",
     borderWidth: 1,
-    borderColor: THEME.line,
+    borderColor: "rgba(255,178,104,0.3)",
     alignItems: "center",
     justifyContent: "center",
-  },
-  alertIconText: {
-    color: THEME.accent,
-    fontSize: 20,
-    fontWeight: "900",
   },
   detailHeroTextWrap: {
     flex: 1,
   },
-  detailAlertTitle: {
-    color: THEME.primary,
+  detailHiveName: {
     fontSize: 20,
-    fontWeight: "900",
-    marginBottom: 4,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    marginBottom: 3,
+  },
+  detailHeroMetaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+  },
+  detailHeroMeta: {
+    fontSize: 12,
+    color: "rgba(255,255,255,0.6)",
+    fontWeight: "500",
+  },
+  detailAlertBanner: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    backgroundColor: "rgba(255,178,104,0.12)",
+    borderRadius: 10,
+    padding: 12,
+  },
+  detailAlertIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: "rgba(255,178,104,0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  detailAlertTitle: {
+    color: THEME.accent,
+    fontSize: 13,
+    fontWeight: "800",
+    marginBottom: 3,
   },
   detailAlertSubtitle: {
-    color: "#6B7280",
-    fontSize: 13,
-    lineHeight: 19,
+    color: "rgba(255,255,255,0.7)",
+    fontSize: 12,
+    lineHeight: 17,
   },
   heroDivider: {
     height: 1,
-    backgroundColor: THEME.line,
+    backgroundColor: "rgba(255,255,255,0.12)",
     marginVertical: 14,
   },
   detailStatusRow: {
@@ -3053,19 +3166,19 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.surfaceSoft,
     borderWidth: 1,
     borderColor: THEME.line,
-    borderRadius: 10,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    gap: 4,
   },
   metricHighlightLabel: {
-    color: "#667085",
+    color: THEME.textMuted,
     fontSize: 11,
-    fontWeight: "700",
+    fontWeight: "600",
   },
   metricHighlightValue: {
-    marginTop: 4,
-    color: "#253242",
-    fontSize: 16,
+    color: THEME.primary,
+    fontSize: 20,
     fontWeight: "800",
   },
   metricsLegendRow: {
@@ -3181,10 +3294,117 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   actionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
     marginTop: 6,
   },
   actionButtonDisabled: {
+    opacity: 0.5,
+    backgroundColor: THEME.line,
+  },
+  hiveAlertCountBadge: {
+    backgroundColor: THEME.surfaceSoft,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderWidth: 1,
+    borderColor: THEME.line,
+  },
+  hiveAlertCountText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: THEME.textMuted,
+  },
+  hiveAlertEmpty: {
+    alignItems: "center",
+    paddingVertical: 20,
+    gap: 8,
+  },
+  hiveAlertEmptyText: {
+    fontSize: 13,
+    color: THEME.textMuted,
+    fontWeight: "600",
+  },
+  hiveAlertRow: {
+    flexDirection: "row",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: THEME.line,
+    backgroundColor: "#FFFFFF",
+    marginTop: 10,
+    overflow: "hidden",
+  },
+  hiveAlertRowAcked: {
+    backgroundColor: "#F9FAFB",
+    borderColor: THEME.line,
     opacity: 0.7,
+  },
+  hiveAlertSeverityBar: {
+    width: 4,
+    borderTopLeftRadius: 12,
+    borderBottomLeftRadius: 12,
+  },
+  hiveAlertContent: {
+    flex: 1,
+    padding: 12,
+    gap: 6,
+  },
+  hiveAlertHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  hiveAlertSeverityBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  hiveAlertSeverityText: {
+    fontSize: 10,
+    fontWeight: "800",
+  },
+  hiveAlertDate: {
+    fontSize: 10,
+    color: THEME.textMuted,
+    fontWeight: "500",
+  },
+  hiveAlertTitle: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: THEME.primary,
+  },
+  hiveAlertTitleAcked: {
+    color: THEME.textMuted,
+    textDecorationLine: "line-through",
+  },
+  hiveAlertSummary: {
+    fontSize: 12,
+    color: THEME.textMuted,
+    lineHeight: 17,
+  },
+  hiveAlertAckBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    alignSelf: "flex-start",
+    marginTop: 4,
+    backgroundColor: THEME.surfaceSoft,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderWidth: 1,
+    borderColor: THEME.line,
+  },
+  hiveAlertAckBtnDone: {
+    backgroundColor: "#F0FDF4",
+    borderColor: "#BBF7D0",
+  },
+  hiveAlertAckText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: THEME.primary,
   },
   detailLongText: {
     color: "#475467",

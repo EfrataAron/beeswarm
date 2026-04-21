@@ -100,24 +100,56 @@ const LOCAL_ALERTS: AlertItem[] = [
     hiveId: "Hive A04",
     severity: "Critical",
     title: "Swarming risk detected",
-    date: "2026-04-09",
-    summary: "Rapid population rise and high queen cell activity.",
+    date: "2026-04-21 08:14",
+    summary: "Rapid population rise and high queen cell activity detected. Immediate inspection recommended.",
   },
   {
     id: "ALT-002",
     hiveId: "Hive A02",
     severity: "Warning",
     title: "Pre-swarm pattern",
-    date: "2026-04-09",
-    summary: "Brood chamber congestion and reduced laying space.",
+    date: "2026-04-21 07:30",
+    summary: "Brood chamber congestion and reduced laying space. Monitor closely.",
   },
   {
     id: "ALT-003",
     hiveId: "Hive A09",
     severity: "Info",
     title: "Humidity deviation",
-    date: "2026-04-08",
-    summary: "Humidity trending above recommended threshold.",
+    date: "2026-04-20 15:00",
+    summary: "Humidity trending above recommended threshold. Check ventilation.",
+  },
+  {
+    id: "ALT-004",
+    hiveId: "Hive A04",
+    severity: "Warning",
+    title: "Temperature spike",
+    date: "2026-04-20 13:45",
+    summary: "Internal hive temperature exceeded 37°C. Possible overcrowding.",
+  },
+  {
+    id: "ALT-005",
+    hiveId: "Hive A04",
+    severity: "Info",
+    title: "Acoustic anomaly",
+    date: "2026-04-19 10:00",
+    summary: "Unusual acoustic pattern detected. Model confidence: 72%.",
+  },
+  {
+    id: "ALT-006",
+    hiveId: "Hive A08",
+    severity: "Warning",
+    title: "Pre-swarm behaviour",
+    date: "2026-04-21 06:50",
+    summary: "Increased bee clustering near entrance. Pre-swarm indicators present.",
+  },
+  {
+    id: "ALT-007",
+    hiveId: "Hive A11",
+    severity: "Critical",
+    title: "Swarm detected",
+    date: "2026-04-21 09:00",
+    summary: "Active swarm event detected. Immediate action required.",
   },
 ];
 
@@ -429,6 +461,26 @@ export async function acknowledgeHiveAlert(hiveId: string): Promise<void> {
   await requestJson<void>(`/hives/${encodeURIComponent(hiveId)}/acknowledge`, undefined, {
     method: "POST",
   });
+}
+
+export async function fetchHiveAlerts(hiveId: string): Promise<AlertItem[]> {
+  if (!BASE_URL) {
+    return LOCAL_ALERTS.filter((a) => a.hiveId === hiveId);
+  }
+  try {
+    const raw = await requestJson<any[]>(`/hives/${encodeURIComponent(hiveId)}/alerts`);
+    if (!Array.isArray(raw)) return [];
+    return raw.map((item, index) => ({
+      id: String(item.id ?? `ALT-${index + 1}`),
+      hiveId: String(item.hiveId ?? item.hive_id ?? hiveId),
+      severity: normalizeSeverity(String(item.severity ?? item.level ?? "info")),
+      title: String(item.title ?? item.alert ?? "Alert"),
+      date: String(item.date ?? item.createdAt ?? item.created_at ?? ""),
+      summary: String(item.summary ?? item.message ?? ""),
+    }));
+  } catch {
+    return LOCAL_ALERTS.filter((a) => a.hiveId === hiveId);
+  }
 }
 
 function normalizeSeverity(value: string): AlertSeverity {
