@@ -29,12 +29,14 @@ import {
   AlertDetailData,
   AlertItem,
   AlertSeverity,
+  Advisory,
   DashboardData,
   Hive,
   HiveDetailData,
   HiveStatus,
   acknowledgeAlert,
   acknowledgeHiveAlert,
+  fetchAdvisory,
   fetchAlertDetail,
   fetchAlerts,
   fetchDashboard,
@@ -533,6 +535,7 @@ function AlertsListScreen({
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [filter, setFilter] = useState<AlertSeverity | "All">("All");
 
   const loadAlerts = useCallback(async () => {
     setLoading(true);
@@ -547,9 +550,26 @@ function AlertsListScreen({
     }
   }, []);
 
-  useEffect(() => {
-    void loadAlerts();
-  }, [loadAlerts]);
+  useEffect(() => { void loadAlerts(); }, [loadAlerts]);
+
+  const SEVERITY_COLOR: Record<AlertSeverity, string> = {
+    Critical: "#DC2626",
+    Warning: "#D97706",
+    Info: "#2563EB",
+  };
+  const SEVERITY_BG: Record<AlertSeverity, string> = {
+    Critical: "#FEF2F2",
+    Warning: "#FFFBEB",
+    Info: "#EFF6FF",
+  };
+  const SEVERITY_ICON: Record<AlertSeverity, keyof typeof Ionicons.glyphMap> = {
+    Critical: "alert-circle",
+    Warning: "warning",
+    Info: "information-circle",
+  };
+
+  const ALL_SEVERITIES: AlertSeverity[] = ["Critical", "Warning", "Info"];
+  const filtered = filter === "All" ? alerts : alerts.filter(a => a.severity === filter);
 
   if (loading) {
     return (
@@ -565,10 +585,7 @@ function AlertsListScreen({
       <View style={styles.centerState}>
         <Text style={styles.errorTitle}>Failed to load alerts</Text>
         <Text style={styles.errorBody}>{error}</Text>
-        <Pressable
-          style={styles.primaryButtonSmall}
-          onPress={() => void loadAlerts()}
-        >
+        <Pressable style={styles.primaryButtonSmall} onPress={() => void loadAlerts()}>
           <Text style={styles.primaryButtonText}>Retry</Text>
         </Pressable>
       </View>
@@ -576,27 +593,72 @@ function AlertsListScreen({
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.appPage}>
-      {alerts.map((alert) => (
+    <ScrollView
+      style={{ flex: 1, backgroundColor: THEME.page }}
+      contentContainerStyle={[styles.appPage, { flexGrow: 1 }]}
+    >
+      {/* Filter pills */}
+      <View style={styles.hiveSummaryStrip}>
+        <Pressable
+          style={[styles.hiveSummaryPill, filter === "All" && styles.hiveSummaryPillActive]}
+          onPress={() => setFilter("All")}
+        >
+          <Text style={[styles.hiveSummaryPillText, filter === "All" && styles.hiveSummaryPillTextActive]}>
+            All {alerts.length}
+          </Text>
+        </Pressable>
+        {ALL_SEVERITIES.map((s) => {
+          const count = alerts.filter(a => a.severity === s).length;
+          if (count === 0) return null;
+          const active = filter === s;
+          return (
+            <Pressable
+              key={s}
+              style={[styles.hiveSummaryPill, { borderColor: SEVERITY_COLOR[s] }, active && { backgroundColor: SEVERITY_BG[s] }]}
+              onPress={() => setFilter(active ? "All" : s)}
+            >
+              <View style={[styles.hiveSummaryDot, { backgroundColor: SEVERITY_COLOR[s] }]} />
+              <Text style={[styles.hiveSummaryPillText, { color: SEVERITY_COLOR[s] }]}>{s} {count}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      {/* Count */}
+      <Text style={styles.hiveListCount}>
+        {filtered.length} {filter === "All" ? "alerts" : filter.toLowerCase() + " alerts"}
+      </Text>
+
+      {filtered.length === 0 && (
+        <View style={styles.inlineState}>
+          <Ionicons name="checkmark-circle-outline" size={32} color="#16A34A" />
+          <Text style={styles.stateTextSmall}>No alerts in this category</Text>
+        </View>
+      )}
+
+      {filtered.map((alert) => (
         <Pressable
           key={alert.id}
-          style={({ pressed }) => [
-            styles.alertRowCard,
-            pressed && styles.pressedRow,
-          ]}
-          onPress={() =>
-            navigation.navigate("AlertDetails", { alertId: alert.id })
-          }
+          style={({ pressed }) => [styles.alertCard, pressed && styles.pressedRow]}
+          onPress={() => navigation.navigate("AlertDetails", { alertId: alert.id })}
         >
-          <View style={styles.alertRowHeader}>
-            <SeverityPill severity={alert.severity} />
-            <Text style={styles.alertRowArrow}>→</Text>
-          </View>
-          <Text style={styles.alertRowHive}>{alert.hiveId}</Text>
-          <Text style={styles.alertRowSummary}>{alert.summary}</Text>
-          <View style={styles.alertRowFooter}>
-            <Text style={styles.alertRowDate}>{alert.date}</Text>
-            <Text style={styles.alertRowAction}>View details</Text>
+          <View style={styles.alertCardBody}>
+            <View style={styles.alertCardTopRow}>
+              <View style={styles.alertCardIconWrap}>
+                <Ionicons name={SEVERITY_ICON[alert.severity]} size={20} color={SEVERITY_COLOR[alert.severity]} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.alertCardTitle}>{alert.title}</Text>
+                <View style={styles.alertCardMeta}>
+                  <Ionicons name="cube-outline" size={11} color={THEME.textMuted} />
+                  <Text style={styles.alertCardMetaText}>{alert.hiveId}</Text>
+                  <Text style={styles.alertCardMetaDot}>·</Text>
+                  <Text style={styles.alertCardMetaText}>{alert.date}</Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={THEME.placeholder} />
+            </View>
+            <Text style={styles.alertCardSummary} numberOfLines={2}>{alert.summary}</Text>
           </View>
         </Pressable>
       ))}
@@ -606,51 +668,59 @@ function AlertsListScreen({
 
 function AlertDetailsScreen({
   route,
+  navigation,
 }: NativeStackScreenProps<AlertsStackParamList, "AlertDetails">) {
   const { alertId } = route.params;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [detail, setDetail] = useState<AlertDetailData | null>(null);
+  const [advisory, setAdvisory] = useState<Advisory | null>(null);
   const [acknowledging, setAcknowledging] = useState(false);
+  const [checkedActions, setCheckedActions] = useState<Set<string>>(new Set());
 
   const loadDetail = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchAlertDetail(alertId);
+      const [data, adv] = await Promise.all([
+        fetchAlertDetail(alertId),
+        fetchAdvisory(alertId),
+      ]);
       setDetail(data);
+      setAdvisory(adv);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Could not load alert details",
-      );
+      setError(err instanceof Error ? err.message : "Could not load alert details");
     } finally {
       setLoading(false);
     }
   }, [alertId]);
 
-  useEffect(() => {
-    void loadDetail();
-  }, [loadDetail]);
+  useEffect(() => { void loadDetail(); }, [loadDetail]);
 
   const handleAcknowledge = useCallback(async () => {
-    if (!detail || acknowledging) {
-      return;
-    }
-
+    if (!detail || acknowledging) return;
     setAcknowledging(true);
     try {
       await acknowledgeAlert(detail.id);
-      setDetail((current) =>
-        current ? { ...current, acknowledged: true } : current,
-      );
+      setDetail((current) => current ? { ...current, acknowledged: true } : current);
+      // Navigate back after short delay so user sees the closed state
+      setTimeout(() => navigation.goBack(), 800);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Could not acknowledge alert",
-      );
+      setError(err instanceof Error ? err.message : "Could not acknowledge alert");
     } finally {
       setAcknowledging(false);
     }
-  }, [acknowledging, detail]);
+  }, [acknowledging, detail, navigation]);
+
+  const toggleAction = (id: string) => {
+    setCheckedActions((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const PRIORITY_COLOR = { High: "#DC2626", Medium: "#D97706", Low: "#16A34A" };
 
   if (loading) {
     return (
@@ -665,45 +735,50 @@ function AlertDetailsScreen({
     return (
       <View style={styles.centerState}>
         <Text style={styles.errorTitle}>Failed to load alert</Text>
-        <Text style={styles.errorBody}>
-          {error ?? "No detail returned from API"}
-        </Text>
-        <Pressable
-          style={styles.primaryButtonSmall}
-          onPress={() => void loadDetail()}
-        >
+        <Text style={styles.errorBody}>{error ?? "No detail returned from API"}</Text>
+        <Pressable style={styles.primaryButtonSmall} onPress={() => void loadDetail()}>
           <Text style={styles.primaryButtonText}>Retry</Text>
         </Pressable>
       </View>
     );
   }
 
+  const allActionsChecked = advisory
+    ? advisory.actions.every((a) => checkedActions.has(a.id))
+    : true;
+
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: THEME.page }}
       contentContainerStyle={styles.detailPage}
     >
-      {/* Hero */}
-      <View style={styles.detailHeroCard}>
+      {/* ── Hero ── */}
+      <View style={[styles.detailHeroCard, detail.acknowledged && { opacity: 0.7 }]}>
         <View style={styles.detailHeroTopRow}>
           <View style={styles.detailHiveIconWrap}>
             <Ionicons name="alert-circle-outline" size={26} color={THEME.accent} />
           </View>
           <View style={styles.detailHeroTextWrap}>
             <Text style={styles.detailHiveName}>{detail.title}</Text>
-            <Text style={styles.detailHeroMeta}>{detail.hiveId}</Text>
+            <Text style={styles.detailHeroMeta}>{detail.hiveId} · {detail.time}</Text>
           </View>
           <SeverityPill severity={detail.severity} />
         </View>
+        {detail.acknowledged && (
+          <View style={styles.alertClosedBanner}>
+            <Ionicons name="checkmark-circle" size={14} color="#16A34A" />
+            <Text style={styles.alertClosedText}>This alert has been acknowledged and closed</Text>
+          </View>
+        )}
       </View>
 
-      {/* Info */}
+      {/* ── Alert Info ── */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Alert Information</Text>
         <InfoRow label="Severity" value={detail.severity} valueColor={severityColor(detail.severity)} />
         <InfoRow label="Hive" value={detail.hiveId} />
         <InfoRow label="Time" value={detail.time} />
-        <InfoRow label="Status" value={detail.acknowledged ? "Acknowledged" : "Pending"} />
+        <InfoRow label="Status" value={detail.acknowledged ? "Closed" : "Open"} valueColor={detail.acknowledged ? "#16A34A" : "#D97706"} />
       </View>
 
       <View style={styles.card}>
@@ -711,28 +786,90 @@ function AlertDetailsScreen({
         <Text style={styles.detailLongText}>{detail.details}</Text>
       </View>
 
-      {/* Action */}
-      <View style={styles.card}>
-        <Pressable
-          style={({ pressed }) => [
-            styles.primaryButton,
-            styles.actionButton,
-            pressed && styles.pressed,
-            detail.acknowledged && styles.actionButtonDisabled,
-          ]}
-          onPress={handleAcknowledge}
-          disabled={acknowledging || detail.acknowledged}
-        >
-          <Ionicons
-            name={detail.acknowledged ? "checkmark-circle" : "checkmark-circle-outline"}
-            size={18}
-            color={detail.acknowledged ? THEME.textMuted : THEME.primary}
-          />
-          <Text style={[styles.primaryButtonText, detail.acknowledged && { color: THEME.textMuted }]}>
-            {detail.acknowledged ? "Alert Acknowledged" : acknowledging ? "Acknowledging..." : "Acknowledge Alert"}
+      {/* ── Advisory ── */}
+      {advisory && !detail.acknowledged && (
+        <View style={styles.card}>
+          <View style={styles.advisoryHeader}>
+            <View style={styles.advisoryTitleRow}>
+              <Ionicons name="bulb-outline" size={18} color={THEME.accent} />
+              <Text style={styles.cardTitle}>Advisory</Text>
+            </View>
+            <View style={[styles.advisoryTypeBadge,
+              { backgroundColor: advisory.type === "Reactive" ? "#FEF2F2" : "#F0FDF4" }]}>
+              <Text style={[styles.advisoryTypeText,
+                { color: advisory.type === "Reactive" ? "#DC2626" : "#16A34A" }]}>
+                {advisory.type}
+              </Text>
+            </View>
+          </View>
+
+          <Text style={styles.advisorySummary}>{advisory.summary}</Text>
+
+          <Text style={styles.advisoryActionsTitle}>
+            Recommended Actions ({checkedActions.size}/{advisory.actions.length} completed)
           </Text>
-        </Pressable>
-      </View>
+
+          {advisory.actions.map((action) => {
+            const checked = checkedActions.has(action.id);
+            return (
+              <Pressable
+                key={action.id}
+                style={[styles.advisoryActionRow, checked && styles.advisoryActionRowDone]}
+                onPress={() => toggleAction(action.id)}
+              >
+                <View style={[styles.advisoryCheckbox, checked && styles.advisoryCheckboxDone]}>
+                  {checked && <Ionicons name="checkmark" size={12} color="#fff" />}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.advisoryActionText, checked && styles.advisoryActionTextDone]}>
+                    {action.description}
+                  </Text>
+                </View>
+                <View style={[styles.advisoryPriorityDot, { backgroundColor: PRIORITY_COLOR[action.priority] }]} />
+              </Pressable>
+            );
+          })}
+
+          {/* Progress bar */}
+          <View style={styles.advisoryProgressTrack}>
+            <View style={[styles.advisoryProgressFill, {
+              width: `${Math.round((checkedActions.size / advisory.actions.length) * 100)}%` as any,
+            }]} />
+          </View>
+          <Text style={styles.advisoryProgressLabel}>
+            {Math.round((checkedActions.size / advisory.actions.length) * 100)}% of actions completed
+          </Text>
+        </View>
+      )}
+
+      {/* ── Acknowledge ── */}
+      {!detail.acknowledged && (
+        <View style={styles.card}>
+          {!allActionsChecked && (
+            <View style={styles.advisoryWarningRow}>
+              <Ionicons name="information-circle-outline" size={14} color="#D97706" />
+              <Text style={styles.advisoryWarningText}>
+                Review and check off all advisory actions before acknowledging
+              </Text>
+            </View>
+          )}
+          <Pressable
+            style={({ pressed }) => [
+              styles.primaryButton,
+              styles.actionButton,
+              pressed && styles.pressed,
+              !allActionsChecked && styles.actionButtonDisabled,
+            ]}
+            onPress={handleAcknowledge}
+            disabled={acknowledging || !allActionsChecked}
+          >
+            <Ionicons name="checkmark-circle-outline" size={18} color={allActionsChecked ? THEME.primary : THEME.textMuted} />
+            <Text style={[styles.primaryButtonText, !allActionsChecked && { color: THEME.textMuted }]}>
+              {acknowledging ? "Acknowledging..." : "Acknowledge & Close Alert"}
+            </Text>
+          </Pressable>
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -1199,12 +1336,7 @@ function HivesListScreen({
 
       {/* Status summary pills */}
       {!loading && !error && hives.length > 0 && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.hiveSummaryStrip}
-          style={{ height: 38 }}
-        >
+        <View style={styles.hiveSummaryStrip}>
           <Pressable
             style={[styles.hiveSummaryPill, filterStatus === "All" && styles.hiveSummaryPillActive]}
             onPress={() => setFilterStatus("All")}
@@ -1234,7 +1366,7 @@ function HivesListScreen({
               </Pressable>
             );
           })}
-        </ScrollView>
+        </View>
       )}
 
       {/* Search + view toggle row */}
@@ -1637,7 +1769,7 @@ function HiveDetailsScreen({
                     color={isAcked ? "#16A34A" : THEME.primary}
                   />
                   <Text style={[styles.hiveAlertAckText, isAcked && { color: "#16A34A" }]}>
-                    {isAcked ? "Acknowledged" : isAcking ? "Acknowledging..." : "Mark as acknowledged"}
+                    {isAcked ? "Acknowledged" : isAcking ? "Acknowledging..." : "Acknowledge"}
                   </Text>
                 </Pressable>
               </View>
@@ -2596,44 +2728,33 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 10,
   },
-  alertRowHeader: {
+  alertRowHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 },
+  alertRowArrow: { color: "#98A2B3", fontSize: 20, fontWeight: "700" },
+  alertRowHive: { color: "#1F2937", fontSize: 18, fontWeight: "800", marginBottom: 4 },
+  alertRowSummary: { color: "#667085", fontSize: 13, lineHeight: 18, marginBottom: 10 },
+  alertRowFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  alertRowDate: { color: "#98A2B3", fontWeight: "700", fontSize: 12 },
+  alertRowAction: { color: THEME.primary, fontWeight: "800", fontSize: 12 },
+  alertCard: {
     flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: THEME.line,
+    borderRadius: 14,
     marginBottom: 10,
+    overflow: "hidden",
   },
-  alertRowArrow: {
-    color: "#98A2B3",
-    fontSize: 20,
-    fontWeight: "700",
-  },
-  alertRowHive: {
-    color: "#1F2937",
-    fontSize: 18,
-    fontWeight: "800",
-    marginBottom: 4,
-  },
-  alertRowSummary: {
-    color: "#667085",
-    fontSize: 13,
-    lineHeight: 18,
-    marginBottom: 10,
-  },
-  alertRowFooter: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  alertRowDate: {
-    color: "#98A2B3",
-    fontWeight: "700",
-    fontSize: 12,
-  },
-  alertRowAction: {
-    color: THEME.primary,
-    fontWeight: "800",
-    fontSize: 12,
-  },
+  alertCardBar: { width: 4 },
+  alertCardBody: { flex: 1, padding: 14, gap: 8 },
+  alertCardTopRow: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
+  alertCardIconWrap: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: THEME.surfaceSoft },
+  alertCardTitle: { fontSize: 14, fontWeight: "800", color: THEME.primary, marginBottom: 3 },
+  alertCardMeta: { flexDirection: "row", alignItems: "center", gap: 4 },
+  alertCardMetaText: { fontSize: 11, color: THEME.textMuted, fontWeight: "500" },
+  alertCardMetaDot: { color: THEME.textMuted, fontSize: 11 },
+  alertCardSummary: { fontSize: 12, color: THEME.textMuted, lineHeight: 17 },
+  alertCardBadge: { alignSelf: "flex-start", borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 },
+  alertCardBadgeText: { fontSize: 10, fontWeight: "800" },
   severityPill: {
     borderRadius: 999,
     paddingHorizontal: 10,
@@ -2662,9 +2783,9 @@ const styles = StyleSheet.create({
   },
   hiveSummaryStrip: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: 6,
-    marginBottom: 12,
-    paddingRight: 4,
+    marginBottom: 10,
   },
   hiveSummaryPill: {
     flexDirection: "row",
@@ -3292,6 +3413,127 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 8,
+  },
+  alertClosedBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 12,
+    backgroundColor: "#F0FDF4",
+    borderRadius: 8,
+    padding: 8,
+  },
+  alertClosedText: {
+    fontSize: 12,
+    color: "#16A34A",
+    fontWeight: "600",
+    flex: 1,
+  },
+  advisoryHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  advisoryTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  advisoryTypeBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+  },
+  advisoryTypeText: {
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  advisorySummary: {
+    fontSize: 13,
+    color: THEME.textMuted,
+    lineHeight: 19,
+    marginBottom: 14,
+  },
+  advisoryActionsTitle: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: THEME.text,
+    marginBottom: 10,
+  },
+  advisoryActionRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: THEME.line,
+  },
+  advisoryActionRowDone: {
+    opacity: 0.5,
+  },
+  advisoryCheckbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 5,
+    borderWidth: 2,
+    borderColor: THEME.line,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 1,
+  },
+  advisoryCheckboxDone: {
+    backgroundColor: THEME.primary,
+    borderColor: THEME.primary,
+  },
+  advisoryActionText: {
+    fontSize: 13,
+    color: THEME.text,
+    lineHeight: 18,
+  },
+  advisoryActionTextDone: {
+    textDecorationLine: "line-through",
+    color: THEME.textMuted,
+  },
+  advisoryPriorityDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginTop: 5,
+  },
+  advisoryProgressTrack: {
+    height: 6,
+    backgroundColor: THEME.line,
+    borderRadius: 99,
+    overflow: "hidden",
+    marginTop: 14,
+  },
+  advisoryProgressFill: {
+    height: "100%",
+    backgroundColor: THEME.primary,
+    borderRadius: 99,
+  },
+  advisoryProgressLabel: {
+    fontSize: 11,
+    color: THEME.textMuted,
+    fontWeight: "600",
+    marginTop: 5,
+  },
+  advisoryWarningRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 6,
+    backgroundColor: "#FFFBEB",
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 12,
+  },
+  advisoryWarningText: {
+    fontSize: 12,
+    color: "#D97706",
+    fontWeight: "600",
+    flex: 1,
+    lineHeight: 17,
   },
   actionButton: {
     flexDirection: "row",

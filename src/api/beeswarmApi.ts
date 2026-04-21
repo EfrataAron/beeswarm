@@ -52,7 +52,23 @@ export type HiveDetailData = {
   acknowledged: boolean;
 };
 
+export type AdvisoryAction = {
+  id: string;
+  description: string;
+  priority: "High" | "Medium" | "Low";
+};
+
+export type Advisory = {
+  id: string;
+  alertId: string;
+  type: "Preventive" | "Reactive";
+  summary: string;
+  actions: AdvisoryAction[];
+};
+
 export type AlertSeverity = "Critical" | "Warning" | "Info";
+
+
 
 export type AlertItem = {
   id: string;
@@ -446,7 +462,7 @@ export async function fetchHiveDetail(hiveId: string): Promise<HiveDetailData> {
     ),
     metrics: Array.isArray(raw.metrics)
       ? raw.metrics.map((value: unknown) => Number(value) || 0)
-      : metricSeries.map((point) => point.temperatureC),
+      : metricSeries.map((point: { temperatureC: number }) => point.temperatureC),
     metricSeries,
     mapLabel: String(raw.mapLabel ?? raw.map_label ?? hiveId),
     acknowledged: Boolean(raw.acknowledged ?? raw.isAcknowledged ?? false),
@@ -550,4 +566,106 @@ export async function acknowledgeAlert(alertId: string): Promise<void> {
   await requestJson<void>(`/alerts/${encodeURIComponent(alertId)}/acknowledge`, undefined, {
     method: "POST",
   });
+}
+
+const LOCAL_ADVISORIES: Advisory[] = [
+  {
+    id: "ADV-001",
+    alertId: "ALT-001",
+    type: "Reactive",
+    summary: "Swarming is imminent. Immediate intervention is required to prevent colony loss.",
+    actions: [
+      { id: "ACT-001-1", description: "Inspect hive frames for queen cells and remove excess ones", priority: "High" },
+      { id: "ACT-001-2", description: "Add a super or additional brood box to relieve congestion", priority: "High" },
+      { id: "ACT-001-3", description: "Consider splitting the colony to simulate a swarm", priority: "Medium" },
+      { id: "ACT-001-4", description: "Mark and monitor the queen's activity over the next 48 hours", priority: "Medium" },
+    ],
+  },
+  {
+    id: "ADV-002",
+    alertId: "ALT-002",
+    type: "Preventive",
+    summary: "Pre-swarm indicators detected. Act now to prevent a full swarm event.",
+    actions: [
+      { id: "ACT-002-1", description: "Check brood chamber for congestion and available laying space", priority: "High" },
+      { id: "ACT-002-2", description: "Ensure adequate ventilation in the hive", priority: "Medium" },
+      { id: "ACT-002-3", description: "Schedule a full hive inspection within 24 hours", priority: "High" },
+    ],
+  },
+  {
+    id: "ADV-003",
+    alertId: "ALT-003",
+    type: "Preventive",
+    summary: "Humidity levels are above the recommended range. Address ventilation to avoid disease risk.",
+    actions: [
+      { id: "ACT-003-1", description: "Open hive entrance reducer to improve airflow", priority: "Medium" },
+      { id: "ACT-003-2", description: "Check for water ingress or condensation inside the hive", priority: "Medium" },
+      { id: "ACT-003-3", description: "Monitor humidity readings over the next 12 hours", priority: "Low" },
+    ],
+  },
+  {
+    id: "ADV-004",
+    alertId: "ALT-004",
+    type: "Reactive",
+    summary: "Temperature spike detected. Overcrowding or disease may be the cause.",
+    actions: [
+      { id: "ACT-004-1", description: "Inspect hive for signs of disease or pest infestation", priority: "High" },
+      { id: "ACT-004-2", description: "Provide shade or relocate hive if in direct sunlight", priority: "Medium" },
+      { id: "ACT-004-3", description: "Add ventilation by propping the hive lid slightly", priority: "Low" },
+    ],
+  },
+  {
+    id: "ADV-005",
+    alertId: "ALT-005",
+    type: "Preventive",
+    summary: "Acoustic anomaly detected with moderate model confidence. Monitor closely.",
+    actions: [
+      { id: "ACT-005-1", description: "Perform a visual inspection to rule out obvious issues", priority: "Medium" },
+      { id: "ACT-005-2", description: "Re-run acoustic analysis in 6 hours to confirm pattern", priority: "Low" },
+    ],
+  },
+  {
+    id: "ADV-006",
+    alertId: "ALT-006",
+    type: "Preventive",
+    summary: "Pre-swarm clustering observed near entrance. Early intervention recommended.",
+    actions: [
+      { id: "ACT-006-1", description: "Inspect entrance area and remove any clustering bees gently", priority: "High" },
+      { id: "ACT-006-2", description: "Check internal space and add frames if needed", priority: "Medium" },
+    ],
+  },
+  {
+    id: "ADV-007",
+    alertId: "ALT-007",
+    type: "Reactive",
+    summary: "Active swarm event in progress. Immediate action required to recover the colony.",
+    actions: [
+      { id: "ACT-007-1", description: "Locate the swarm cluster and prepare a capture box", priority: "High" },
+      { id: "ACT-007-2", description: "Capture the swarm and re-hive in a prepared hive body", priority: "High" },
+      { id: "ACT-007-3", description: "Inspect the original hive for a new queen or queen cells", priority: "High" },
+      { id: "ACT-007-4", description: "Feed the captured swarm with sugar syrup to encourage settling", priority: "Medium" },
+    ],
+  },
+];
+
+export async function fetchAdvisory(alertId: string): Promise<Advisory | null> {
+  if (!BASE_URL) {
+    return LOCAL_ADVISORIES.find((a) => a.alertId === alertId) ?? null;
+  }
+  try {
+    const raw = await requestJson<any>(`/alerts/${encodeURIComponent(alertId)}/advisory`);
+    return {
+      id: String(raw.id ?? ""),
+      alertId,
+      type: raw.type === "Preventive" ? "Preventive" : "Reactive",
+      summary: String(raw.summary ?? ""),
+      actions: Array.isArray(raw.actions) ? raw.actions.map((a: any, i: number) => ({
+        id: String(a.id ?? `act-${i}`),
+        description: String(a.description ?? a.action_description ?? ""),
+        priority: (["High", "Medium", "Low"].includes(a.priority) ? a.priority : "Medium") as "High" | "Medium" | "Low",
+      })) : [],
+    };
+  } catch {
+    return LOCAL_ADVISORIES.find((a) => a.alertId === alertId) ?? null;
+  }
 }
