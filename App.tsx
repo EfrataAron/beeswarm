@@ -322,7 +322,7 @@ function WelcomeScreen({
           <Image source={beeLogo} style={styles.welcomeLogo} resizeMode="contain" />
         </View>
         <Text style={styles.welcomeAppName}>BSADS</Text>
-        <Text style={styles.welcomeAppSub}>Bee Swarm Abscondment Detection</Text>
+        <Text style={styles.welcomeAppSub}>Bee Swarm & Abscondment Detection</Text>
       </View>
 
       {/* Bottom card */}
@@ -338,13 +338,6 @@ function WelcomeScreen({
         >
           <Ionicons name="log-in-outline" size={18} color={THEME.primary} />
           <Text style={styles.welcomePrimaryBtnText}>Get Started</Text>
-        </Pressable>
-
-        <Pressable
-          style={({ pressed }) => [styles.welcomeSecondaryBtn, pressed && styles.pressed]}
-          onPress={() => navigation.navigate("Signup")}
-        >
-          <Text style={styles.welcomeSecondaryBtnText}>Create an Account</Text>
         </Pressable>
       </View>
     </View>
@@ -367,7 +360,7 @@ function LoginScreen({
           <Image source={beeLogo} style={styles.brandLogo} resizeMode="contain" />
         </View>
         <Text style={styles.brandText}>BSADS</Text>
-        <Text style={styles.heading}>Welcome Back</Text>
+        <Text style={styles.heading}>Welcome</Text>
 
         <TextInput
           placeholder="Email or Username"
@@ -394,7 +387,9 @@ function LoginScreen({
           <Text style={styles.separatorText}>or</Text>
           <View style={styles.separatorLine} />
         </View>
-
+        <Text style={styles.authTextPrompt}>
+          Don't have an account ?{" "}
+        </Text>
         <Pressable onPress={() => navigation.navigate("Signup")}>
           <Text style={styles.linkAction}>Create an Account</Text>
         </Pressable>
@@ -410,16 +405,10 @@ function SignupScreen({
   onAuthSuccess: () => void;
 }) {
   return (
-    <ScrollView
-      contentContainerStyle={styles.formPage}
-      keyboardShouldPersistTaps="handled"
-    >
-      <Pressable
-        onPress={() => navigation.navigate("Login")}
-        style={styles.backChip}
-      >
-        <Text style={styles.backChipText}>Back</Text>
-      </Pressable>
+
+    <View style={styles.authShell}>
+      <View style={styles.backgroundOrbOne} />
+      <View style={styles.backgroundOrbTwo} />
 
       <View style={styles.formCard}>
         <View style={styles.brandMark}>
@@ -478,7 +467,7 @@ function SignupScreen({
           </Text>
         </Text>
       </View>
-    </ScrollView>
+    </View>
   );
 }
 
@@ -1144,6 +1133,8 @@ function HivesListScreen({
   const [searchText, setSearchText] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [filterStatus, setFilterStatus] = useState<HiveStatus | "All">("All");
+  const [viewMode, setViewMode] = useState<"list" | "tile">("list");
 
   const loadHives = useCallback(async (search: string) => {
     setLoading(true);
@@ -1159,25 +1150,111 @@ function HivesListScreen({
   }, []);
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      void loadHives(searchText);
-    }, 250);
-
+    const timeout = setTimeout(() => { void loadHives(searchText); }, 250);
     return () => clearTimeout(timeout);
   }, [searchText, loadHives]);
 
+  const STATUS_COLOR: Record<HiveStatus, string> = {
+    Healthy: "#16A34A",
+    "Pre-swarm": "#D97706",
+    Swarm: "#DC2626",
+    Abscondment: "#6B7280",
+  };
+
+  const STATUS_BG: Record<HiveStatus, string> = {
+    Healthy: "#F0FDF4",
+    "Pre-swarm": "#FFFBEB",
+    Swarm: "#FEF2F2",
+    Abscondment: "#F9FAFB",
+  };
+
+  const ALL_STATUSES: HiveStatus[] = ["Healthy", "Pre-swarm", "Swarm", "Abscondment"];
+
+  const filtered = filterStatus === "All"
+    ? hives
+    : hives.filter((h) => h.status === filterStatus);
+
   return (
     <ScrollView contentContainerStyle={styles.appPage}>
-      <View style={styles.searchBarWrap}>
-        <Text style={styles.searchIcon}>Q</Text>
-        <TextInput
-          value={searchText}
-          onChangeText={setSearchText}
-          style={styles.searchInput}
-          placeholder="Search hives"
-          placeholderTextColor={THEME.placeholder}
-        />
+
+      {/* Status summary pills */}
+      {!loading && !error && hives.length > 0 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.hiveSummaryStrip}
+        >
+          <Pressable
+            style={[styles.hiveSummaryPill, filterStatus === "All" && styles.hiveSummaryPillActive]}
+            onPress={() => setFilterStatus("All")}
+          >
+            <Text style={[styles.hiveSummaryPillText, filterStatus === "All" && styles.hiveSummaryPillTextActive]}>
+              All {hives.length}
+            </Text>
+          </Pressable>
+          {ALL_STATUSES.map((s) => {
+            const count = hives.filter((h) => h.status === s).length;
+            if (count === 0) return null;
+            const active = filterStatus === s;
+            return (
+              <Pressable
+                key={s}
+                style={[
+                  styles.hiveSummaryPill,
+                  { borderColor: STATUS_COLOR[s] },
+                  active && { backgroundColor: STATUS_BG[s] },
+                ]}
+                onPress={() => setFilterStatus(active ? "All" : s)}
+              >
+                <View style={[styles.hiveSummaryDot, { backgroundColor: STATUS_COLOR[s] }]} />
+                <Text style={[styles.hiveSummaryPillText, { color: STATUS_COLOR[s] }]}>
+                  {s} {count}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      )}
+
+      {/* Search + view toggle row */}
+      <View style={styles.hiveToolbarRow}>
+        <View style={[styles.searchBarWrap, { flex: 1, marginBottom: 0 }]}>
+          <Ionicons name="search-outline" size={16} color={THEME.textMuted} style={{ marginRight: 8 }} />
+          <TextInput
+            value={searchText}
+            onChangeText={setSearchText}
+            style={styles.searchInput}
+            placeholder="Search hives..."
+            placeholderTextColor={THEME.placeholder}
+          />
+          {searchText.length > 0 && (
+            <Pressable onPress={() => setSearchText("")}>
+              <Ionicons name="close-circle" size={16} color={THEME.textMuted} />
+            </Pressable>
+          )}
+        </View>
+        <View style={styles.viewToggle}>
+          <Pressable
+            style={[styles.viewToggleBtn, viewMode === "list" && styles.viewToggleBtnActive]}
+            onPress={() => setViewMode("list")}
+          >
+            <Ionicons name="list-outline" size={18} color={viewMode === "list" ? THEME.primary : THEME.textMuted} />
+          </Pressable>
+          <Pressable
+            style={[styles.viewToggleBtn, viewMode === "tile" && styles.viewToggleBtnActive]}
+            onPress={() => setViewMode("tile")}
+          >
+            <Ionicons name="grid-outline" size={18} color={viewMode === "tile" ? THEME.primary : THEME.textMuted} />
+          </Pressable>
+        </View>
       </View>
+
+      {/* Result count */}
+      {!loading && !error && (
+        <Text style={[styles.hiveListCount, { marginTop: 10 }]}>
+          {filtered.length} {filterStatus === "All" ? "hives" : filterStatus + " hives"}
+        </Text>
+      )}
 
       {loading && (
         <View style={styles.inlineState}>
@@ -1189,56 +1266,74 @@ function HivesListScreen({
       {!!error && (
         <View style={styles.errorBox}>
           <Text style={styles.errorBody}>{error}</Text>
-          <Pressable
-            style={styles.primaryButtonSmall}
-            onPress={() => void loadHives(searchText)}
-          >
+          <Pressable style={styles.primaryButtonSmall} onPress={() => void loadHives(searchText)}>
             <Text style={styles.primaryButtonText}>Retry</Text>
           </Pressable>
         </View>
       )}
 
-      {!loading && !error && hives.length === 0 && (
+      {!loading && !error && filtered.length === 0 && (
         <View style={styles.inlineState}>
-          <Text style={styles.stateTextSmall}>
-            No hives found for this search.
-          </Text>
+          <Text style={styles.stateTextSmall}>No hives found.</Text>
         </View>
       )}
 
-      {!error &&
-        hives.map((hive) => (
-          <Pressable
-            key={hive.id}
-            style={({ pressed }) => [
-              styles.hiveRowCard,
-              pressed && styles.pressedRow,
-            ]}
-            onPress={() =>
-              navigation.navigate("HiveDetails", { hiveId: hive.id })
-            }
-          >
-            <View>
-              <Text style={styles.hiveName}>{hive.id}</Text>
-              <Text
-                style={[
-                  styles.hiveStatus,
-                  { color: STATUS_COLOR[hive.status] },
-                ]}
-              >
+      {/* Tile view */}
+      {!error && viewMode === "tile" && (
+        <View style={styles.hiveTileGrid}>
+          {filtered.map((hive) => (
+            <Pressable
+              key={hive.id}
+              style={({ pressed }) => [styles.hiveTileCard, pressed && styles.pressedRow]}
+              onPress={() => navigation.navigate("HiveDetails", { hiveId: hive.id })}
+            >
+              <View style={[styles.hiveTileIconWrap, { backgroundColor: STATUS_BG[hive.status] }]}>
+                <Ionicons name="cube-outline" size={26} color={STATUS_COLOR[hive.status]} />
+              </View>
+              <Text style={styles.hiveTileName} numberOfLines={1}>{hive.id}</Text>
+              <View style={[styles.hiveStatusBadge, { backgroundColor: STATUS_BG[hive.status] }]}>
+                <Text style={[styles.hiveStatusBadgeText, { color: STATUS_COLOR[hive.status] }]}>
+                  {hive.status}
+                </Text>
+              </View>
+            </Pressable>
+          ))}
+        </View>
+      )}
+
+      {/* List view */}
+      {!error && viewMode === "list" && filtered.map((hive) => (
+        <Pressable
+          key={hive.id}
+          style={({ pressed }) => [styles.hiveRowCard, pressed && styles.pressedRow]}
+          onPress={() => navigation.navigate("HiveDetails", { hiveId: hive.id })}
+        >
+          {/* Icon */}
+          <View style={[styles.hiveRowIconWrap, { backgroundColor: STATUS_BG[hive.status] }]}>
+            <Ionicons name="cube-outline" size={22} color={STATUS_COLOR[hive.status]} />
+          </View>
+
+          {/* Info */}
+          <View style={styles.hiveRowInfo}>
+            <Text style={styles.hiveName}>{hive.id}</Text>
+            <View style={styles.hiveRowMeta}>
+              <Ionicons name="location-outline" size={11} color={THEME.textMuted} />
+              <Text style={styles.hiveRowMetaText}>North Yard</Text>
+            </View>
+          </View>
+
+          {/* Status badge + arrow */}
+          <View style={styles.hiveRowRight}>
+            <View style={[styles.hiveStatusBadge, { backgroundColor: STATUS_BG[hive.status] }]}>
+              <Text style={[styles.hiveStatusBadgeText, { color: STATUS_COLOR[hive.status] }]}>
                 {hive.status}
               </Text>
             </View>
-            <Pressable
-              style={styles.mapChip}
-              onPress={() =>
-                navigation.navigate("HiveDetails", { hiveId: hive.id })
-              }
-            >
-              <Text style={styles.mapChipText}>View details</Text>
-            </Pressable>
-          </Pressable>
-        ))}
+            <Ionicons name="chevron-forward" size={16} color={THEME.placeholder} style={{ marginTop: 6 }} />
+          </View>
+        </Pressable>
+      ))}
+
     </ScrollView>
   );
 }
@@ -1919,8 +2014,10 @@ const styles = StyleSheet.create({
     borderColor: THEME.accent,
   },
   brandLogo: {
-    width: 28,
-    height: 28,
+    width: 40,
+    height: 40,
+    tintColor: THEME.accent,
+
   },
   brandText: {
     textAlign: "center",
@@ -1973,6 +2070,11 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#667085",
     marginTop: 18,
+  },
+  authTextPrompt: {
+    textAlign: "center",
+    color: "#667085",
+    // marginTop: 18,
   },
   footerLink: {
     color: THEME.primary,
@@ -2460,59 +2562,167 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
     borderColor: THEME.line,
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    marginBottom: 12,
-  },
-  searchIcon: {
-    fontSize: 14,
-    marginRight: 8,
-    color: "#475467",
-    fontWeight: "700",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    marginBottom: 14,
   },
   searchInput: {
     flex: 1,
-    color: "#344054",
+    color: THEME.text,
     paddingVertical: 10,
+    fontSize: 14,
+  },
+  hiveSummaryStrip: {
+    flexDirection: "row",
+    gap: 6,
+    marginBottom: 12,
+    paddingRight: 4,
+  },
+  hiveSummaryPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    borderWidth: 1,
+    borderColor: THEME.line,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    backgroundColor: "#FFFFFF",
+  },
+  hiveSummaryPillActive: {
+    backgroundColor: THEME.primary,
+    borderColor: THEME.primary,
+  },
+  hiveSummaryPillText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: THEME.textMuted,
+  },
+  hiveSummaryPillTextActive: {
+    color: "#FFFFFF",
+  },
+  hiveSummaryDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  hiveToolbarRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  viewToggle: {
+    flexDirection: "row",
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: THEME.line,
+    borderRadius: 10,
+    overflow: "hidden",
+  },
+  viewToggleBtn: {
+    padding: 9,
+  },
+  viewToggleBtnActive: {
+    backgroundColor: THEME.surfaceSoft,
+  },
+  hiveListCount: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: THEME.textMuted,
+    marginBottom: 10,
+  },
+  hiveTileGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  hiveTileCard: {
+    width: "47.5%",
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: THEME.line,
+    borderRadius: 16,
+    padding: 16,
+    alignItems: "center",
+    gap: 10,
+  },
+  hiveTileIconWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  hiveTileName: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: THEME.primary,
+    textAlign: "center",
+  },
+  hiveTileStatus: {
+    fontSize: 11,
+    fontWeight: "600",
   },
   hiveRowCard: {
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
     borderColor: THEME.line,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 16,
     marginBottom: 10,
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    gap: 14,
+  },
+  hiveRowIconWrap: {
+    width: 46,
+    height: 46,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  hiveRowInfo: {
+    flex: 1,
+    gap: 4,
+  },
+  hiveRowMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+  },
+  hiveRowMetaText: {
+    fontSize: 11,
+    color: THEME.textMuted,
+    fontWeight: "500",
+  },
+  hiveRowRight: {
+    alignItems: "flex-end",
+    gap: 2,
+  },
+  hiveStatusBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+  },
+  hiveStatusBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
   },
   pressedRow: {
-    opacity: 0.9,
-    transform: [{ scale: 0.995 }],
+    opacity: 0.85,
   },
   hiveName: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: "800",
-    color: "#253242",
+    color: THEME.primary,
   },
   hiveStatus: {
-    marginTop: 4,
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  mapChip: {
-    backgroundColor: THEME.surfaceSoft,
-    borderWidth: 1,
-    borderColor: THEME.line,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  mapChipText: {
-    color: "#344054",
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "600",
+    color: THEME.textMuted,
+    marginTop: 2,
   },
   mapCard: {
     backgroundColor: "#FFFFFF",
