@@ -244,7 +244,10 @@ function MainTabsScreen({
         tabBarActiveTintColor: THEME.accent,
         tabBarInactiveTintColor: "#8A97A8",
         headerRight: () => (
-          <HeaderOverflowMenu onOpenSettings={openSettingsPage} onLogout={onLogout} />
+          <HeaderOverflowMenu
+            onOpenSettings={openSettingsPage}
+            onLogout={onLogout}
+          />
         ),
       }}
     >
@@ -278,7 +281,10 @@ function MainTabsScreen({
         }}
       >
         {() => (
-          <HivesStackScreen onOpenSettings={openSettingsPage} onLogout={onLogout} />
+          <HivesStackScreen
+            onOpenSettings={openSettingsPage}
+            onLogout={onLogout}
+          />
         )}
       </Tab.Screen>
       <Tab.Screen
@@ -296,7 +302,10 @@ function MainTabsScreen({
         }}
       >
         {() => (
-          <AlertsStackScreen onOpenSettings={openSettingsPage} onLogout={onLogout} />
+          <AlertsStackScreen
+            onOpenSettings={openSettingsPage}
+            onLogout={onLogout}
+          />
         )}
       </Tab.Screen>
       <Tab.Screen
@@ -369,7 +378,9 @@ function SettingsScreen({
         <View style={styles.settingsRow}>
           <View style={{ flex: 1 }}>
             <Text style={styles.settingsRowLabel}>Push Notifications</Text>
-            <Text style={styles.settingsRowHint}>Receive hive status updates and alerts</Text>
+            <Text style={styles.settingsRowHint}>
+              Receive hive status updates and alerts
+            </Text>
           </View>
           <Switch
             value={pushNotificationsEnabled}
@@ -382,7 +393,9 @@ function SettingsScreen({
         <View style={styles.settingsRow}>
           <View style={{ flex: 1 }}>
             <Text style={styles.settingsRowLabel}>Critical Alerts Only</Text>
-            <Text style={styles.settingsRowHint}>Reduce noise and notify only high-risk events</Text>
+            <Text style={styles.settingsRowHint}>
+              Reduce noise and notify only high-risk events
+            </Text>
           </View>
           <Switch
             value={criticalAlertsOnly}
@@ -398,7 +411,9 @@ function SettingsScreen({
         <View style={styles.settingsRow}>
           <View style={{ flex: 1 }}>
             <Text style={styles.settingsRowLabel}>Biometric Login</Text>
-            <Text style={styles.settingsRowHint}>Use fingerprint or face unlock on launch</Text>
+            <Text style={styles.settingsRowHint}>
+              Use fingerprint or face unlock on launch
+            </Text>
           </View>
           <Switch
             value={biometricLoginEnabled}
@@ -411,7 +426,9 @@ function SettingsScreen({
         <View style={styles.settingsRow}>
           <View style={{ flex: 1 }}>
             <Text style={styles.settingsRowLabel}>Satellite Map View</Text>
-            <Text style={styles.settingsRowHint}>Default to satellite style in the map tab</Text>
+            <Text style={styles.settingsRowHint}>
+              Default to satellite style in the map tab
+            </Text>
           </View>
           <Switch
             value={satelliteMapEnabled}
@@ -461,7 +478,10 @@ function SettingsScreen({
       </View>
 
       <View style={styles.settingsActionsRow}>
-        <Pressable style={styles.settingsSecondaryButton} onPress={closeSettings}>
+        <Pressable
+          style={styles.settingsSecondaryButton}
+          onPress={closeSettings}
+        >
           <Text style={styles.settingsSecondaryButtonText}>Back</Text>
         </Pressable>
         <Pressable style={styles.settingsPrimaryButton} onPress={closeSettings}>
