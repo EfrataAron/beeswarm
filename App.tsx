@@ -46,7 +46,7 @@ import {
 } from "./src/api/beeswarmApi";
 import HiveMap from "./src/components/HiveMap";
 import { ClassificationDebugPanel } from "./src/components/ClassificationDebugPanel";
-import AntDesign from '@expo/vector-icons/AntDesign';
+import { HeaderOverflowMenu } from "./src/components/HeaderOverflowMenu";
 
 
 const beeLogo = require("./assets/images/bee.png");
@@ -222,6 +222,7 @@ function MainTabsScreen({ onLogout }: { onLogout: () => void }) {
         },
         tabBarActiveTintColor: THEME.accent,
         tabBarInactiveTintColor: "#8A97A8",
+        headerRight: () => <HeaderOverflowMenu onLogout={onLogout} />,
       }}
     >
       <Tab.Screen
@@ -237,26 +238,10 @@ function MainTabsScreen({ onLogout }: { onLogout: () => void }) {
               color={color}
             />
           ),
-          headerRight: () => (
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              {/* Notification Icon */}
-              <Pressable style={styles.headerAction} onPress={() => {/* handle notifications */ }}>
-                <Ionicons name="notifications-outline" size={18} color={THEME.primary} />
-              </Pressable>
-
-              {/* 3 vertical dots on click the  Logout Button option appears*/}
-              <Pressable style={styles.headerAction} onPress={onLogout}>
-                <Ionicons name="log-out-outline" size={18} color={THEME.primary} />
-                <Text style={styles.headerActionText}>Logout</Text>
-              </Pressable>
-            </View>
-          ),
-
         }}
       />
       <Tab.Screen
         name="Hives"
-        component={HivesStackScreen}
         options={{
           headerShown: false,
           tabBarLabel: "Hives",
@@ -268,10 +253,11 @@ function MainTabsScreen({ onLogout }: { onLogout: () => void }) {
             />
           ),
         }}
-      />
+      >
+        {() => <HivesStackScreen onLogout={onLogout} />}
+      </Tab.Screen>
       <Tab.Screen
         name="Alerts"
-        component={AlertsStackScreen}
         options={{
           headerShown: false,
           tabBarLabel: "Alerts",
@@ -283,7 +269,9 @@ function MainTabsScreen({ onLogout }: { onLogout: () => void }) {
             />
           ),
         }}
-      />
+      >
+        {() => <AlertsStackScreen onLogout={onLogout} />}
+      </Tab.Screen>
       <Tab.Screen
         name="Map"
         component={MapScreen}
@@ -483,13 +471,14 @@ function SignupScreen({
   );
 }
 
-function HivesStackScreen() {
+function HivesStackScreen({ onLogout }: { onLogout: () => void }) {
   return (
     <HivesStack.Navigator
       screenOptions={{
         headerStyle: { backgroundColor: "#FFFFFF" },
         headerTintColor: THEME.primary,
         headerTitleStyle: { fontWeight: "800" },
+        headerRight: () => <HeaderOverflowMenu onLogout={onLogout} />,
       }}
     >
       <HivesStack.Screen
@@ -506,13 +495,14 @@ function HivesStackScreen() {
   );
 }
 
-function AlertsStackScreen() {
+function AlertsStackScreen({ onLogout }: { onLogout: () => void }) {
   return (
     <AlertsStack.Navigator
       screenOptions={{
         headerStyle: { backgroundColor: "#FFFFFF" },
         headerTintColor: THEME.primary,
         headerTitleStyle: { fontWeight: "800" },
+        headerRight: () => <HeaderOverflowMenu onLogout={onLogout} />,
       }}
     >
       <AlertsStack.Screen
@@ -2298,21 +2288,6 @@ const styles = StyleSheet.create({
   footerLink: {
     color: THEME.primary,
     fontWeight: "700",
-  },
-  headerAction: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: THEME.surfaceSoft,
-    borderRadius: 999,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    marginRight: 12,
-  },
-  headerActionText: {
-    color: THEME.primary,
-    fontWeight: "700",
-    fontSize: 12,
   },
   appPage: {
     paddingHorizontal: 16,
