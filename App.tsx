@@ -196,13 +196,25 @@ function MainTabsScreen({ onLogout }: { onLogout: () => void }) {
         headerTintColor: THEME.primary,
         headerTitleStyle: { fontWeight: "800" },
         tabBarShowLabel: true,
-        tabBarIconStyle: { marginBottom: -2 },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: "700" },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: "700",
+          includeFontPadding: false,
+        },
+        tabBarIconStyle: {
+          marginBottom: 2,
+        },
+        tabBarItemStyle: {
+          alignItems: "center",
+          justifyContent: "center",
+          flex: 1,
+        },
         tabBarStyle: {
           backgroundColor: "#FFFFFF",
           borderTopColor: THEME.line,
-          height: 62,
-          paddingBottom: 8,
+          borderTopWidth: 1,
+          height: Platform.OS === "ios" ? 85 : 70,
+          paddingBottom: Platform.OS === "ios" ? 20 : 10,
           paddingTop: 8,
         },
         tabBarActiveTintColor: THEME.accent,
@@ -280,7 +292,7 @@ function MainTabsScreen({ onLogout }: { onLogout: () => void }) {
         component={ClassificationScreen}
         options={{
           title: "Classification API",
-          tabBarLabel: "Classification",
+          tabBarLabel: "ML Model",
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
               name={focused ? "flask" : "flask-outline"}
@@ -299,30 +311,42 @@ function WelcomeScreen({
 }: NativeStackScreenProps<RootStackParamList, "Welcome">) {
   return (
     <View style={styles.welcomeShell}>
-      <View style={styles.welcomeCard}>
-        <View style={styles.logoFrame}>
-          <Image
-            source={beeLogo}
-            style={styles.welcomeLogo}
-            resizeMode="contain"
-          />
-        </View>
-
-        <Text style={styles.tagline}>Smart Beekeeping, Healthier Hives.</Text>
-
-        <Pressable
-          style={({ pressed }) => [
-            styles.primaryButton,
-            pressed && styles.pressed,
-          ]}
-          onPress={() => navigation.navigate("Login")}
-        >
-          <Text style={styles.primaryButtonText}>Continue</Text>
-        </Pressable>
-      </View>
-
+      {/* Background orbs */}
       <View style={styles.backgroundOrbOne} />
       <View style={styles.backgroundOrbTwo} />
+      <View style={styles.backgroundOrbThree} />
+
+      {/* Logo area */}
+      <View style={styles.welcomeLogoWrap}>
+        <View style={styles.welcomeLogoRing}>
+          <Image source={beeLogo} style={styles.welcomeLogo} resizeMode="contain" />
+        </View>
+        <Text style={styles.welcomeAppName}>BSADS</Text>
+        <Text style={styles.welcomeAppSub}>Bee Swarm Abscondment Detection</Text>
+      </View>
+
+      {/* Bottom card */}
+      <View style={styles.welcomeBottomCard}>
+        <Text style={styles.welcomeHeadline}>Smart Beekeeping,{"\n"}Healthier Hives.</Text>
+        <Text style={styles.welcomeSubtitle}>
+          Monitor your hives in real-time. Get instant alerts before swarms happen.
+        </Text>
+
+        <Pressable
+          style={({ pressed }) => [styles.welcomePrimaryBtn, pressed && styles.pressed]}
+          onPress={() => navigation.navigate("Login")}
+        >
+          <Ionicons name="log-in-outline" size={18} color={THEME.primary} />
+          <Text style={styles.welcomePrimaryBtnText}>Get Started</Text>
+        </Pressable>
+
+        <Pressable
+          style={({ pressed }) => [styles.welcomeSecondaryBtn, pressed && styles.pressed]}
+          onPress={() => navigation.navigate("Signup")}
+        >
+          <Text style={styles.welcomeSecondaryBtnText}>Create an Account</Text>
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -334,24 +358,13 @@ function LoginScreen({
   onAuthSuccess: () => void;
 }) {
   return (
-    <ScrollView
-      contentContainerStyle={styles.formPage}
-      keyboardShouldPersistTaps="handled"
-    >
-      {/* <Pressable
-        onPress={() => navigation.navigate("Welcome")}
-        style={styles.backChip}
-      >
-        <Text style={styles.backChipText}>Back</Text>
-      </Pressable> */}
+    <View style={styles.authShell}>
+      <View style={styles.backgroundOrbOne} />
+      <View style={styles.backgroundOrbTwo} />
 
       <View style={styles.formCard}>
         <View style={styles.brandMark}>
-          <Image
-            source={beeLogo}
-            style={styles.brandLogo}
-            resizeMode="contain"
-          />
+          <Image source={beeLogo} style={styles.brandLogo} resizeMode="contain" />
         </View>
         <Text style={styles.brandText}>BSADS</Text>
         <Text style={styles.heading}>Welcome Back</Text>
@@ -370,11 +383,7 @@ function LoginScreen({
         />
 
         <Pressable
-          style={({ pressed }) => [
-            styles.primaryButton,
-            styles.primaryButtonWide,
-            pressed && styles.pressed,
-          ]}
+          style={({ pressed }) => [styles.primaryButton, styles.primaryButtonWide, pressed && styles.pressed]}
           onPress={onAuthSuccess}
         >
           <Text style={styles.primaryButtonText}>Login</Text>
@@ -390,7 +399,7 @@ function LoginScreen({
           <Text style={styles.linkAction}>Create an Account</Text>
         </Pressable>
       </View>
-    </ScrollView>
+    </View>
   );
 }
 
@@ -763,17 +772,13 @@ function DashboardScreen({
       const data = await fetchDashboard();
       setDashboard(data);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Could not load dashboard data",
-      );
+      setError(err instanceof Error ? err.message : "Could not load dashboard data");
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => {
-    void loadDashboard();
-  }, [loadDashboard]);
+  useEffect(() => { void loadDashboard(); }, [loadDashboard]);
 
   if (loading) {
     return (
@@ -788,123 +793,218 @@ function DashboardScreen({
     return (
       <View style={styles.centerState}>
         <Text style={styles.errorTitle}>Failed to load dashboard</Text>
-        <Text style={styles.errorBody}>
-          {error ?? "No data returned from API"}
-        </Text>
-        <Pressable
-          style={styles.primaryButtonSmall}
-          onPress={() => void loadDashboard()}
-        >
+        <Text style={styles.errorBody}>{error ?? "No data returned from API"}</Text>
+        <Pressable style={styles.primaryButtonSmall} onPress={() => void loadDashboard()}>
           <Text style={styles.primaryButtonText}>Retry</Text>
         </Pressable>
       </View>
     );
   }
 
+  const total = dashboard.totalHives || 1;
+  const donutSegments: { pct: number; color: string; label: string; count: number }[] = [
+    { pct: dashboard.statusCounts.Healthy / total, color: "#22C55E", label: "Healthy", count: dashboard.statusCounts.Healthy },
+    { pct: dashboard.statusCounts["Pre-swarm"] / total, color: THEME.accent, label: "Pre-swarm", count: dashboard.statusCounts["Pre-swarm"] },
+    { pct: dashboard.statusCounts.Swarm / total, color: "#EF4444", label: "Swarm", count: dashboard.statusCounts.Swarm },
+    { pct: dashboard.statusCounts.Abscondment / total, color: "#94A3B8", label: "Abscondment", count: dashboard.statusCounts.Abscondment },
+  ];
+
+  const alertResponseRate = dashboard.pendingAlerts + dashboard.acknowledgedAlerts > 0
+    ? Math.round((dashboard.acknowledgedAlerts / (dashboard.pendingAlerts + dashboard.acknowledgedAlerts)) * 100)
+    : 0;
+
+  const trendMax = Math.max(...dashboard.preSwarmTrend.map((d) => d.count), 1);
+
   return (
     <ScrollView contentContainerStyle={styles.appPage}>
+
+      {/* ── Overview row ── */}
+      <View style={styles.overviewCardRow}>
+        <View style={[styles.overviewTile, { backgroundColor: THEME.primary }]}>
+          <Ionicons name="grid-outline" size={20} color={THEME.accent} />
+          <Text style={styles.overviewTileValue}>{dashboard.totalHives}</Text>
+          <Text style={styles.overviewTileLabel}>Total Hives</Text>
+        </View>
+        <View style={[styles.overviewTile, { backgroundColor: "#22C55E" }]}>
+          <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
+          <Text style={styles.overviewTileValue}>{dashboard.activeHives}</Text>
+          <Text style={styles.overviewTileLabel}>Active</Text>
+        </View>
+        <View style={[styles.overviewTile, { backgroundColor: "#EF4444" }]}>
+          <Ionicons name="alert-circle-outline" size={20} color="#fff" />
+          <Text style={styles.overviewTileValue}>{dashboard.pendingAlerts}</Text>
+          <Text style={styles.overviewTileLabel}>Pending Alerts</Text>
+        </View>
+        <View style={[styles.overviewTile, { backgroundColor: THEME.accent }]}>
+          <Ionicons name="warning-outline" size={20} color={THEME.primary} />
+          <Text style={[styles.overviewTileValue, { color: THEME.primary }]}>{dashboard.statusCounts["Pre-swarm"]}</Text>
+          <Text style={[styles.overviewTileLabel, { color: THEME.primary }]}>Pre-swarm</Text>
+        </View>
+      </View>
+
+      {/* ── Hive State Donut ── */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Hive State Breakdown</Text>
+        <View style={styles.donutRow}>
+          <DonutChart segments={donutSegments} total={total} />
+          <View style={styles.donutLegend}>
+            {donutSegments.map((seg) => (
+              <View key={seg.label} style={styles.donutLegendItem}>
+                <View style={[styles.donutLegendDot, { backgroundColor: seg.color }]} />
+                <Text style={styles.donutLegendLabel}>{seg.label}</Text>
+                <Text style={styles.donutLegendCount}>{seg.count}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      </View>
+
+      {/* ── Pre-swarm Trend ── */}
       <View style={styles.card}>
         <View style={styles.rowBetween}>
-          <Text style={styles.cardTitle}>Hive Overview</Text>
-          <View style={styles.healthPill}>
-            <Text style={styles.healthPillText}>Live API</Text>
-          </View>
+          <Text style={styles.cardTitle}>Pre-swarm Trend</Text>
+          <Text style={styles.cardSubtitle}>Last 7 days</Text>
         </View>
-
-        <View style={styles.overviewRow}>
-          <View>
-            <Text style={styles.metricBigGreen}>{dashboard.totalHives}</Text>
-            <Text style={styles.metricCaption}>Total Hives</Text>
-          </View>
-          <View>
-            <Text style={styles.metricBigOrange}>{dashboard.activeHives}</Text>
-            <Text style={styles.metricCaption}>Active Hives</Text>
-          </View>
+        <View style={styles.barChartWrap}>
+          {dashboard.preSwarmTrend.map((d) => (
+            <View key={d.day} style={styles.barCol}>
+              <Text style={styles.barValue}>{d.count}</Text>
+              <View style={styles.barTrack}>
+                <View style={[styles.barFill, { height: `${Math.round((d.count / trendMax) * 100)}%` as any }]} />
+              </View>
+              <Text style={styles.barLabel}>{d.day}</Text>
+            </View>
+          ))}
         </View>
       </View>
 
-      <View style={styles.alertBanner}>
-        <View style={styles.alertBannerIcon}>
-          <Text style={styles.alertBannerIconText}>!</Text>
+      {/* ── Alert Intelligence ── */}
+      <Text style={styles.sectionTitle}>Alert Intelligence</Text>
+      <View style={styles.gridTwo}>
+        <View style={styles.infoCard}>
+          <Ionicons name="flame-outline" size={22} color="#EF4444" />
+          <Text style={styles.infoCardValue}>{dashboard.mostAtRiskHive.hiveId}</Text>
+          <Text style={styles.infoCardLabel}>Most At-Risk Hive</Text>
+          <Text style={styles.infoCardSub}>{dashboard.mostAtRiskHive.alertCount} alerts triggered</Text>
         </View>
-        <View style={styles.alertBannerTextWrap}>
-          <Text style={styles.alertBannerTitle}>Pre-swarm risk</Text>
-          <Text style={styles.alertBannerSubtitle}>
-            {dashboard.statusCounts["Pre-swarm"]} hives need attention right
-            now.
+        <View style={styles.infoCard}>
+          <Ionicons name="time-outline" size={22} color={THEME.accent} />
+          <Text style={styles.infoCardValue}>{dashboard.avgAcknowledgeTimeMinutes}m</Text>
+          <Text style={styles.infoCardLabel}>Avg. Acknowledge Time</Text>
+          <Text style={styles.infoCardSub}>Time to respond</Text>
+        </View>
+      </View>
+
+      {/* ── Alert Response Rate ── */}
+      <View style={styles.card}>
+        <View style={styles.rowBetween}>
+          <Text style={styles.cardTitle}>Alert Response Rate</Text>
+          <Text style={[styles.cardSubtitle, { color: alertResponseRate >= 70 ? "#22C55E" : "#EF4444" }]}>
+            {alertResponseRate}%
           </Text>
         </View>
-        <Pressable
-          style={styles.alertBannerButton}
-          onPress={() => navigation.navigate("Hives", { screen: "HiveList" })}
-        >
-          <Text style={styles.alertBannerButtonText}>Review</Text>
-        </Pressable>
+        <View style={styles.progressTrack}>
+          <View style={[styles.progressFill, {
+            width: `${alertResponseRate}%` as any,
+            backgroundColor: alertResponseRate >= 70 ? "#22C55E" : "#EF4444"
+          }]} />
+        </View>
+        <View style={styles.rowBetween}>
+          <Text style={styles.progressLabel}>
+            <Text style={{ color: "#22C55E" }}>● </Text>Acknowledged: {dashboard.acknowledgedAlerts}
+          </Text>
+          <Text style={styles.progressLabel}>
+            <Text style={{ color: "#EF4444" }}>● </Text>Pending: {dashboard.pendingAlerts}
+          </Text>
+        </View>
       </View>
 
-      <Text style={styles.sectionTitle}>Alerts</Text>
+      {/* ── Hive Status Cards ── */}
+      {/* <Text style={styles.sectionTitle}>Status Counts</Text>
       <View style={styles.gridTwo}>
-        <StatCard
-          label="Normal"
-          value={dashboard.statusCounts.Healthy}
-          color={THEME.accent}
-          icon="N"
-        />
-        <StatCard
-          label="Pre-swarm"
-          value={dashboard.statusCounts["Pre-swarm"]}
-          color={THEME.primary}
-          icon="P"
-        />
-        <StatCard
-          label="Swarm"
-          value={dashboard.statusCounts.Swarm}
-          color={THEME.primary}
-          icon="S"
-        />
-        <StatCard
-          label="Abscondment"
-          value={dashboard.statusCounts.Abscondment}
-          color={THEME.accent}
-          icon="A"
-        />
-      </View>
+        <StatCard label="Normal" value={dashboard.statusCounts.Healthy} color={THEME.accent} icon="checkmark-circle-outline" />
+        <StatCard label="Pre-swarm" value={dashboard.statusCounts["Pre-swarm"]} color={THEME.primary} icon="warning-outline" />
+        <StatCard label="Swarm" value={dashboard.statusCounts.Swarm} color={THEME.primary} icon="alert-circle-outline" />
+        <StatCard label="Abscondment" value={dashboard.statusCounts.Abscondment} color={THEME.accent} icon="exit-outline" />
+      </View> */}
 
+      {/* ── Key Metrics ── */}
       <Text style={styles.sectionTitle}>Key Metrics</Text>
       <View style={styles.gridTwo}>
-        <MetricCard
-          title="Average Temperature"
-          value={dashboard.keyMetrics.temperatureC.toFixed(1)}
-          unit=" C"
-          subtitle="Last 24 hours"
-        />
-        <MetricCard
-          title="Average Humidity"
-          value={dashboard.keyMetrics.humidityPercent.toFixed(0)}
-          unit="%"
-          subtitle="Last 24 hours"
-        />
-        <MetricCard
-          title="Estimated Population"
-          value={dashboard.keyMetrics.populationKBees.toFixed(0)}
-          unit="k bees"
-          subtitle="Across all hives"
-        />
+        <MetricCard title="Avg Temperature" value={dashboard.keyMetrics.temperatureC.toFixed(1)} unit="°C" subtitle="Last 24 hours" />
+        <MetricCard title="Avg Humidity" value={dashboard.keyMetrics.humidityPercent.toFixed(0)} unit="%" subtitle="Last 24 hours" />
       </View>
 
-      <View style={styles.quickActionsRow}>
-        <Pressable
-          style={styles.quickActionButton}
-          onPress={() => navigation.navigate("Hives", { screen: "HiveList" })}
-        >
-          <Text style={styles.quickActionText}>All Hives</Text>
-        </Pressable>
-        <Pressable
-          style={styles.quickActionButton}
-          onPress={() => navigation.navigate("Map")}
-        >
-          <Text style={styles.quickActionText}>Map</Text>
-        </Pressable>
+      {/* ── Audio Ingestion ── */}
+      <Text style={styles.sectionTitle}>Audio Ingestion</Text>
+      <View style={styles.gridTwo}>
+        <View style={styles.infoCard}>
+          <Ionicons name="mic-outline" size={22} color={THEME.primary} />
+          <Text style={styles.infoCardValue}>{dashboard.recordingsToday}</Text>
+          <Text style={styles.infoCardLabel}>Recordings Today</Text>
+          <Text style={styles.infoCardSub}>Across all hives</Text>
+        </View>
+        <View style={[styles.infoCard, dashboard.silentHives.length > 0 && styles.infoCardWarn]}>
+          <Ionicons name="volume-mute-outline" size={22} color={dashboard.silentHives.length > 0 ? "#EF4444" : "#22C55E"} />
+          <Text style={[styles.infoCardValue, { color: dashboard.silentHives.length > 0 ? "#EF4444" : "#22C55E" }]}>
+            {dashboard.silentHives.length}
+          </Text>
+          <Text style={styles.infoCardLabel}>Silent Hives</Text>
+          <Text style={styles.infoCardSub}>No audio in 8h+</Text>
+        </View>
+      </View>
+      {dashboard.silentHives.length > 0 && (
+        <View style={styles.silentHivesList}>
+          {dashboard.silentHives.map((h) => (
+            <View key={h.hiveId} style={styles.silentHiveRow}>
+              <Ionicons name="radio-button-off-outline" size={14} color="#EF4444" />
+              <Text style={styles.silentHiveText}>{h.hiveId}</Text>
+              <Text style={styles.silentHiveTime}>Last seen {h.lastSeenHoursAgo}h ago</Text>
+            </View>
+          ))}
+        </View>
+      )}
+
+      {/* ── Environmental Correlation ── */}
+      {dashboard.highTempPreSwarmHives.length > 0 && (
+        <>
+          <Text style={styles.sectionTitle}>⚠ High Temp + Pre-swarm</Text>
+          <View style={styles.card}>
+            <Text style={styles.cardSubtitle}>Hives showing elevated temperature alongside pre-swarm state</Text>
+            {dashboard.highTempPreSwarmHives.map((h) => (
+              <View key={h.hiveId} style={styles.corrRow}>
+                <View style={styles.corrHiveChip}>
+                  <Text style={styles.corrHiveChipText}>{h.hiveId}</Text>
+                </View>
+                <View style={styles.corrTempBar}>
+                  <View style={[styles.corrTempFill, { width: `${Math.min(((h.temperatureC - 30) / 15) * 100, 100)}%` as any }]} />
+                </View>
+                <Text style={styles.corrTempValue}>{h.temperatureC}°C</Text>
+              </View>
+            ))}
+          </View>
+        </>
+      )}
+
+      {/* ── ML & Advisory ── */}
+      <Text style={styles.sectionTitle}>System Health</Text>
+      <View style={styles.gridTwo}>
+        <View style={[styles.infoCard, dashboard.lowConfidenceInferences > 0 && styles.infoCardWarn]}>
+          <Ionicons name="help-circle-outline" size={22} color={dashboard.lowConfidenceInferences > 0 ? "#EF4444" : "#22C55E"} />
+          <Text style={[styles.infoCardValue, { color: dashboard.lowConfidenceInferences > 0 ? "#EF4444" : "#22C55E" }]}>
+            {dashboard.lowConfidenceInferences}
+          </Text>
+          <Text style={styles.infoCardLabel}>Low-Confidence Inferences</Text>
+          <Text style={styles.infoCardSub}>Score &lt; 0.6</Text>
+        </View>
+        <View style={[styles.infoCard, dashboard.pendingAdvisoryActions > 0 && styles.infoCardWarn]}>
+          <Ionicons name="clipboard-outline" size={22} color={dashboard.pendingAdvisoryActions > 0 ? THEME.accent : "#22C55E"} />
+          <Text style={[styles.infoCardValue, { color: dashboard.pendingAdvisoryActions > 0 ? THEME.accent : "#22C55E" }]}>
+            {dashboard.pendingAdvisoryActions}
+          </Text>
+          <Text style={styles.infoCardLabel}>Pending Advisory Actions</Text>
+          <Text style={styles.infoCardSub}>Checklist items open</Text>
+        </View>
       </View>
     </ScrollView>
   );
@@ -928,6 +1028,70 @@ function ClassificationScreen() {
   );
 }
 
+// Pure SVG-free donut chart using View arcs
+function DonutChart({
+  segments,
+  total,
+}: {
+  segments: { pct: number; color: string; label: string; count: number }[];
+  total: number;
+}) {
+  const SIZE = 120;
+  const STROKE = 18;
+  const R = (SIZE - STROKE) / 2;
+  const CIRC = 2 * Math.PI * R;
+
+  // Build cumulative offsets for stroke-dashoffset simulation using Views
+  // We'll use a simple segmented ring via absolute-positioned arcs using border tricks
+  // Since we can't use SVG easily cross-platform, we use a stacked ring approach
+  let cumulativePct = 0;
+  const arcs = segments.map((seg) => {
+    const start = cumulativePct;
+    cumulativePct += seg.pct;
+    return { ...seg, start, end: cumulativePct };
+  });
+
+  return (
+    <View style={{ width: SIZE, height: SIZE, position: "relative", alignItems: "center", justifyContent: "center" }}>
+      {/* Background ring */}
+      <View style={{
+        width: SIZE, height: SIZE, borderRadius: SIZE / 2,
+        borderWidth: STROKE, borderColor: "#F1F5F9", position: "absolute",
+      }} />
+      {/* Colored segments via conic-gradient simulation: stacked rings with rotation */}
+      {arcs.map((arc, i) => {
+        const deg = arc.pct * 360;
+        const rotateDeg = arc.start * 360;
+        if (deg < 1) return null;
+        return (
+          <View key={i} style={{
+            width: SIZE, height: SIZE, borderRadius: SIZE / 2,
+            position: "absolute",
+            overflow: "hidden",
+          }}>
+            <View style={{
+              width: SIZE, height: SIZE, borderRadius: SIZE / 2,
+              borderWidth: STROKE,
+              borderColor: "transparent",
+              borderTopColor: arc.color,
+              borderRightColor: deg > 90 ? arc.color : "transparent",
+              borderBottomColor: deg > 180 ? arc.color : "transparent",
+              borderLeftColor: deg > 270 ? arc.color : "transparent",
+              transform: [{ rotate: `${rotateDeg - 90}deg` }],
+              position: "absolute",
+            }} />
+          </View>
+        );
+      })}
+      {/* Center label */}
+      <View style={{ alignItems: "center" }}>
+        <Text style={{ fontSize: 22, fontWeight: "800", color: THEME.primary }}>{total}</Text>
+        <Text style={{ fontSize: 10, color: THEME.textMuted, fontWeight: "600" }}>Hives</Text>
+      </View>
+    </View>
+  );
+}
+
 function StatCard({
   label,
   value,
@@ -937,13 +1101,14 @@ function StatCard({
   label: string;
   value: number;
   color: string;
-  icon: string;
+  icon: keyof typeof Ionicons.glyphMap;
 }) {
   return (
     <View style={styles.statCard}>
-      <Text style={styles.statLabel}>
-        {icon} {label}
-      </Text>
+      <View style={styles.statLabelRow}>
+        <Ionicons name={icon} size={14} color={THEME.accent} />
+        <Text style={styles.statLabel}>{label}</Text>
+      </View>
       <Text style={styles.statValue}>{value}</Text>
     </View>
   );
@@ -1543,50 +1708,116 @@ function LegendItem({ color, text }: { color: string; text: string }) {
 const styles = StyleSheet.create({
   welcomeShell: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-    backgroundColor: THEME.page,
-  },
-  welcomeCard: {
-    width: "100%",
-    maxWidth: 360,
-    minHeight: 420,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    paddingVertical: 26,
-    paddingHorizontal: 22,
+    backgroundColor: THEME.primary,
     alignItems: "center",
     justifyContent: "space-between",
-    shadowColor: "#000",
-    shadowOpacity: 0.16,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 5,
-    borderWidth: 1,
-    borderColor: THEME.line,
+    paddingTop: 80,
+    paddingBottom: 40,
+    paddingHorizontal: 24,
+    overflow: "hidden",
   },
-  logoFrame: {
-    marginTop: 8,
+  welcomeLogoWrap: {
+    alignItems: "center",
+    flex: 1,
+    justifyContent: "center",
+  },
+  welcomeLogoRing: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: "rgba(255,178,104,0.15)",
+    borderWidth: 2,
+    borderColor: "rgba(255,178,104,0.4)",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 10,
+    marginBottom: 20,
   },
   welcomeLogo: {
-    width: 168,
-    height: 154,
+    width: 90,
+    height: 90,
+    tintColor: THEME.accent,
   },
-  tagline: {
-    color: THEME.primary,
-    fontSize: 15,
-    fontWeight: "700",
-    letterSpacing: 0.2,
+  welcomeAppName: {
+    fontSize: 32,
+    fontWeight: "800",
+    color: THEME.accent,
+    letterSpacing: 4,
+  },
+  welcomeAppSub: {
+    fontSize: 12,
+    color: "rgba(255,178,104,0.7)",
+    fontWeight: "600",
+    letterSpacing: 0.5,
+    marginTop: 4,
     textAlign: "center",
-    paddingHorizontal: 12,
+  },
+  welcomeBottomCard: {
+    width: "100%",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    padding: 28,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: -4 },
+    elevation: 8,
+  },
+  welcomeHeadline: {
+    fontSize: 26,
+    fontWeight: "800",
+    color: THEME.primary,
+    textAlign: "center",
+    lineHeight: 34,
+    marginBottom: 10,
+  },
+  welcomeSubtitle: {
+    fontSize: 13,
+    color: THEME.textMuted,
+    textAlign: "center",
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  welcomePrimaryBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: THEME.accent,
+    borderRadius: 12,
+    paddingVertical: 15,
+    width: "100%",
+    marginBottom: 12,
+  },
+  welcomePrimaryBtnText: {
+    color: THEME.primary,
+    fontWeight: "800",
+    fontSize: 16,
+  },
+  welcomeSecondaryBtn: {
+    borderWidth: 2,
+    borderColor: THEME.primary,
+    borderRadius: 12,
+    paddingVertical: 13,
+    width: "100%",
+    alignItems: "center",
+  },
+  welcomeSecondaryBtnText: {
+    color: THEME.primary,
+    fontWeight: "700",
+    fontSize: 15,
+  },
+  authShell: {
+    flex: 1,
+    backgroundColor: THEME.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+    overflow: "hidden",
   },
   primaryButton: {
-    backgroundColor: THEME.primary,
-    borderRadius: 8,
+    backgroundColor: THEME.accent,
+    borderRadius: 10,
     paddingVertical: 14,
     alignItems: "center",
     justifyContent: "center",
@@ -1594,8 +1825,8 @@ const styles = StyleSheet.create({
   },
   primaryButtonSmall: {
     marginTop: 12,
-    backgroundColor: THEME.primary,
-    borderRadius: 8,
+    backgroundColor: THEME.accent,
+    borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 16,
     alignItems: "center",
@@ -1606,8 +1837,8 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   primaryButtonText: {
-    color: "#FFFFFF",
-    fontWeight: "700",
+    color: THEME.primary,
+    fontWeight: "800",
     fontSize: 15,
   },
   pressed: {
@@ -1616,21 +1847,30 @@ const styles = StyleSheet.create({
   },
   backgroundOrbOne: {
     position: "absolute",
-    top: 40,
+    top: -40,
     left: -60,
-    width: 180,
-    height: 180,
-    borderRadius: 180,
-    backgroundColor: "rgba(0, 30, 55, 0.08)",
+    width: 220,
+    height: 220,
+    borderRadius: 220,
+    backgroundColor: "rgba(255, 178, 104, 0.12)",
   },
   backgroundOrbTwo: {
     position: "absolute",
-    bottom: 22,
+    bottom: 80,
     right: -56,
-    width: 160,
-    height: 160,
-    borderRadius: 160,
-    backgroundColor: "rgba(255, 178, 104, 0.16)",
+    width: 200,
+    height: 200,
+    borderRadius: 200,
+    backgroundColor: "rgba(255, 178, 104, 0.08)",
+  },
+  backgroundOrbThree: {
+    position: "absolute",
+    top: "40%",
+    left: "30%",
+    width: 120,
+    height: 120,
+    borderRadius: 120,
+    backgroundColor: "rgba(255, 178, 104, 0.06)",
   },
   formPage: {
     flexGrow: 1,
@@ -1655,28 +1895,28 @@ const styles = StyleSheet.create({
   },
   formCard: {
     width: "100%",
-    maxWidth: 360,
+    maxWidth: 380,
     backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    paddingHorizontal: 20,
-    paddingVertical: 24,
-    borderWidth: 1,
-    borderColor: THEME.line,
+    borderRadius: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 28,
     shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 3,
+    shadowOpacity: 0.25,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 8,
   },
   brandMark: {
     alignSelf: "center",
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: THEME.accent,
+    width: 52,
+    height: 52,
+    borderRadius: 14,
+    backgroundColor: THEME.primary,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 6,
+    marginBottom: 8,
+    borderWidth: 2,
+    borderColor: THEME.accent,
   },
   brandLogo: {
     width: 28,
@@ -1806,6 +2046,210 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingHorizontal: 2,
   },
+  // ── Dashboard new styles ──
+  overviewCardRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 14,
+  },
+  overviewTile: {
+    flex: 1,
+    borderRadius: 12,
+    padding: 10,
+    alignItems: "center",
+    gap: 4,
+  },
+  overviewTileValue: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#FFFFFF",
+  },
+  overviewTileLabel: {
+    fontSize: 9,
+    fontWeight: "700",
+    color: "rgba(255,255,255,0.8)",
+    textAlign: "center",
+  },
+  donutRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 20,
+    paddingTop: 8,
+  },
+  donutLegend: {
+    flex: 1,
+    gap: 8,
+  },
+  donutLegendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  donutLegendDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  donutLegendLabel: {
+    flex: 1,
+    fontSize: 12,
+    color: THEME.text,
+    fontWeight: "600",
+  },
+  donutLegendCount: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: THEME.primary,
+  },
+  cardSubtitle: {
+    fontSize: 11,
+    color: THEME.textMuted,
+    fontWeight: "600",
+  },
+  barChartWrap: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    height: 90,
+    gap: 6,
+    marginTop: 12,
+  },
+  barCol: {
+    flex: 1,
+    alignItems: "center",
+    height: "100%",
+    justifyContent: "flex-end",
+  },
+  barValue: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: THEME.primary,
+    marginBottom: 2,
+  },
+  barTrack: {
+    width: "100%",
+    height: 60,
+    backgroundColor: "#F1F5F9",
+    borderRadius: 6,
+    justifyContent: "flex-end",
+    overflow: "hidden",
+  },
+  barFill: {
+    width: "100%",
+    backgroundColor: THEME.accent,
+    borderRadius: 6,
+  },
+  barLabel: {
+    fontSize: 9,
+    color: THEME.textMuted,
+    fontWeight: "600",
+    marginTop: 4,
+  },
+  infoCard: {
+    width: "48.5%",
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: THEME.line,
+    borderRadius: 12,
+    padding: 12,
+    gap: 4,
+  },
+  infoCardWarn: {
+    borderColor: "#FCA5A5",
+    backgroundColor: "#FFF5F5",
+  },
+  infoCardValue: {
+    fontSize: 26,
+    fontWeight: "800",
+    color: THEME.primary,
+  },
+  infoCardLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: THEME.text,
+  },
+  infoCardSub: {
+    fontSize: 10,
+    color: THEME.textMuted,
+  },
+  progressTrack: {
+    height: 10,
+    backgroundColor: "#F1F5F9",
+    borderRadius: 99,
+    overflow: "hidden",
+    marginVertical: 10,
+  },
+  progressFill: {
+    height: "100%",
+    borderRadius: 99,
+  },
+  progressLabel: {
+    fontSize: 11,
+    color: THEME.textMuted,
+    fontWeight: "600",
+  },
+  silentHivesList: {
+    backgroundColor: "#FFF5F5",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#FCA5A5",
+    padding: 10,
+    gap: 8,
+    marginBottom: 14,
+  },
+  silentHiveRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  silentHiveText: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: "700",
+    color: THEME.text,
+  },
+  silentHiveTime: {
+    fontSize: 11,
+    color: "#EF4444",
+    fontWeight: "600",
+  },
+  corrRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 10,
+  },
+  corrHiveChip: {
+    backgroundColor: THEME.surfaceSoft,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    minWidth: 72,
+  },
+  corrHiveChipText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: THEME.primary,
+  },
+  corrTempBar: {
+    flex: 1,
+    height: 8,
+    backgroundColor: "#F1F5F9",
+    borderRadius: 99,
+    overflow: "hidden",
+  },
+  corrTempFill: {
+    height: "100%",
+    backgroundColor: "#F97316",
+    borderRadius: 99,
+  },
+  corrTempValue: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: THEME.primary,
+    minWidth: 44,
+    textAlign: "right",
+  },
+  // ── end dashboard new styles ──
   metricBigGreen: {
     fontSize: 32,
     fontWeight: "800",
@@ -1814,7 +2258,9 @@ const styles = StyleSheet.create({
   metricBigOrange: {
     fontSize: 32,
     fontWeight: "800",
-    color: THEME.primary,
+    // color: THEME.primary,
+    color: THEME.accent,
+
   },
   metricCaption: {
     color: "#8592A3",
@@ -1841,10 +2287,15 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
   },
+  statLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginBottom: 6,
+  },
   statLabel: {
     fontSize: 12,
     fontWeight: "700",
-    marginBottom: 6,
     color: THEME.accent,
   },
   statValue: {
@@ -2358,14 +2809,6 @@ const styles = StyleSheet.create({
     color: "#344054",
     fontWeight: "800",
     fontSize: 12,
-  },
-  infoCard: {
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: THEME.line,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 14,
   },
   infoRow: {
     flexDirection: "row",

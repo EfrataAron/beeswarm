@@ -17,6 +17,22 @@ export type DashboardData = {
     populationKBees: number;
     nectarFlowKgPerDay: number;
   };
+  // Alerts section
+  mostAtRiskHive: { hiveId: string; alertCount: number };
+  avgAcknowledgeTimeMinutes: number;
+  pendingAlerts: number;
+  acknowledgedAlerts: number;
+  // Pre-swarm trend (last 7 days)
+  preSwarmTrend: Array<{ day: string; count: number }>;
+  // Audio ingestion
+  recordingsToday: number;
+  silentHives: Array<{ hiveId: string; lastSeenHoursAgo: number }>;
+  // Environmental correlation
+  highTempPreSwarmHives: Array<{ hiveId: string; temperatureC: number }>;
+  // Advisory
+  pendingAdvisoryActions: number;
+  // ML confidence
+  lowConfidenceInferences: number;
 };
 
 export type HiveDetailData = {
@@ -175,6 +191,30 @@ function buildLocalDashboard(): DashboardData {
       populationKBees: 120,
       nectarFlowKgPerDay: 1.2,
     },
+    mostAtRiskHive: { hiveId: "Hive A04", alertCount: 7 },
+    avgAcknowledgeTimeMinutes: 42,
+    pendingAlerts: 5,
+    acknowledgedAlerts: 11,
+    preSwarmTrend: [
+      { day: "Mon", count: 1 },
+      { day: "Tue", count: 1 },
+      { day: "Wed", count: 2 },
+      { day: "Thu", count: 2 },
+      { day: "Fri", count: 3 },
+      { day: "Sat", count: 2 },
+      { day: "Sun", count: 2 },
+    ],
+    recordingsToday: 34,
+    silentHives: [
+      { hiveId: "Hive A05", lastSeenHoursAgo: 14 },
+      { hiveId: "Hive A11", lastSeenHoursAgo: 9 },
+    ],
+    highTempPreSwarmHives: [
+      { hiveId: "Hive A02", temperatureC: 37.2 },
+      { hiveId: "Hive A08", temperatureC: 36.8 },
+    ],
+    pendingAdvisoryActions: 8,
+    lowConfidenceInferences: 3,
   };
 }
 
@@ -220,6 +260,16 @@ export async function fetchDashboard(): Promise<DashboardData> {
           0
       ),
     },
+    mostAtRiskHive: raw.mostAtRiskHive ?? raw.most_at_risk_hive ?? { hiveId: "N/A", alertCount: 0 },
+    avgAcknowledgeTimeMinutes: Number(raw.avgAcknowledgeTimeMinutes ?? raw.avg_ack_time_minutes ?? 0),
+    pendingAlerts: Number(raw.pendingAlerts ?? raw.pending_alerts ?? 0),
+    acknowledgedAlerts: Number(raw.acknowledgedAlerts ?? raw.acknowledged_alerts ?? 0),
+    preSwarmTrend: Array.isArray(raw.preSwarmTrend ?? raw.pre_swarm_trend) ? (raw.preSwarmTrend ?? raw.pre_swarm_trend) : [],
+    recordingsToday: Number(raw.recordingsToday ?? raw.recordings_today ?? 0),
+    silentHives: Array.isArray(raw.silentHives ?? raw.silent_hives) ? (raw.silentHives ?? raw.silent_hives) : [],
+    highTempPreSwarmHives: Array.isArray(raw.highTempPreSwarmHives ?? raw.high_temp_pre_swarm_hives) ? (raw.highTempPreSwarmHives ?? raw.high_temp_pre_swarm_hives) : [],
+    pendingAdvisoryActions: Number(raw.pendingAdvisoryActions ?? raw.pending_advisory_actions ?? 0),
+    lowConfidenceInferences: Number(raw.lowConfidenceInferences ?? raw.low_confidence_inferences ?? 0),
   };
 }
 
