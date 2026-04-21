@@ -1,21 +1,23 @@
 import React, { useState } from "react";
-import {
-  Modal,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 type HeaderOverflowMenuProps = {
+  onOpenSettings?: () => void;
   onLogout: () => void;
 };
 
-export function HeaderOverflowMenu({ onLogout }: HeaderOverflowMenuProps) {
+export function HeaderOverflowMenu({
+  onOpenSettings,
+  onLogout,
+}: HeaderOverflowMenuProps) {
   const [visible, setVisible] = useState(false);
 
   const closeMenu = () => setVisible(false);
+  const handleOpenSettings = () => {
+    closeMenu();
+    onOpenSettings?.();
+  };
   const handleLogout = () => {
     closeMenu();
     onLogout();
@@ -42,7 +44,21 @@ export function HeaderOverflowMenu({ onLogout }: HeaderOverflowMenuProps) {
           <View style={styles.menu}>
             <Pressable
               accessibilityRole="menuitem"
-              style={({ pressed }) => [styles.menuItem, pressed && styles.menuItemPressed]}
+              style={({ pressed }) => [
+                styles.menuItem,
+                pressed && styles.menuItemPressed,
+              ]}
+              onPress={handleOpenSettings}
+            >
+              <Ionicons name="settings-outline" size={16} color="#001E37" />
+              <Text style={styles.menuItemText}>Settings</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="menuitem"
+              style={({ pressed }) => [
+                styles.menuItem,
+                pressed && styles.menuItemPressed,
+              ]}
               onPress={handleLogout}
             >
               <Ionicons name="log-out-outline" size={16} color="#001E37" />
