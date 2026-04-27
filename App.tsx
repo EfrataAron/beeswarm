@@ -27,6 +27,7 @@ import {
 } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import {
+  AmbientWeather,
   AlertDetailData,
   AlertItem,
   AlertSeverity,
@@ -35,9 +36,8 @@ import {
   Hive,
   HiveDetailData,
   HiveStatus,
-  acknowledgeAlert,
-  acknowledgeHiveAlert,
   fetchAdvisory,
+  fetchAmbientWeather,
   fetchAlertDetail,
   fetchAlerts,
   fetchDashboard,
@@ -637,6 +637,12 @@ function SignupScreen({
           autoCapitalize="none"
         />
         <TextInput
+          placeholder="+1 234 567 8900"
+          placeholderTextColor={THEME.placeholder}
+          style={styles.input}
+          keyboardType="phone-pad"
+        />
+        <TextInput
           placeholder="Enter your password"
           placeholderTextColor={THEME.placeholder}
           secureTextEntry
@@ -933,15 +939,12 @@ function AlertsListScreen({
 
 function AlertDetailsScreen({
   route,
-  navigation,
 }: NativeStackScreenProps<AlertsStackParamList, "AlertDetails">) {
   const { alertId } = route.params;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [detail, setDetail] = useState<AlertDetailData | null>(null);
   const [advisory, setAdvisory] = useState<Advisory | null>(null);
-  const [acknowledging, setAcknowledging] = useState(false);
-  const [checkedActions, setCheckedActions] = useState<Set<string>>(new Set());
 
   const loadDetail = useCallback(async () => {
     setLoading(true);
@@ -965,33 +968,6 @@ function AlertDetailsScreen({
   useEffect(() => {
     void loadDetail();
   }, [loadDetail]);
-
-  const handleAcknowledge = useCallback(async () => {
-    if (!detail || acknowledging) return;
-    setAcknowledging(true);
-    try {
-      await acknowledgeAlert(detail.id);
-      setDetail((current) =>
-        current ? { ...current, acknowledged: true } : current,
-      );
-      // Navigate back after short delay so user sees the closed state
-      setTimeout(() => navigation.goBack(), 800);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Could not acknowledge alert",
-      );
-    } finally {
-      setAcknowledging(false);
-    }
-  }, [acknowledging, detail, navigation]);
-
-  const toggleAction = (id: string) => {
-    setCheckedActions((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  };
 
   const PRIORITY_COLOR = { High: "#DC2626", Medium: "#D97706", Low: "#16A34A" };
 
@@ -1020,10 +996,6 @@ function AlertDetailsScreen({
       </View>
     );
   }
-
-  const allActionsChecked = advisory
-    ? advisory.actions.every((a) => checkedActions.has(a.id))
-    : true;
 
   return (
     <ScrollView
@@ -1114,110 +1086,21 @@ function AlertDetailsScreen({
 
           <Text style={styles.advisorySummary}>{advisory.summary}</Text>
 
-          <Text style={styles.advisoryActionsTitle}>
-            Recommended Actions ({checkedActions.size}/{advisory.actions.length}{" "}
-            completed)
-          </Text>
+          <Text style={styles.advisoryActionsTitle}>Recommended Actions</Text>
 
-          {advisory.actions.map((action) => {
-            const checked = checkedActions.has(action.id);
-            return (
-              <Pressable
-                key={action.id}
+          {advisory.actions.map((action) => (
+            <View key={action.id} style={styles.advisoryActionRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.advisoryActionText}>{action.description}</Text>
+              </View>
+              <View
                 style={[
-                  styles.advisoryActionRow,
-                  checked && styles.advisoryActionRowDone,
+                  styles.advisoryPriorityDot,
+                  { backgroundColor: PRIORITY_COLOR[action.priority] },
                 ]}
-                onPress={() => toggleAction(action.id)}
-              >
-                <View
-                  style={[
-                    styles.advisoryCheckbox,
-                    checked && styles.advisoryCheckboxDone,
-                  ]}
-                >
-                  {checked && (
-                    <Ionicons name="checkmark" size={12} color="#fff" />
-                  )}
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text
-                    style={[
-                      styles.advisoryActionText,
-                      checked && styles.advisoryActionTextDone,
-                    ]}
-                  >
-                    {action.description}
-                  </Text>
-                </View>
-                <View
-                  style={[
-                    styles.advisoryPriorityDot,
-                    { backgroundColor: PRIORITY_COLOR[action.priority] },
-                  ]}
-                />
-              </Pressable>
-            );
-          })}
-
-          {/* Progress bar */}
-          <View style={styles.advisoryProgressTrack}>
-            <View
-              style={[
-                styles.advisoryProgressFill,
-                {
-                  width:
-                    `${Math.round((checkedActions.size / advisory.actions.length) * 100)}%` as any,
-                },
-              ]}
-            />
-          </View>
-          <Text style={styles.advisoryProgressLabel}>
-            {Math.round((checkedActions.size / advisory.actions.length) * 100)}%
-            of actions completed
-          </Text>
-        </View>
-      )}
-
-      {/* ── Acknowledge ── */}
-      {!detail.acknowledged && (
-        <View style={styles.card}>
-          {!allActionsChecked && (
-            <View style={styles.advisoryWarningRow}>
-              <Ionicons
-                name="information-circle-outline"
-                size={14}
-                color="#D97706"
               />
-              <Text style={styles.advisoryWarningText}>
-                Review and check off all advisory actions before acknowledging
-              </Text>
             </View>
-          )}
-          <Pressable
-            style={({ pressed }) => [
-              styles.primaryButton,
-              styles.actionButton,
-              pressed && styles.pressed,
-              !allActionsChecked && styles.actionButtonDisabled,
-            ]}
-            onPress={handleAcknowledge}
-            disabled={acknowledging || !allActionsChecked}
-          >
-            <Ionicons
-              name="checkmark-circle-outline"
-              size={18}
-              color={allActionsChecked ? THEME.primary : THEME.textMuted}
-            />
-            <Text
-              style={[
-                styles.primaryButtonText,
-                !allActionsChecked && { color: THEME.textMuted },
-              ]}
-            >
-              {acknowledging ? "Acknowledging..." : "Acknowledge & Close Alert"}
-            </Text>
-          </Pressable>
+          ))}
         </View>
       )}
     </ScrollView>
@@ -1251,19 +1134,76 @@ function severityColor(severity: AlertSeverity): string {
   return THEME.accent;
 }
 
+const TREND_24H: Array<{ label: string; count: number }> = [
+  { label: "00", count: 0 },
+  { label: "03", count: 1 },
+  { label: "06", count: 2 },
+  { label: "09", count: 2 },
+  { label: "12", count: 3 },
+  { label: "15", count: 2 },
+  { label: "18", count: 3 },
+  { label: "21", count: 1 },
+];
+
+const TREND_30D: Array<{ label: string; count: number }> = [
+  { label: "Apr 1", count: 1 },
+  { label: "Apr 4", count: 2 },
+  { label: "Apr 7", count: 1 },
+  { label: "Apr 10", count: 3 },
+  { label: "Apr 13", count: 2 },
+  { label: "Apr 16", count: 4 },
+  { label: "Apr 19", count: 3 },
+  { label: "Apr 22", count: 5 },
+  { label: "Apr 25", count: 4 },
+  { label: "Apr 28", count: 3 },
+];
+
 function DashboardScreen({
   navigation,
 }: BottomTabScreenProps<MainTabParamList, "Dashboard">) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
+  const [ambientWeather, setAmbientWeather] =
+    useState<AmbientWeather | null>(null);
+  const [dashboardAlerts, setDashboardAlerts] = useState<AlertItem[]>([]);
+  const [alertsError, setAlertsError] = useState<string | null>(null);
+  const [openAlertMenu, setOpenAlertMenu] = useState<
+    "severity" | "hive" | "latest" | null
+  >(null);
+  const [severityFilter, setSeverityFilter] = useState<AlertSeverity | "All">(
+    "All",
+  );
+  const [hiveFilter, setHiveFilter] = useState<string>("All");
+  const [selectedAlertId, setSelectedAlertId] = useState<string | null>(null);
+  const [trendRange, setTrendRange] = useState<"24h" | "7d" | "30d">("7d");
 
   const loadDashboard = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setAlertsError(null);
     try {
       const data = await fetchDashboard();
       setDashboard(data);
+
+      try {
+        const alerts = await fetchAlerts();
+        setDashboardAlerts(alerts);
+      } catch (alertsErr) {
+        setDashboardAlerts([]);
+        setAlertsError(
+          alertsErr instanceof Error
+            ? alertsErr.message
+            : "Could not load dashboard alerts",
+        );
+      }
+
+      try {
+        const weather = await fetchAmbientWeather();
+        setAmbientWeather(weather);
+      } catch {
+        setAmbientWeather(null);
+      }
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Could not load dashboard data",
@@ -1276,6 +1216,66 @@ function DashboardScreen({
   useEffect(() => {
     void loadDashboard();
   }, [loadDashboard]);
+
+  const severityCounts = useMemo(
+    () => ({
+      Critical: dashboardAlerts.filter((a) => a.severity === "Critical").length,
+      Warning: dashboardAlerts.filter((a) => a.severity === "Warning").length,
+      Info: dashboardAlerts.filter((a) => a.severity === "Info").length,
+    }),
+    [dashboardAlerts],
+  );
+
+  const hiveOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+    dashboardAlerts.forEach((alert) => {
+      counts.set(alert.hiveId, (counts.get(alert.hiveId) ?? 0) + 1);
+    });
+    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
+  }, [dashboardAlerts]);
+
+  const latestAlerts = useMemo(
+    () =>
+      [...dashboardAlerts]
+        .sort((a, b) => {
+          const aTime = Date.parse(a.date.replace(" ", "T"));
+          const bTime = Date.parse(b.date.replace(" ", "T"));
+          return (Number.isFinite(bTime) ? bTime : 0) -
+            (Number.isFinite(aTime) ? aTime : 0);
+        })
+        .slice(0, 6),
+    [dashboardAlerts],
+  );
+
+  const filteredDashboardAlerts = useMemo(
+    () =>
+      dashboardAlerts.filter((alert) => {
+        const passesSeverity =
+          severityFilter === "All" || alert.severity === severityFilter;
+        const passesHive = hiveFilter === "All" || alert.hiveId === hiveFilter;
+        return passesSeverity && passesHive;
+      }),
+    [dashboardAlerts, severityFilter, hiveFilter],
+  );
+
+  const selectedDashboardAlert = useMemo(() => {
+    if (filteredDashboardAlerts.length === 0) {
+      return null;
+    }
+    return (
+      filteredDashboardAlerts.find((alert) => alert.id === selectedAlertId) ??
+      filteredDashboardAlerts[0]
+    );
+  }, [filteredDashboardAlerts, selectedAlertId]);
+
+  const activeTrendData = useMemo(() => {
+    if (trendRange === "24h") return TREND_24H;
+    if (trendRange === "30d") return TREND_30D;
+    return (dashboard?.preSwarmTrend ?? []).map((d) => ({
+      label: d.day,
+      count: d.count,
+    }));
+  }, [trendRange, dashboard?.preSwarmTrend]);
 
   if (loading) {
     return (
@@ -1336,19 +1336,370 @@ function DashboardScreen({
     },
   ];
 
-  const alertResponseRate =
-    dashboard.pendingAlerts + dashboard.acknowledgedAlerts > 0
-      ? Math.round(
-          (dashboard.acknowledgedAlerts /
-            (dashboard.pendingAlerts + dashboard.acknowledgedAlerts)) *
-            100,
-        )
-      : 0;
 
-  const trendMax = Math.max(...dashboard.preSwarmTrend.map((d) => d.count), 1);
+  const dashboardSeverityColor: Record<AlertSeverity, string> = {
+    Critical: "#DC2626",
+    Warning: "#D97706",
+    Info: "#2563EB",
+  };
+
+  const displayTemperature =
+    ambientWeather?.temperatureC ?? dashboard.keyMetrics.temperatureC;
+  const displayHumidity =
+    ambientWeather?.humidityPercent ?? dashboard.keyMetrics.humidityPercent;
+  const weatherSubtitle = ambientWeather
+    ? "Live weather (Open-Meteo)"
+    : "Last 24 hours";
 
   return (
     <ScrollView contentContainerStyle={styles.appPage}>
+      <View style={styles.dashboardAlertsCard}>
+        <View style={styles.dashboardAlertsTopRow}>
+          <View style={styles.dashboardAlertsTitleWrap}>
+            <Text style={styles.dashboardAlertsTitle}>Alerts</Text>
+            <Text style={styles.dashboardAlertsSubTitle}>Dashboard quick view</Text>
+          </View>
+          <View style={styles.hiveAlertCountBadge}>
+            <Text style={styles.hiveAlertCountText}>
+              {filteredDashboardAlerts.length} shown
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.dashboardAlertMenuRow}>
+          <Pressable
+            style={[
+              styles.dashboardAlertMenuChip,
+              openAlertMenu === "severity" && styles.dashboardAlertMenuChipActive,
+            ]}
+            onPress={() =>
+              setOpenAlertMenu((current) =>
+                current === "severity" ? null : "severity",
+              )
+            }
+          >
+            <Ionicons
+              name="funnel-outline"
+              size={14}
+              color={openAlertMenu === "severity" ? "#FFFFFF" : THEME.primary}
+            />
+            <Text
+              style={[
+                styles.dashboardAlertMenuChipText,
+                openAlertMenu === "severity" &&
+                  styles.dashboardAlertMenuChipTextActive,
+              ]}
+            >
+              Severity
+            </Text>
+          </Pressable>
+
+          <Pressable
+            style={[
+              styles.dashboardAlertMenuChip,
+              openAlertMenu === "hive" && styles.dashboardAlertMenuChipActive,
+            ]}
+            onPress={() =>
+              setOpenAlertMenu((current) => (current === "hive" ? null : "hive"))
+            }
+          >
+            <Ionicons
+              name="cube-outline"
+              size={14}
+              color={openAlertMenu === "hive" ? "#FFFFFF" : THEME.primary}
+            />
+            <Text
+              style={[
+                styles.dashboardAlertMenuChipText,
+                openAlertMenu === "hive" && styles.dashboardAlertMenuChipTextActive,
+              ]}
+            >
+              Hive
+            </Text>
+          </Pressable>
+
+          <Pressable
+            style={[
+              styles.dashboardAlertMenuChip,
+              openAlertMenu === "latest" && styles.dashboardAlertMenuChipActive,
+            ]}
+            onPress={() =>
+              setOpenAlertMenu((current) =>
+                current === "latest" ? null : "latest",
+              )
+            }
+          >
+            <Ionicons
+              name="time-outline"
+              size={14}
+              color={openAlertMenu === "latest" ? "#FFFFFF" : THEME.primary}
+            />
+            <Text
+              style={[
+                styles.dashboardAlertMenuChipText,
+                openAlertMenu === "latest" &&
+                  styles.dashboardAlertMenuChipTextActive,
+              ]}
+            >
+              Latest
+            </Text>
+          </Pressable>
+        </View>
+
+        {openAlertMenu !== null && (
+          <View style={styles.dashboardAlertSubMenu}>
+            <View style={styles.dashboardAlertSubMenuHeader}>
+              <Text style={styles.dashboardAlertSubMenuTitle}>
+                {openAlertMenu === "severity"
+                  ? "Severity Categories"
+                  : openAlertMenu === "hive"
+                    ? "Hive Categories"
+                    : "Recent Alerts"}
+              </Text>
+              <Pressable
+                style={styles.dashboardAlertSubMenuCloseBtn}
+                onPress={() => setOpenAlertMenu(null)}
+              >
+                <Ionicons name="close" size={16} color={THEME.textMuted} />
+              </Pressable>
+            </View>
+
+            {openAlertMenu === "severity" && (
+              <View style={styles.dashboardAlertSubMenuList}>
+                <Pressable
+                  style={[
+                    styles.dashboardAlertSubMenuItem,
+                    severityFilter === "All" &&
+                      styles.dashboardAlertSubMenuItemActive,
+                  ]}
+                  onPress={() => setSeverityFilter("All")}
+                >
+                  <Text
+                    style={[
+                      styles.dashboardAlertSubMenuItemText,
+                      severityFilter === "All" &&
+                        styles.dashboardAlertSubMenuItemTextActive,
+                    ]}
+                  >
+                    All ({dashboardAlerts.length})
+                  </Text>
+                </Pressable>
+                {(["Critical", "Warning", "Info"] as AlertSeverity[]).map(
+                  (severity) => (
+                    <Pressable
+                      key={severity}
+                      style={[
+                        styles.dashboardAlertSubMenuItem,
+                        severityFilter === severity &&
+                          styles.dashboardAlertSubMenuItemActive,
+                      ]}
+                      onPress={() => setSeverityFilter(severity)}
+                    >
+                      <View
+                        style={[
+                          styles.dashboardAlertSubMenuDot,
+                          { backgroundColor: dashboardSeverityColor[severity] },
+                        ]}
+                      />
+                      <Text
+                        style={[
+                          styles.dashboardAlertSubMenuItemText,
+                          severityFilter === severity &&
+                            styles.dashboardAlertSubMenuItemTextActive,
+                        ]}
+                      >
+                        {severity} ({severityCounts[severity]})
+                      </Text>
+                    </Pressable>
+                  ),
+                )}
+              </View>
+            )}
+
+            {openAlertMenu === "hive" && (
+              <View style={styles.dashboardAlertSubMenuList}>
+                <Pressable
+                  style={[
+                    styles.dashboardAlertSubMenuItem,
+                    hiveFilter === "All" && styles.dashboardAlertSubMenuItemActive,
+                  ]}
+                  onPress={() => setHiveFilter("All")}
+                >
+                  <Text
+                    style={[
+                      styles.dashboardAlertSubMenuItemText,
+                      hiveFilter === "All" &&
+                        styles.dashboardAlertSubMenuItemTextActive,
+                    ]}
+                  >
+                    All hives
+                  </Text>
+                </Pressable>
+                {hiveOptions.map(([hiveId, count]) => (
+                  <Pressable
+                    key={hiveId}
+                    style={[
+                      styles.dashboardAlertSubMenuItem,
+                      hiveFilter === hiveId && styles.dashboardAlertSubMenuItemActive,
+                    ]}
+                    onPress={() => setHiveFilter(hiveId)}
+                  >
+                    <Text
+                      style={[
+                        styles.dashboardAlertSubMenuItemText,
+                        hiveFilter === hiveId &&
+                          styles.dashboardAlertSubMenuItemTextActive,
+                      ]}
+                    >
+                      {hiveId} ({count})
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+
+            {openAlertMenu === "latest" && (
+              <View style={styles.dashboardAlertSubMenuList}>
+                {latestAlerts.map((alert) => (
+                  <Pressable
+                    key={alert.id}
+                    style={styles.dashboardAlertSubMenuItem}
+                    onPress={() => {
+                      setSelectedAlertId(alert.id);
+                      setOpenAlertMenu(null);
+                    }}
+                  >
+                    <View
+                      style={[
+                        styles.dashboardAlertSubMenuDot,
+                        {
+                          backgroundColor: dashboardSeverityColor[alert.severity],
+                        },
+                      ]}
+                    />
+                    <Text style={styles.dashboardAlertSubMenuItemText}>
+                      {alert.title}
+                    </Text>
+                  </Pressable>
+                ))}
+                {latestAlerts.length === 0 && (
+                  <Text style={styles.dashboardAlertSubMenuEmpty}>
+                    No recent alerts available
+                  </Text>
+                )}
+              </View>
+            )}
+          </View>
+        )}
+
+        {alertsError && (
+          <Text style={styles.dashboardAlertsInlineError}>{alertsError}</Text>
+        )}
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.dashboardAlertScroller}
+        >
+          {filteredDashboardAlerts.map((alert) => {
+            const selected = selectedDashboardAlert?.id === alert.id;
+            return (
+              <Pressable
+                key={alert.id}
+                style={[
+                  styles.dashboardAlertCompactCard,
+                  selected && styles.dashboardAlertCompactCardActive,
+                ]}
+                onPress={() => setSelectedAlertId(alert.id)}
+              >
+                <View style={styles.dashboardAlertCompactTopRow}>
+                  <View
+                    style={[
+                      styles.dashboardAlertCompactDot,
+                      {
+                        backgroundColor: dashboardSeverityColor[alert.severity],
+                      },
+                    ]}
+                  />
+                  <Text style={styles.dashboardAlertCompactHive}>{alert.hiveId}</Text>
+                </View>
+                <Text style={styles.dashboardAlertCompactTitle} numberOfLines={1}>
+                  {alert.title}
+                </Text>
+                <Text style={styles.dashboardAlertCompactDate}>{alert.date}</Text>
+              </Pressable>
+            );
+          })}
+          {filteredDashboardAlerts.length === 0 && (
+            <View style={styles.dashboardAlertsEmptyState}>
+              <Ionicons
+                name="checkmark-circle-outline"
+                size={18}
+                color="#16A34A"
+              />
+              <Text style={styles.dashboardAlertsEmptyStateText}>
+                No alerts match this filter
+              </Text>
+            </View>
+          )}
+        </ScrollView>
+
+        {selectedDashboardAlert && (
+          <View style={styles.dashboardAlertDetailsCard}>
+            <View style={styles.rowBetween}>
+              <Text style={styles.dashboardAlertDetailsTitle}>
+                {selectedDashboardAlert.title}
+              </Text>
+              <View
+                style={[
+                  styles.dashboardAlertDetailsSeverity,
+                  {
+                    backgroundColor:
+                      `${dashboardSeverityColor[selectedDashboardAlert.severity]}20`,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.dashboardAlertDetailsSeverityText,
+                    {
+                      color:
+                        dashboardSeverityColor[selectedDashboardAlert.severity],
+                    },
+                  ]}
+                >
+                  {selectedDashboardAlert.severity}
+                </Text>
+              </View>
+            </View>
+            <Text style={styles.dashboardAlertDetailsMeta}>
+              {selectedDashboardAlert.hiveId} · {selectedDashboardAlert.date}
+            </Text>
+            <Text style={styles.dashboardAlertDetailsSummary}>
+              {selectedDashboardAlert.summary}
+            </Text>
+            <Pressable
+              style={styles.dashboardAlertDetailsLink}
+              onPress={() =>
+                navigation.navigate("Alerts", {
+                  screen: "AlertDetails",
+                  params: { alertId: selectedDashboardAlert.id },
+                })
+              }
+            >
+              <Text style={styles.dashboardAlertDetailsLinkText}>
+                Open Full Details
+              </Text>
+              <Ionicons
+                name="chevron-forward"
+                size={14}
+                color={THEME.primary}
+              />
+            </Pressable>
+          </View>
+        )}
+      </View>
+
       {/* ── Overview row ── */}
       <View style={styles.overviewCardRow}>
         <View style={[styles.overviewTile, { backgroundColor: THEME.primary }]}>
@@ -1405,27 +1756,29 @@ function DashboardScreen({
       <View style={styles.card}>
         <View style={styles.rowBetween}>
           <Text style={styles.cardTitle}>Pre-swarm Trend</Text>
-          <Text style={styles.cardSubtitle}>Last 7 days</Text>
-        </View>
-        <View style={styles.barChartWrap}>
-          {dashboard.preSwarmTrend.map((d) => (
-            <View key={d.day} style={styles.barCol}>
-              <Text style={styles.barValue}>{d.count}</Text>
-              <View style={styles.barTrack}>
-                <View
+          <View style={styles.trendRangeRow}>
+            {(["24h", "7d", "30d"] as const).map((r) => (
+              <Pressable
+                key={r}
+                style={[
+                  styles.trendRangeBtn,
+                  trendRange === r && styles.trendRangeBtnActive,
+                ]}
+                onPress={() => setTrendRange(r)}
+              >
+                <Text
                   style={[
-                    styles.barFill,
-                    {
-                      height:
-                        `${Math.round((d.count / trendMax) * 100)}%` as any,
-                    },
+                    styles.trendRangeBtnText,
+                    trendRange === r && styles.trendRangeBtnTextActive,
                   ]}
-                />
-              </View>
-              <Text style={styles.barLabel}>{d.day}</Text>
-            </View>
-          ))}
+                >
+                  {r}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
         </View>
+        <TrendLineChart data={activeTrendData} />
       </View>
 
       {/* ── Alert Intelligence ── */}
@@ -1451,43 +1804,6 @@ function DashboardScreen({
         </View>
       </View>
 
-      {/* ── Alert Response Rate ── */}
-      <View style={styles.card}>
-        <View style={styles.rowBetween}>
-          <Text style={styles.cardTitle}>Alert Response Rate</Text>
-          <Text
-            style={[
-              styles.cardSubtitle,
-              { color: alertResponseRate >= 70 ? "#22C55E" : "#EF4444" },
-            ]}
-          >
-            {alertResponseRate}%
-          </Text>
-        </View>
-        <View style={styles.progressTrack}>
-          <View
-            style={[
-              styles.progressFill,
-              {
-                width: `${alertResponseRate}%` as any,
-                backgroundColor:
-                  alertResponseRate >= 70 ? "#22C55E" : "#EF4444",
-              },
-            ]}
-          />
-        </View>
-        <View style={styles.rowBetween}>
-          <Text style={styles.progressLabel}>
-            <Text style={{ color: "#22C55E" }}>● </Text>Acknowledged:{" "}
-            {dashboard.acknowledgedAlerts}
-          </Text>
-          <Text style={styles.progressLabel}>
-            <Text style={{ color: "#EF4444" }}>● </Text>Pending:{" "}
-            {dashboard.pendingAlerts}
-          </Text>
-        </View>
-      </View>
-
       {/* ── Hive Status Cards ── */}
       {/* <Text style={styles.sectionTitle}>Status Counts</Text>
       <View style={styles.gridTwo}>
@@ -1502,15 +1818,15 @@ function DashboardScreen({
       <View style={styles.gridTwo}>
         <MetricCard
           title="Avg Temperature"
-          value={dashboard.keyMetrics.temperatureC.toFixed(1)}
+          value={displayTemperature.toFixed(1)}
           unit="°C"
-          subtitle="Last 24 hours"
+          subtitle={weatherSubtitle}
         />
         <MetricCard
           title="Avg Humidity"
-          value={dashboard.keyMetrics.humidityPercent.toFixed(0)}
+          value={displayHumidity.toFixed(0)}
           unit="%"
-          subtitle="Last 24 hours"
+          subtitle={weatherSubtitle}
         />
       </View>
 
@@ -1813,6 +2129,125 @@ function MetricCard({
         <Text style={styles.metricUnit}>{unit}</Text>
       </Text>
       <Text style={styles.metricSubtitle}>{subtitle}</Text>
+    </View>
+  );
+}
+
+function TrendLineChart({
+  data,
+}: {
+  data: Array<{ label: string; count: number }>;
+}) {
+  const [chartWidth, setChartWidth] = useState(0);
+  const CHART_HEIGHT = 140;
+  const PAD_TOP = 22;
+  const PAD_BOTTOM = 26;
+  const PAD_H = 14;
+
+  const max = Math.max(...data.map((d) => d.count), 1);
+  const n = data.length;
+  const plotW = Math.max(chartWidth - PAD_H * 2, 1);
+  const plotH = CHART_HEIGHT - PAD_TOP - PAD_BOTTOM;
+
+  const pts = data.map((d, i) => ({
+    x: PAD_H + (n > 1 ? (i / (n - 1)) * plotW : plotW / 2),
+    y: PAD_TOP + (1 - d.count / max) * plotH,
+    label: d.label,
+    count: d.count,
+  }));
+
+  return (
+    <View
+      style={{ height: CHART_HEIGHT, marginTop: 12 }}
+      onLayout={(e) => setChartWidth(e.nativeEvent.layout.width)}
+    >
+      {chartWidth > 0 && (
+        <>
+          {[0, 0.5, 1].map((pct) => (
+            <View
+              key={pct}
+              style={{
+                position: "absolute",
+                left: PAD_H,
+                top: PAD_TOP + pct * plotH,
+                width: plotW,
+                height: 1,
+                backgroundColor: "#F1F5F9",
+              }}
+            />
+          ))}
+          {pts.slice(0, -1).map((p, i) => {
+            const q = pts[i + 1];
+            const dx = q.x - p.x;
+            const dy = q.y - p.y;
+            const len = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+            return (
+              <View
+                key={`line-${i}`}
+                style={{
+                  position: "absolute",
+                  left: (p.x + q.x) / 2 - len / 2,
+                  top: (p.y + q.y) / 2 - 1,
+                  width: len,
+                  height: 2,
+                  backgroundColor: THEME.accent,
+                  borderRadius: 1,
+                  transform: [{ rotate: `${angle}deg` }],
+                }}
+              />
+            );
+          })}
+          {pts.map((p, i) => (
+            <React.Fragment key={`dot-${i}`}>
+              <View
+                style={{
+                  position: "absolute",
+                  left: p.x - 5,
+                  top: p.y - 5,
+                  width: 10,
+                  height: 10,
+                  borderRadius: 5,
+                  backgroundColor: THEME.accent,
+                  borderWidth: 2,
+                  borderColor: "#FFFFFF",
+                }}
+              />
+              <Text
+                style={{
+                  position: "absolute",
+                  left: p.x - 12,
+                  top: p.y - 19,
+                  width: 24,
+                  textAlign: "center",
+                  fontSize: 9,
+                  fontWeight: "700",
+                  color: THEME.primary,
+                }}
+              >
+                {p.count}
+              </Text>
+            </React.Fragment>
+          ))}
+          {pts.map((p, i) => (
+            <Text
+              key={`lbl-${i}`}
+              style={{
+                position: "absolute",
+                left: p.x - 16,
+                top: PAD_TOP + plotH + 6,
+                width: 32,
+                textAlign: "center",
+                fontSize: 9,
+                color: THEME.textMuted,
+                fontWeight: "600",
+              }}
+            >
+              {p.label}
+            </Text>
+          ))}
+        </>
+      )}
     </View>
   );
 }
@@ -2144,12 +2579,7 @@ function HiveDetailsScreen({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [detail, setDetail] = useState<HiveDetailData | null>(null);
-  const [acknowledging, setAcknowledging] = useState(false);
   const [hiveAlerts, setHiveAlerts] = useState<AlertItem[]>([]);
-  const [acknowledgedIds, setAcknowledgedIds] = useState<Set<string>>(
-    new Set(),
-  );
-  const [acknowledgingId, setAcknowledgingId] = useState<string | null>(null);
 
   const loadDetail = useCallback(async () => {
     setLoading(true);
@@ -2173,26 +2603,6 @@ function HiveDetailsScreen({
   useEffect(() => {
     void loadDetail();
   }, [loadDetail]);
-
-  const handleAcknowledge = useCallback(async () => {
-    if (!detail || acknowledging) {
-      return;
-    }
-
-    setAcknowledging(true);
-    try {
-      await acknowledgeHiveAlert(detail.id);
-      setDetail((current) =>
-        current ? { ...current, acknowledged: true } : current,
-      );
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Could not acknowledge alert",
-      );
-    } finally {
-      setAcknowledging(false);
-    }
-  }, [acknowledging, detail]);
 
   if (loading) {
     return (
@@ -2405,10 +2815,7 @@ function HiveDetailsScreen({
         <View style={styles.rowBetween}>
           <Text style={styles.cardTitle}>Notifications</Text>
           <View style={styles.hiveAlertCountBadge}>
-            <Text style={styles.hiveAlertCountText}>
-              {hiveAlerts.filter((a) => !acknowledgedIds.has(a.id)).length}{" "}
-              active
-            </Text>
+            <Text style={styles.hiveAlertCountText}>{hiveAlerts.length} active</Text>
           </View>
         </View>
 
@@ -2426,8 +2833,6 @@ function HiveDetailsScreen({
         )}
 
         {hiveAlerts.map((alert) => {
-          const isAcked = acknowledgedIds.has(alert.id);
-          const isAcking = acknowledgingId === alert.id;
           const severityColors: Record<AlertSeverity, string> = {
             Critical: "#DC2626",
             Warning: "#D97706",
@@ -2442,15 +2847,12 @@ function HiveDetailsScreen({
           const bg = severityBg[alert.severity];
 
           return (
-            <View
-              key={alert.id}
-              style={[styles.hiveAlertRow, isAcked && styles.hiveAlertRowAcked]}
-            >
+            <View key={alert.id} style={styles.hiveAlertRow}>
               {/* Severity indicator */}
               <View
                 style={[
                   styles.hiveAlertSeverityBar,
-                  { backgroundColor: isAcked ? THEME.line : color },
+                  { backgroundColor: color },
                 ]}
               />
 
@@ -2460,15 +2862,10 @@ function HiveDetailsScreen({
                   <View
                     style={[
                       styles.hiveAlertSeverityBadge,
-                      { backgroundColor: isAcked ? "#F9FAFB" : bg },
+                      { backgroundColor: bg },
                     ]}
                   >
-                    <Text
-                      style={[
-                        styles.hiveAlertSeverityText,
-                        { color: isAcked ? THEME.textMuted : color },
-                      ]}
-                    >
+                    <Text style={[styles.hiveAlertSeverityText, { color }]}>
                       {alert.severity}
                     </Text>
                   </View>
@@ -2476,97 +2873,12 @@ function HiveDetailsScreen({
                 </View>
 
                 {/* Title + summary */}
-                <Text
-                  style={[
-                    styles.hiveAlertTitle,
-                    isAcked && styles.hiveAlertTitleAcked,
-                  ]}
-                >
-                  {alert.title}
-                </Text>
+                <Text style={styles.hiveAlertTitle}>{alert.title}</Text>
                 <Text style={styles.hiveAlertSummary}>{alert.summary}</Text>
-
-                {/* Acknowledge button */}
-                <Pressable
-                  style={[
-                    styles.hiveAlertAckBtn,
-                    isAcked && styles.hiveAlertAckBtnDone,
-                  ]}
-                  onPress={async () => {
-                    if (isAcked || isAcking) return;
-                    setAcknowledgingId(alert.id);
-                    try {
-                      await acknowledgeAlert(alert.id);
-                      setAcknowledgedIds(
-                        (prev) => new Set([...prev, alert.id]),
-                      );
-                    } finally {
-                      setAcknowledgingId(null);
-                    }
-                  }}
-                  disabled={isAcked || isAcking}
-                >
-                  <Ionicons
-                    name={
-                      isAcked ? "checkmark-circle" : "checkmark-circle-outline"
-                    }
-                    size={14}
-                    color={isAcked ? "#16A34A" : THEME.primary}
-                  />
-                  <Text
-                    style={[
-                      styles.hiveAlertAckText,
-                      isAcked && { color: "#16A34A" },
-                    ]}
-                  >
-                    {isAcked
-                      ? "Acknowledged"
-                      : isAcking
-                        ? "Acknowledging..."
-                        : "Acknowledge"}
-                  </Text>
-                </Pressable>
               </View>
             </View>
           );
         })}
-      </View>
-
-      {/* ── Action ── */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Actions</Text>
-        <Pressable
-          style={({ pressed }) => [
-            styles.primaryButton,
-            styles.actionButton,
-            pressed && styles.pressed,
-            detail.acknowledged && styles.actionButtonDisabled,
-          ]}
-          onPress={handleAcknowledge}
-          disabled={acknowledging || detail.acknowledged}
-        >
-          <Ionicons
-            name={
-              detail.acknowledged
-                ? "checkmark-circle"
-                : "checkmark-circle-outline"
-            }
-            size={18}
-            color={detail.acknowledged ? THEME.textMuted : THEME.primary}
-          />
-          <Text
-            style={[
-              styles.primaryButtonText,
-              detail.acknowledged && { color: THEME.textMuted },
-            ]}
-          >
-            {detail.acknowledged
-              ? "Alert Acknowledged"
-              : acknowledging
-                ? "Acknowledging..."
-                : "Acknowledge Alert"}
-          </Text>
-        </Pressable>
       </View>
     </ScrollView>
   );
@@ -3246,6 +3558,247 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
   },
   // ── Dashboard new styles ──
+  dashboardAlertsCard: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: THEME.line,
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 14,
+  },
+  dashboardAlertsTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+  dashboardAlertsTitleWrap: {
+    gap: 2,
+  },
+  dashboardAlertsTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: THEME.primary,
+  },
+  dashboardAlertsSubTitle: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: THEME.textMuted,
+  },
+  dashboardAlertMenuRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  dashboardAlertMenuChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderWidth: 1,
+    borderColor: THEME.line,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    backgroundColor: "#FFFFFF",
+  },
+  dashboardAlertMenuChipActive: {
+    backgroundColor: THEME.primary,
+    borderColor: THEME.primary,
+  },
+  dashboardAlertMenuChipText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: THEME.primary,
+  },
+  dashboardAlertMenuChipTextActive: {
+    color: "#FFFFFF",
+  },
+  dashboardAlertSubMenu: {
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: THEME.line,
+    backgroundColor: "#FAFCFF",
+    borderRadius: 12,
+    padding: 10,
+    gap: 8,
+  },
+  dashboardAlertSubMenuHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  dashboardAlertSubMenuTitle: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: THEME.primary,
+  },
+  dashboardAlertSubMenuCloseBtn: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: THEME.line,
+  },
+  dashboardAlertSubMenuList: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  dashboardAlertSubMenuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderWidth: 1,
+    borderColor: THEME.line,
+    borderRadius: 999,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+  dashboardAlertSubMenuItemActive: {
+    borderColor: THEME.primary,
+    backgroundColor: THEME.surfaceSoft,
+  },
+  dashboardAlertSubMenuItemText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: THEME.text,
+    maxWidth: 160,
+  },
+  dashboardAlertSubMenuItemTextActive: {
+    color: THEME.primary,
+  },
+  dashboardAlertSubMenuDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+  },
+  dashboardAlertSubMenuEmpty: {
+    fontSize: 11,
+    color: THEME.textMuted,
+    fontWeight: "600",
+  },
+  dashboardAlertsInlineError: {
+    marginTop: 8,
+    fontSize: 11,
+    color: "#B91C1C",
+    fontWeight: "600",
+  },
+  dashboardAlertScroller: {
+    marginTop: 10,
+    gap: 8,
+    paddingRight: 4,
+  },
+  dashboardAlertCompactCard: {
+    width: 165,
+    borderWidth: 1,
+    borderColor: THEME.line,
+    borderRadius: 12,
+    backgroundColor: "#FFFFFF",
+    padding: 10,
+    gap: 5,
+  },
+  dashboardAlertCompactCardActive: {
+    borderColor: THEME.primary,
+    backgroundColor: THEME.surfaceSoft,
+  },
+  dashboardAlertCompactTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  dashboardAlertCompactDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  dashboardAlertCompactHive: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: THEME.textMuted,
+  },
+  dashboardAlertCompactTitle: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: THEME.primary,
+  },
+  dashboardAlertCompactDate: {
+    fontSize: 10,
+    color: THEME.textMuted,
+    fontWeight: "600",
+  },
+  dashboardAlertsEmptyState: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderWidth: 1,
+    borderColor: "#BBF7D0",
+    backgroundColor: "#F0FDF4",
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  dashboardAlertsEmptyStateText: {
+    fontSize: 11,
+    color: "#166534",
+    fontWeight: "700",
+  },
+  dashboardAlertDetailsCard: {
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: THEME.line,
+    borderRadius: 12,
+    backgroundColor: "#FFFFFF",
+    padding: 12,
+    gap: 5,
+  },
+  dashboardAlertDetailsTitle: {
+    flex: 1,
+    marginRight: 8,
+    fontSize: 14,
+    fontWeight: "800",
+    color: THEME.primary,
+  },
+  dashboardAlertDetailsSeverity: {
+    borderRadius: 999,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+  },
+  dashboardAlertDetailsSeverityText: {
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  dashboardAlertDetailsMeta: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: THEME.textMuted,
+  },
+  dashboardAlertDetailsSummary: {
+    fontSize: 12,
+    lineHeight: 18,
+    color: THEME.text,
+  },
+  dashboardAlertDetailsLink: {
+    marginTop: 4,
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+    borderWidth: 1,
+    borderColor: THEME.line,
+    borderRadius: 999,
+    backgroundColor: THEME.surfaceSoft,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+  dashboardAlertDetailsLinkText: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: THEME.primary,
+  },
   overviewCardRow: {
     flexDirection: "row",
     gap: 8,
@@ -3305,43 +3858,29 @@ const styles = StyleSheet.create({
     color: THEME.textMuted,
     fontWeight: "600",
   },
-  barChartWrap: {
+  trendRangeRow: {
     flexDirection: "row",
-    alignItems: "flex-end",
-    height: 90,
-    gap: 6,
-    marginTop: 12,
+    gap: 4,
   },
-  barCol: {
-    flex: 1,
-    alignItems: "center",
-    height: "100%",
-    justifyContent: "flex-end",
+  trendRangeBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: THEME.line,
+    backgroundColor: THEME.surface,
   },
-  barValue: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: THEME.primary,
-    marginBottom: 2,
-  },
-  barTrack: {
-    width: "100%",
-    height: 60,
-    backgroundColor: "#F1F5F9",
-    borderRadius: 6,
-    justifyContent: "flex-end",
-    overflow: "hidden",
-  },
-  barFill: {
-    width: "100%",
+  trendRangeBtnActive: {
     backgroundColor: THEME.accent,
-    borderRadius: 6,
+    borderColor: THEME.accent,
   },
-  barLabel: {
-    fontSize: 9,
-    color: THEME.textMuted,
+  trendRangeBtnText: {
+    fontSize: 11,
     fontWeight: "600",
-    marginTop: 4,
+    color: THEME.textMuted,
+  },
+  trendRangeBtnTextActive: {
+    color: "#FFFFFF",
   },
   infoCard: {
     width: "48.5%",
