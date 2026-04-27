@@ -89,6 +89,13 @@ export type AlertDetailData = {
   acknowledged: boolean;
 };
 
+export type AmbientWeather = {
+  temperatureC: number;
+  humidityPercent: number;
+  observedAt: string;
+  source: "open-meteo";
+};
+
 const BASE_URL =
   String((globalThis as { process?: { env?: Record<string, string | undefined> } }).process
     ?.env?.EXPO_PUBLIC_API_BASE_URL ?? "")
@@ -169,6 +176,11 @@ const LOCAL_ALERTS: AlertItem[] = [
   },
 ];
 
+const DEFAULT_WEATHER_COORDS = {
+  latitude: 0.3476,
+  longitude: 32.5825,
+};
+
 async function requestJson<T>(
   path: string,
   query?: Record<string, string>,
@@ -198,6 +210,76 @@ async function requestJson<T>(
   }
 
   return (await response.json()) as T;
+}
+
+function getAverageHiveCoordinates() {
+  const withCoords = LOCAL_HIVES.filter(
+    (hive) =>
+      typeof hive.latitude === "number" &&
+      Number.isFinite(hive.latitude) &&
+      typeof hive.longitude === "number" &&
+      Number.isFinite(hive.longitude),
+  );
+
+  if (withCoords.length === 0) {
+    return DEFAULT_WEATHER_COORDS;
+  }
+
+  const latitude =
+    withCoords.reduce((sum, hive) => sum + (hive.latitude ?? 0), 0) /
+    withCoords.length;
+  const longitude =
+    withCoords.reduce((sum, hive) => sum + (hive.longitude ?? 0), 0) /
+    withCoords.length;
+
+  return {
+    latitude,
+    longitude,
+  };
+}
+
+export async function fetchAmbientWeather(
+  latitude?: number,
+  longitude?: number,
+): Promise<AmbientWeather> {
+  const coords =
+    typeof latitude === "number" &&
+    Number.isFinite(latitude) &&
+    typeof longitude === "number" &&
+    Number.isFinite(longitude)
+      ? { latitude, longitude }
+      : getAverageHiveCoordinates();
+
+  const params = new URLSearchParams({
+    latitude: String(coords.latitude),
+    longitude: String(coords.longitude),
+    current: "temperature_2m,relative_humidity_2m",
+    timezone: "auto",
+  });
+
+  const response = await fetch(
+    `https://api.open-meteo.com/v1/forecast?${params.toString()}`,
+  );
+
+  if (!response.ok) {
+    throw new Error(`Weather API request failed (${response.status})`);
+  }
+
+  const raw = await response.json();
+  const current = raw?.current;
+  const temperatureC = Number(current?.temperature_2m);
+  const humidityPercent = Number(current?.relative_humidity_2m);
+
+  if (!Number.isFinite(temperatureC) || !Number.isFinite(humidityPercent)) {
+    throw new Error("Weather API returned invalid weather values");
+  }
+
+  return {
+    temperatureC,
+    humidityPercent,
+    observedAt: String(current?.time ?? new Date().toISOString()),
+    source: "open-meteo",
+  };
 }
 
 function normalizeStatus(value: string): HiveStatus {
