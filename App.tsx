@@ -1962,35 +1962,6 @@ function DashboardScreen({
           <Text style={styles.infoCardLabel}>Low-Confidence Inferences</Text>
           <Text style={styles.infoCardSub}>Score &lt; 0.6</Text>
         </View>
-        <View
-          style={[
-            styles.infoCard,
-            dashboard.pendingAdvisoryActions > 0 && styles.infoCardWarn,
-          ]}
-        >
-          <Ionicons
-            name="clipboard-outline"
-            size={22}
-            color={
-              dashboard.pendingAdvisoryActions > 0 ? THEME.accent : "#22C55E"
-            }
-          />
-          <Text
-            style={[
-              styles.infoCardValue,
-              {
-                color:
-                  dashboard.pendingAdvisoryActions > 0
-                    ? THEME.accent
-                    : "#22C55E",
-              },
-            ]}
-          >
-            {dashboard.pendingAdvisoryActions}
-          </Text>
-          <Text style={styles.infoCardLabel}>Pending Advisory Actions</Text>
-          <Text style={styles.infoCardSub}>Checklist items open</Text>
-        </View>
       </View>
     </ScrollView>
   );
