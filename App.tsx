@@ -1091,7 +1091,9 @@ function AlertDetailsScreen({
           {advisory.actions.map((action) => (
             <View key={action.id} style={styles.advisoryActionRow}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.advisoryActionText}>{action.description}</Text>
+                <Text style={styles.advisoryActionText}>
+                  {action.description}
+                </Text>
               </View>
               <View
                 style={[
@@ -1164,8 +1166,9 @@ function DashboardScreen({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
-  const [ambientWeather, setAmbientWeather] =
-    useState<AmbientWeather | null>(null);
+  const [ambientWeather, setAmbientWeather] = useState<AmbientWeather | null>(
+    null,
+  );
   const [dashboardAlerts, setDashboardAlerts] = useState<AlertItem[]>([]);
   const [alertsError, setAlertsError] = useState<string | null>(null);
   const [openAlertMenu, setOpenAlertMenu] = useState<
@@ -1240,8 +1243,10 @@ function DashboardScreen({
         .sort((a, b) => {
           const aTime = Date.parse(a.date.replace(" ", "T"));
           const bTime = Date.parse(b.date.replace(" ", "T"));
-          return (Number.isFinite(bTime) ? bTime : 0) -
-            (Number.isFinite(aTime) ? aTime : 0);
+          return (
+            (Number.isFinite(bTime) ? bTime : 0) -
+            (Number.isFinite(aTime) ? aTime : 0)
+          );
         })
         .slice(0, 6),
     [dashboardAlerts],
@@ -1336,7 +1341,6 @@ function DashboardScreen({
     },
   ];
 
-
   const dashboardSeverityColor: Record<AlertSeverity, string> = {
     Critical: "#DC2626",
     Warning: "#D97706",
@@ -1357,7 +1361,9 @@ function DashboardScreen({
         <View style={styles.dashboardAlertsTopRow}>
           <View style={styles.dashboardAlertsTitleWrap}>
             <Text style={styles.dashboardAlertsTitle}>Alerts</Text>
-            <Text style={styles.dashboardAlertsSubTitle}>Dashboard quick view</Text>
+            <Text style={styles.dashboardAlertsSubTitle}>
+              Dashboard quick view
+            </Text>
           </View>
           <View style={styles.hiveAlertCountBadge}>
             <Text style={styles.hiveAlertCountText}>
@@ -1370,7 +1376,8 @@ function DashboardScreen({
           <Pressable
             style={[
               styles.dashboardAlertMenuChip,
-              openAlertMenu === "severity" && styles.dashboardAlertMenuChipActive,
+              openAlertMenu === "severity" &&
+                styles.dashboardAlertMenuChipActive,
             ]}
             onPress={() =>
               setOpenAlertMenu((current) =>
@@ -1400,7 +1407,9 @@ function DashboardScreen({
               openAlertMenu === "hive" && styles.dashboardAlertMenuChipActive,
             ]}
             onPress={() =>
-              setOpenAlertMenu((current) => (current === "hive" ? null : "hive"))
+              setOpenAlertMenu((current) =>
+                current === "hive" ? null : "hive",
+              )
             }
           >
             <Ionicons
@@ -1411,7 +1420,8 @@ function DashboardScreen({
             <Text
               style={[
                 styles.dashboardAlertMenuChipText,
-                openAlertMenu === "hive" && styles.dashboardAlertMenuChipTextActive,
+                openAlertMenu === "hive" &&
+                  styles.dashboardAlertMenuChipTextActive,
               ]}
             >
               Hive
@@ -1521,7 +1531,8 @@ function DashboardScreen({
                 <Pressable
                   style={[
                     styles.dashboardAlertSubMenuItem,
-                    hiveFilter === "All" && styles.dashboardAlertSubMenuItemActive,
+                    hiveFilter === "All" &&
+                      styles.dashboardAlertSubMenuItemActive,
                   ]}
                   onPress={() => setHiveFilter("All")}
                 >
@@ -1540,7 +1551,8 @@ function DashboardScreen({
                     key={hiveId}
                     style={[
                       styles.dashboardAlertSubMenuItem,
-                      hiveFilter === hiveId && styles.dashboardAlertSubMenuItemActive,
+                      hiveFilter === hiveId &&
+                        styles.dashboardAlertSubMenuItemActive,
                     ]}
                     onPress={() => setHiveFilter(hiveId)}
                   >
@@ -1573,7 +1585,8 @@ function DashboardScreen({
                       style={[
                         styles.dashboardAlertSubMenuDot,
                         {
-                          backgroundColor: dashboardSeverityColor[alert.severity],
+                          backgroundColor:
+                            dashboardSeverityColor[alert.severity],
                         },
                       ]}
                     />
@@ -1621,12 +1634,19 @@ function DashboardScreen({
                       },
                     ]}
                   />
-                  <Text style={styles.dashboardAlertCompactHive}>{alert.hiveId}</Text>
+                  <Text style={styles.dashboardAlertCompactHive}>
+                    {alert.hiveId}
+                  </Text>
                 </View>
-                <Text style={styles.dashboardAlertCompactTitle} numberOfLines={1}>
+                <Text
+                  style={styles.dashboardAlertCompactTitle}
+                  numberOfLines={1}
+                >
                   {alert.title}
                 </Text>
-                <Text style={styles.dashboardAlertCompactDate}>{alert.date}</Text>
+                <Text style={styles.dashboardAlertCompactDate}>
+                  {alert.date}
+                </Text>
               </Pressable>
             );
           })}
@@ -1654,8 +1674,7 @@ function DashboardScreen({
                 style={[
                   styles.dashboardAlertDetailsSeverity,
                   {
-                    backgroundColor:
-                      `${dashboardSeverityColor[selectedDashboardAlert.severity]}20`,
+                    backgroundColor: `${dashboardSeverityColor[selectedDashboardAlert.severity]}20`,
                   },
                 ]}
               >
@@ -2815,7 +2834,9 @@ function HiveDetailsScreen({
         <View style={styles.rowBetween}>
           <Text style={styles.cardTitle}>Notifications</Text>
           <View style={styles.hiveAlertCountBadge}>
-            <Text style={styles.hiveAlertCountText}>{hiveAlerts.length} active</Text>
+            <Text style={styles.hiveAlertCountText}>
+              {hiveAlerts.length} active
+            </Text>
           </View>
         </View>
 
