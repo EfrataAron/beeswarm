@@ -371,12 +371,16 @@ function SettingsScreen({
 
   const togglePush = async (value: boolean) => {
     setPushNotificationsEnabled(value);
-    try { await AsyncStorage.setItem(PREF_PUSH, String(value)); } catch {}
+    try {
+      await AsyncStorage.setItem(PREF_PUSH, String(value));
+    } catch {}
   };
 
   const toggleCritical = async (value: boolean) => {
     setCriticalAlertsOnly(value);
-    try { await AsyncStorage.setItem(PREF_CRITICAL, String(value)); } catch {}
+    try {
+      await AsyncStorage.setItem(PREF_CRITICAL, String(value));
+    } catch {}
   };
   const [satelliteMapEnabled, setSatelliteMapEnabled] = useState(false);
   const [biometricLoginEnabled, setBiometricLoginEnabled] = useState(false);
@@ -635,7 +639,10 @@ function LoginScreen({
           autoCapitalize="none"
           keyboardType="email-address"
           value={email}
-          onChangeText={(t: string) => { setEmail(t); setEmailError(""); }}
+          onChangeText={(t: string) => {
+            setEmail(t);
+            setEmailError("");
+          }}
         />
         {!!emailError && <Text style={styles.fieldError}>{emailError}</Text>}
 
@@ -645,9 +652,14 @@ function LoginScreen({
           secureTextEntry
           style={[styles.input, !!passwordError && styles.inputError]}
           value={password}
-          onChangeText={(t: string) => { setPassword(t); setPasswordError(""); }}
+          onChangeText={(t: string) => {
+            setPassword(t);
+            setPasswordError("");
+          }}
         />
-        {!!passwordError && <Text style={styles.fieldError}>{passwordError}</Text>}
+        {!!passwordError && (
+          <Text style={styles.fieldError}>{passwordError}</Text>
+        )}
 
         <Pressable
           style={({ pressed }) => [
@@ -727,7 +739,12 @@ function SignupScreen({
 
   const field = (key: string) => ({
     hasError: !!errors[key],
-    clearError: () => setErrors((e) => { const n = { ...e }; delete n[key]; return n; }),
+    clearError: () =>
+      setErrors((e) => {
+        const n = { ...e };
+        delete n[key];
+        return n;
+      }),
   });
 
   return (
@@ -755,7 +772,10 @@ function SignupScreen({
           placeholderTextColor={THEME.placeholder}
           style={[styles.input, field("name").hasError && styles.inputError]}
           value={name}
-          onChangeText={(t: string) => { setName(t); field("name").clearError(); }}
+          onChangeText={(t: string) => {
+            setName(t);
+            field("name").clearError();
+          }}
         />
         {!!errors.name && <Text style={styles.fieldError}>{errors.name}</Text>}
 
@@ -766,9 +786,14 @@ function SignupScreen({
           keyboardType="email-address"
           autoCapitalize="none"
           value={email}
-          onChangeText={(t: string) => { setEmail(t); field("email").clearError(); }}
+          onChangeText={(t: string) => {
+            setEmail(t);
+            field("email").clearError();
+          }}
         />
-        {!!errors.email && <Text style={styles.fieldError}>{errors.email}</Text>}
+        {!!errors.email && (
+          <Text style={styles.fieldError}>{errors.email}</Text>
+        )}
 
         <TextInput
           placeholder="Phone Number"
@@ -776,27 +801,46 @@ function SignupScreen({
           style={[styles.input, field("phone").hasError && styles.inputError]}
           keyboardType="phone-pad"
           value={phone}
-          onChangeText={(t: string) => { setPhone(t); field("phone").clearError(); }}
+          onChangeText={(t: string) => {
+            setPhone(t);
+            field("phone").clearError();
+          }}
         />
-        {!!errors.phone && <Text style={styles.fieldError}>{errors.phone}</Text>}
+        {!!errors.phone && (
+          <Text style={styles.fieldError}>{errors.phone}</Text>
+        )}
 
         <TextInput
           placeholder="Password (min 8 characters)"
           placeholderTextColor={THEME.placeholder}
           secureTextEntry
-          style={[styles.input, field("password").hasError && styles.inputError]}
+          style={[
+            styles.input,
+            field("password").hasError && styles.inputError,
+          ]}
           value={password}
-          onChangeText={(t: string) => { setPassword(t); field("password").clearError(); }}
+          onChangeText={(t: string) => {
+            setPassword(t);
+            field("password").clearError();
+          }}
         />
-        {!!errors.password && <Text style={styles.fieldError}>{errors.password}</Text>}
+        {!!errors.password && (
+          <Text style={styles.fieldError}>{errors.password}</Text>
+        )}
 
         <TextInput
           placeholder="Confirm Password"
           placeholderTextColor={THEME.placeholder}
           secureTextEntry
-          style={[styles.input, field("confirmPassword").hasError && styles.inputError]}
+          style={[
+            styles.input,
+            field("confirmPassword").hasError && styles.inputError,
+          ]}
           value={confirmPassword}
-          onChangeText={(t: string) => { setConfirmPassword(t); field("confirmPassword").clearError(); }}
+          onChangeText={(t: string) => {
+            setConfirmPassword(t);
+            field("confirmPassword").clearError();
+          }}
         />
         {!!errors.confirmPassword && (
           <Text style={styles.fieldError}>{errors.confirmPassword}</Text>
