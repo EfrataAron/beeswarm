@@ -66,13 +66,34 @@ function buildMapHtml(
         background: #fff5ea;
         overflow: hidden;
       }
-      .marker {
-        width: 16px;
-        height: 16px;
-        border-radius: 999px;
-        border: 2px solid #ffffff;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+      .pin-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background: none;
+        border: none;
+        padding: 0;
         cursor: pointer;
+      }
+      .pin-badge {
+        font-size: 11px;
+        font-weight: 700;
+        font-family: system-ui, -apple-system, sans-serif;
+        color: #ffffff;
+        padding: 4px 9px;
+        border-radius: 12px;
+        border: 2px solid #ffffff;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+        white-space: nowrap;
+        max-width: 90px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .pin-tail {
+        width: 0;
+        height: 0;
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
       }
     </style>
   </head>
@@ -115,15 +136,28 @@ function buildMapHtml(
       }
 
       payload.hives.forEach((hive) => {
-        const marker = document.createElement("button");
-        marker.className = "marker";
-        marker.style.background = payload.statusColor[hive.status] || "#FFB268";
-        marker.title = hive.id + " (" + hive.status + ")";
-        marker.addEventListener("click", () => {
+        const color = payload.statusColor[hive.status] || "#FFB268";
+
+        const wrapper = document.createElement("button");
+        wrapper.className = "pin-wrapper";
+        wrapper.title = hive.id + " (" + hive.status + ")";
+
+        const badge = document.createElement("div");
+        badge.className = "pin-badge";
+        badge.style.background = color;
+        badge.textContent = hive.id;
+
+        const tail = document.createElement("div");
+        tail.className = "pin-tail";
+        tail.style.borderTop = "7px solid " + color;
+
+        wrapper.appendChild(badge);
+        wrapper.appendChild(tail);
+        wrapper.addEventListener("click", () => {
           postMessage({ type: "markerPress", hiveId: hive.id });
         });
 
-        new maplibregl.Marker({ element: marker })
+        new maplibregl.Marker({ element: wrapper, anchor: "bottom" })
           .setLngLat([hive.longitude, hive.latitude])
           .addTo(map);
       });

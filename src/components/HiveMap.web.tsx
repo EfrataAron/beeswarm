@@ -105,18 +105,52 @@ export default function HiveMap({
     markersRef.current = [];
 
     renderedHives.forEach((hive) => {
-      const markerEl = document.createElement("button");
-      markerEl.style.width = "16px";
-      markerEl.style.height = "16px";
-      markerEl.style.borderRadius = "999px";
-      markerEl.style.border = "2px solid #FFFFFF";
-      markerEl.style.background = statusColor[hive.status] ?? "#FFB268";
-      markerEl.style.cursor = "pointer";
-      markerEl.style.boxShadow = "0 2px 6px rgba(0, 0, 0, 0.35)";
-      markerEl.title = `${hive.id} (${hive.status})`;
-      markerEl.addEventListener("click", () => onMarkerPress(hive.id));
+      const color = statusColor[hive.status] ?? "#FFB268";
 
-      const marker = new maplibregl.Marker({ element: markerEl })
+      const wrapper = document.createElement("button");
+      Object.assign(wrapper.style, {
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        background: "none",
+        border: "none",
+        padding: "0",
+        cursor: "pointer",
+      });
+      wrapper.title = `${hive.id} — ${hive.status}`;
+
+      const badge = document.createElement("div");
+      Object.assign(badge.style, {
+        background: color,
+        color: "#ffffff",
+        fontSize: "11px",
+        fontWeight: "700",
+        fontFamily: "system-ui, -apple-system, sans-serif",
+        padding: "4px 9px",
+        borderRadius: "12px",
+        border: "2px solid #ffffff",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.35)",
+        whiteSpace: "nowrap",
+        maxWidth: "90px",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+      });
+      badge.textContent = hive.id;
+
+      const tail = document.createElement("div");
+      Object.assign(tail.style, {
+        width: "0",
+        height: "0",
+        borderLeft: "5px solid transparent",
+        borderRight: "5px solid transparent",
+        borderTop: `7px solid ${color}`,
+      });
+
+      wrapper.appendChild(badge);
+      wrapper.appendChild(tail);
+      wrapper.addEventListener("click", () => onMarkerPress(hive.id));
+
+      const marker = new maplibregl.Marker({ element: wrapper, anchor: "bottom" })
         .setLngLat([hive.longitude, hive.latitude])
         .addTo(map);
 
@@ -128,7 +162,7 @@ export default function HiveMap({
       renderedHives.forEach((hive) => {
         bounds.extend([hive.longitude, hive.latitude]);
       });
-      map.fitBounds(bounds, { padding: 40, maxZoom: 15 });
+      map.fitBounds(bounds, { padding: 60, maxZoom: 15 });
       return;
     }
 

@@ -4,6 +4,7 @@ import {
   Image,
   Platform,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Switch,
@@ -11,6 +12,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { StatusBar as ExpoStatusBar } from "expo-status-bar";
 import Toast from "react-native-toast-message";
 import {
@@ -83,10 +85,10 @@ const HivesStack = createNativeStackNavigator<HivesStackParamList>();
 const AlertsStack = createNativeStackNavigator<AlertsStackParamList>();
 
 const STATUS_COLOR: Record<HiveStatus, string> = {
-  Healthy: "#FFB268",
-  "Pre-swarm": "#001E37",
-  Swarm: "#001E37",
-  Abscondment: "#FFB268",
+  Healthy: "#16A34A",
+  "Pre-swarm": "#D97706",
+  Swarm: "#DC2626",
+  Abscondment: "#6B7280",
 };
 
 const THEME = {
@@ -342,12 +344,40 @@ function MainTabsScreen({
   );
 }
 
+const PREF_PUSH = "@bsads/push_notifications";
+const PREF_CRITICAL = "@bsads/critical_alerts_only";
+
 function SettingsScreen({
   navigation,
 }: NativeStackScreenProps<RootStackParamList, "Settings">) {
   const [pushNotificationsEnabled, setPushNotificationsEnabled] =
     useState(true);
   const [criticalAlertsOnly, setCriticalAlertsOnly] = useState(false);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const [push, critical] = await Promise.all([
+          AsyncStorage.getItem(PREF_PUSH),
+          AsyncStorage.getItem(PREF_CRITICAL),
+        ]);
+        if (push !== null) setPushNotificationsEnabled(push === "true");
+        if (critical !== null) setCriticalAlertsOnly(critical === "true");
+      } catch {
+        // use defaults if storage unavailable
+      }
+    })();
+  }, []);
+
+  const togglePush = async (value: boolean) => {
+    setPushNotificationsEnabled(value);
+    try { await AsyncStorage.setItem(PREF_PUSH, String(value)); } catch {}
+  };
+
+  const toggleCritical = async (value: boolean) => {
+    setCriticalAlertsOnly(value);
+    try { await AsyncStorage.setItem(PREF_CRITICAL, String(value)); } catch {}
+  };
   const [satelliteMapEnabled, setSatelliteMapEnabled] = useState(false);
   const [biometricLoginEnabled, setBiometricLoginEnabled] = useState(false);
   const [temperatureUnit, setTemperatureUnit] = useState<"C" | "F">("C");
@@ -384,7 +414,7 @@ function SettingsScreen({
           </View>
           <Switch
             value={pushNotificationsEnabled}
-            onValueChange={setPushNotificationsEnabled}
+            onValueChange={(v: boolean) => void togglePush(v)}
             trackColor={{ false: "#D0D5DD", true: THEME.accent }}
             thumbColor="#FFFFFF"
           />
@@ -399,7 +429,7 @@ function SettingsScreen({
           </View>
           <Switch
             value={criticalAlertsOnly}
-            onValueChange={setCriticalAlertsOnly}
+            onValueChange={(v: boolean) => void toggleCritical(v)}
             trackColor={{ false: "#D0D5DD", true: THEME.accent }}
             thumbColor="#FFFFFF"
           />
@@ -548,6 +578,40 @@ function LoginScreen({
 }: NativeStackScreenProps<RootStackParamList, "Login"> & {
   onAuthSuccess: () => void;
 }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  const handleLogin = async () => {
+    let valid = true;
+    setEmailError("");
+    setPasswordError("");
+
+    if (!email.trim()) {
+      setEmailError("Email is required.");
+      valid = false;
+    } else if (!EMAIL_RE.test(email.trim())) {
+      setEmailError("Enter a valid email address.");
+      valid = false;
+    }
+
+    if (!password) {
+      setPasswordError("Password is required.");
+      valid = false;
+    }
+
+    if (!valid) return;
+
+    setSubmitting(true);
+    await new Promise((r) => setTimeout(r, 400));
+    setSubmitting(false);
+    onAuthSuccess();
+  };
+
   return (
     <View style={styles.authShell}>
       <View style={styles.backgroundOrbOne} />
@@ -565,27 +629,40 @@ function LoginScreen({
         <Text style={styles.heading}>Welcome</Text>
 
         <TextInput
-          placeholder="Email or Username"
+          placeholder="Email"
           placeholderTextColor={THEME.placeholder}
-          style={styles.input}
+          style={[styles.input, !!emailError && styles.inputError]}
           autoCapitalize="none"
+          keyboardType="email-address"
+          value={email}
+          onChangeText={(t: string) => { setEmail(t); setEmailError(""); }}
         />
+        {!!emailError && <Text style={styles.fieldError}>{emailError}</Text>}
+
         <TextInput
           placeholder="Password"
           placeholderTextColor={THEME.placeholder}
           secureTextEntry
-          style={styles.input}
+          style={[styles.input, !!passwordError && styles.inputError]}
+          value={password}
+          onChangeText={(t: string) => { setPassword(t); setPasswordError(""); }}
         />
+        {!!passwordError && <Text style={styles.fieldError}>{passwordError}</Text>}
 
         <Pressable
           style={({ pressed }) => [
             styles.primaryButton,
             styles.primaryButtonWide,
-            pressed && styles.pressed,
+            (pressed || submitting) && styles.pressed,
           ]}
-          onPress={onAuthSuccess}
+          onPress={() => void handleLogin()}
+          disabled={submitting}
         >
-          <Text style={styles.primaryButtonText}>Login</Text>
+          {submitting ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={styles.primaryButtonText}>Login</Text>
+          )}
         </Pressable>
 
         <View style={styles.separatorRow}>
@@ -593,7 +670,7 @@ function LoginScreen({
           <Text style={styles.separatorText}>or</Text>
           <View style={styles.separatorLine} />
         </View>
-        <Text style={styles.authTextPrompt}>Don't have an account ? </Text>
+        <Text style={styles.authTextPrompt}>Don't have an account? </Text>
         <Pressable onPress={() => navigation.navigate("Signup")}>
           <Text style={styles.linkAction}>Create an Account</Text>
         </Pressable>
@@ -608,8 +685,57 @@ function SignupScreen({
 }: NativeStackScreenProps<RootStackParamList, "Signup"> & {
   onAuthSuccess: () => void;
 }) {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState(false);
+
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  const handleSignup = async () => {
+    const next: Record<string, string> = {};
+
+    if (!name.trim()) next.name = "Full name is required.";
+    if (!email.trim()) {
+      next.email = "Email is required.";
+    } else if (!EMAIL_RE.test(email.trim())) {
+      next.email = "Enter a valid email address.";
+    }
+    if (!phone.trim()) next.phone = "Phone number is required.";
+    if (!password) {
+      next.password = "Password is required.";
+    } else if (password.length < 8) {
+      next.password = "Password must be at least 8 characters.";
+    }
+    if (!confirmPassword) {
+      next.confirmPassword = "Please confirm your password.";
+    } else if (confirmPassword !== password) {
+      next.confirmPassword = "Passwords do not match.";
+    }
+
+    setErrors(next);
+    if (Object.keys(next).length > 0) return;
+
+    setSubmitting(true);
+    await new Promise((r) => setTimeout(r, 400));
+    setSubmitting(false);
+    onAuthSuccess();
+  };
+
+  const field = (key: string) => ({
+    hasError: !!errors[key],
+    clearError: () => setErrors((e) => { const n = { ...e }; delete n[key]; return n; }),
+  });
+
   return (
-    <View style={styles.authShell}>
+    <ScrollView
+      style={{ flex: 1, backgroundColor: THEME.page }}
+      contentContainerStyle={styles.authShell}
+      keyboardShouldPersistTaps="handled"
+    >
       <View style={styles.backgroundOrbOne} />
       <View style={styles.backgroundOrbTwo} />
 
@@ -625,45 +751,71 @@ function SignupScreen({
         <Text style={styles.heading}>Create Your Account</Text>
 
         <TextInput
-          placeholder="John Doe"
+          placeholder="Full Name"
           placeholderTextColor={THEME.placeholder}
-          style={styles.input}
+          style={[styles.input, field("name").hasError && styles.inputError]}
+          value={name}
+          onChangeText={(t: string) => { setName(t); field("name").clearError(); }}
         />
+        {!!errors.name && <Text style={styles.fieldError}>{errors.name}</Text>}
+
         <TextInput
-          placeholder="john.doe@example.com"
+          placeholder="Email"
           placeholderTextColor={THEME.placeholder}
-          style={styles.input}
+          style={[styles.input, field("email").hasError && styles.inputError]}
           keyboardType="email-address"
           autoCapitalize="none"
+          value={email}
+          onChangeText={(t: string) => { setEmail(t); field("email").clearError(); }}
         />
+        {!!errors.email && <Text style={styles.fieldError}>{errors.email}</Text>}
+
         <TextInput
-          placeholder="+1 234 567 8900"
+          placeholder="Phone Number"
           placeholderTextColor={THEME.placeholder}
-          style={styles.input}
+          style={[styles.input, field("phone").hasError && styles.inputError]}
           keyboardType="phone-pad"
+          value={phone}
+          onChangeText={(t: string) => { setPhone(t); field("phone").clearError(); }}
         />
+        {!!errors.phone && <Text style={styles.fieldError}>{errors.phone}</Text>}
+
         <TextInput
-          placeholder="Enter your password"
+          placeholder="Password (min 8 characters)"
           placeholderTextColor={THEME.placeholder}
           secureTextEntry
-          style={styles.input}
+          style={[styles.input, field("password").hasError && styles.inputError]}
+          value={password}
+          onChangeText={(t: string) => { setPassword(t); field("password").clearError(); }}
         />
+        {!!errors.password && <Text style={styles.fieldError}>{errors.password}</Text>}
+
         <TextInput
-          placeholder="Confirm your password"
+          placeholder="Confirm Password"
           placeholderTextColor={THEME.placeholder}
           secureTextEntry
-          style={styles.input}
+          style={[styles.input, field("confirmPassword").hasError && styles.inputError]}
+          value={confirmPassword}
+          onChangeText={(t: string) => { setConfirmPassword(t); field("confirmPassword").clearError(); }}
         />
+        {!!errors.confirmPassword && (
+          <Text style={styles.fieldError}>{errors.confirmPassword}</Text>
+        )}
 
         <Pressable
           style={({ pressed }) => [
             styles.primaryButton,
             styles.primaryButtonWide,
-            pressed && styles.pressed,
+            (pressed || submitting) && styles.pressed,
           ]}
-          onPress={onAuthSuccess}
+          onPress={() => void handleSignup()}
+          disabled={submitting}
         >
-          <Text style={styles.primaryButtonText}>Create Account</Text>
+          {submitting ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={styles.primaryButtonText}>Create Account</Text>
+          )}
         </Pressable>
 
         <Text style={styles.footerPrompt}>
@@ -676,7 +828,7 @@ function SignupScreen({
           </Text>
         </Text>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -755,6 +907,7 @@ function AlertsListScreen({
 }: NativeStackScreenProps<AlertsStackParamList, "AlertsList">) {
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<AlertSeverity | "All">("All");
 
@@ -770,6 +923,12 @@ function AlertsListScreen({
       setLoading(false);
     }
   }, []);
+
+  const onRefreshAlerts = useCallback(async () => {
+    setRefreshing(true);
+    await loadAlerts();
+    setRefreshing(false);
+  }, [loadAlerts]);
 
   useEffect(() => {
     void loadAlerts();
@@ -823,6 +982,14 @@ function AlertsListScreen({
     <ScrollView
       style={{ flex: 1, backgroundColor: THEME.page }}
       contentContainerStyle={[styles.appPage, { flexGrow: 1 }]}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={() => void onRefreshAlerts()}
+          colors={[THEME.accent]}
+          tintColor={THEME.accent}
+        />
+      }
     >
       {/* Filter pills */}
       <View style={styles.hiveSummaryStrip}>
@@ -1180,6 +1347,7 @@ function DashboardScreen({
   const [hiveFilter, setHiveFilter] = useState<string>("All");
   const [selectedAlertId, setSelectedAlertId] = useState<string | null>(null);
   const [trendRange, setTrendRange] = useState<"24h" | "7d" | "30d">("7d");
+  const [refreshing, setRefreshing] = useState(false);
 
   const loadDashboard = useCallback(async () => {
     setLoading(true);
@@ -1218,6 +1386,12 @@ function DashboardScreen({
 
   useEffect(() => {
     void loadDashboard();
+  }, [loadDashboard]);
+
+  const onRefreshDashboard = useCallback(async () => {
+    setRefreshing(true);
+    await loadDashboard();
+    setRefreshing(false);
   }, [loadDashboard]);
 
   const severityCounts = useMemo(
@@ -1356,7 +1530,17 @@ function DashboardScreen({
     : "Last 24 hours";
 
   return (
-    <ScrollView contentContainerStyle={styles.appPage}>
+    <ScrollView
+      contentContainerStyle={styles.appPage}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={() => void onRefreshDashboard()}
+          colors={[THEME.accent]}
+          tintColor={THEME.accent}
+        />
+      }
+    >
       <View style={styles.dashboardAlertsCard}>
         <View style={styles.dashboardAlertsTopRow}>
           <View style={styles.dashboardAlertsTitleWrap}>
@@ -2248,6 +2432,7 @@ function HivesListScreen({
   const [hives, setHives] = useState<Hive[]>([]);
   const [searchText, setSearchText] = useState("");
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<HiveStatus | "All">("All");
   const [viewMode, setViewMode] = useState<"list" | "tile">("list");
@@ -2264,6 +2449,12 @@ function HivesListScreen({
       setLoading(false);
     }
   }, []);
+
+  const onRefreshHives = useCallback(async () => {
+    setRefreshing(true);
+    await loadHives(searchText);
+    setRefreshing(false);
+  }, [loadHives, searchText]);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -2302,6 +2493,14 @@ function HivesListScreen({
     <ScrollView
       style={{ flex: 1, backgroundColor: THEME.page }}
       contentContainerStyle={[styles.appPage, { flexGrow: 1 }]}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={() => void onRefreshHives()}
+          colors={[THEME.accent]}
+          tintColor={THEME.accent}
+        />
+      }
     >
       {/* Status summary pills */}
       {!loading && !error && hives.length > 0 && (
@@ -2912,7 +3111,6 @@ function MapScreen({
   navigation,
 }: BottomTabScreenProps<MainTabParamList, "Map">) {
   const [hives, setHives] = useState<Hive[]>([]);
-  const [selectedHiveId, setSelectedHiveId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -2938,10 +3136,6 @@ function MapScreen({
 
   const mapHives = useMemo(() => hives.filter(hasMapCoordinates), [hives]);
   const region = useMemo(() => getMapRegion(mapHives), [mapHives]);
-  const selectedHive = useMemo(
-    () => mapHives.find((hive) => hive.id === selectedHiveId) ?? null,
-    [mapHives, selectedHiveId],
-  );
 
   return (
     <ScrollView contentContainerStyle={styles.appPage}>
@@ -3007,7 +3201,12 @@ function MapScreen({
               mapHives={mapHives}
               region={region}
               statusColor={STATUS_COLOR}
-              onMarkerPress={(hiveId: string) => setSelectedHiveId(hiveId)}
+              onMarkerPress={(hiveId: string) =>
+                navigation.navigate("Hives", {
+                  screen: "HiveDetails",
+                  params: { hiveId },
+                })
+              }
             />
 
             {loading && (
@@ -3016,45 +3215,6 @@ function MapScreen({
                 <Text style={styles.stateTextSmall}>Loading hive map...</Text>
               </View>
             )}
-          </View>
-        )}
-
-        {!!selectedHive && (
-          <View style={styles.mapSelectionCard}>
-            <View style={styles.rowBetween}>
-              <Text style={styles.mapSelectionTitle}>{selectedHive.id}</Text>
-              <Text
-                style={[
-                  styles.hiveStatus,
-                  { color: STATUS_COLOR[selectedHive.status] },
-                ]}
-              >
-                {selectedHive.status}
-              </Text>
-            </View>
-            <Text style={styles.mapSelectionMeta}>
-              {formatCoordinate(selectedHive.latitude)},{" "}
-              {formatCoordinate(selectedHive.longitude)}
-            </Text>
-            <View style={styles.mapSelectionActions}>
-              <Pressable
-                style={styles.mapSelectionButton}
-                onPress={() =>
-                  navigation.navigate("Hives", {
-                    screen: "HiveDetails",
-                    params: { hiveId: selectedHive.id },
-                  })
-                }
-              >
-                <Text style={styles.mapSelectionButtonText}>Open Details</Text>
-              </Pressable>
-              <Pressable
-                style={styles.mapSelectionSecondaryButton}
-                onPress={() => setSelectedHiveId(null)}
-              >
-                <Text style={styles.mapSelectionSecondaryText}>Close</Text>
-              </Pressable>
-            </View>
           </View>
         )}
 
@@ -3331,7 +3491,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#101828",
     backgroundColor: "#FFFFFF",
-    marginBottom: 14,
+    marginBottom: 4,
+  },
+  inputError: {
+    borderColor: "#DC2626",
+    marginBottom: 2,
+  },
+  fieldError: {
+    width: "100%",
+    fontSize: 12,
+    color: "#DC2626",
+    marginBottom: 10,
+    paddingHorizontal: 2,
   },
   separatorRow: {
     flexDirection: "row",
@@ -3875,7 +4046,7 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
   },
   infoCard: {
-    width: "48.5%",
+    width: "49%",
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
     borderColor: THEME.line,
@@ -4005,11 +4176,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
-    gap: 10,
+    rowGap: 10,
+    columnGap: 0,
     marginBottom: 14,
   },
   statCard: {
-    width: "48.5%",
+    width: "49%",
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
     borderColor: THEME.line,
@@ -4033,7 +4205,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   metricCard: {
-    width: "48.5%",
+    width: "49%",
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
     borderColor: THEME.line,
@@ -4426,7 +4598,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   mapOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(248, 249, 251, 0.88)",
     alignItems: "center",
     justifyContent: "center",
