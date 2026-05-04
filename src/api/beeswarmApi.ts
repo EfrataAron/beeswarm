@@ -1,4 +1,58 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 export type HiveStatus = "Healthy" | "Pre-swarm" | "Swarm" | "Abscondment";
+
+export type BeekeeperProfile = {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string;
+  address: string | null;
+  profile_photo_url: string | null;
+};
+
+export type AuthResponse = {
+  token: string;
+  beekeeper: BeekeeperProfile;
+};
+
+const AUTH_TOKEN_KEY = "@bsads/auth_token";
+const AUTH_USER_KEY  = "@bsads/auth_user";
+
+let _authToken: string | null = null;
+
+export function setAuthToken(token: string | null): void {
+  _authToken = token;
+}
+
+export function getAuthToken(): string | null {
+  return _authToken;
+}
+
+export async function initAuthFromStorage(): Promise<BeekeeperProfile | null> {
+  try {
+    const [token, raw] = await Promise.all([
+      AsyncStorage.getItem(AUTH_TOKEN_KEY),
+      AsyncStorage.getItem(AUTH_USER_KEY),
+    ]);
+    if (!token) return null;
+    _authToken = token;
+    return raw ? (JSON.parse(raw) as BeekeeperProfile) : null;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeProfile(raw: Record<string, unknown>): BeekeeperProfile {
+  return {
+    id:                String(raw.id ?? ""),
+    name:              String(raw.name ?? "Beekeeper"),
+    email:             raw.email != null ? String(raw.email) : null,
+    phone:             String(raw.phone ?? ""),
+    address:           raw.address != null ? String(raw.address) : null,
+    profile_photo_url: raw.profile_photo_url != null ? String(raw.profile_photo_url) : null,
+  };
+}
 
 export type Hive = {
   id: string;
@@ -200,6 +254,7 @@ async function requestJson<T>(
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
+      ...(_authToken ? { Authorization: `Bearer ${_authToken}` } : {}),
       ...(init?.headers ?? {}),
     },
     body: init?.body,
@@ -729,6 +784,129 @@ const LOCAL_ADVISORIES: Advisory[] = [
     ],
   },
 ];
+
+// ── Auth & Profile ────────────────────────────────────────────────────────────
+
+async function persistSession(token: string, beekeeper: BeekeeperProfile): Promise<void> {
+  _authToken = token;
+  await Promise.all([
+    AsyncStorage.setItem(AUTH_TOKEN_KEY, token),
+    AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(beekeeper)),
+  ]);
+}
+
+export async function login(email: string, password: string): Promise<AuthResponse> {
+  if (!BASE_URL) {
+    const beekeeper: BeekeeperProfile = {
+      id: "BK0001",
+      name: "Beekeeper",
+      email,
+      phone: "",
+      address: null,
+      profile_photo_url: null,
+    };
+    const token = `mock-${Date.now()}`;
+    await persistSession(token, beekeeper);
+    return { token, beekeeper };
+  }
+
+  const raw = await requestJson<Record<string, unknown>>("/auth/login", undefined, {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+
+  const token = String(raw.token ?? raw.access_token ?? "");
+  const beekeeper = normalizeProfile((raw.beekeeper ?? raw.user ?? raw) as Record<string, unknown>);
+  await persistSession(token, beekeeper);
+  return { token, beekeeper };
+}
+
+export async function register(
+  name: string,
+  email: string,
+  phone: string,
+  password: string,
+): Promise<AuthResponse> {
+  if (!BASE_URL) {
+    const beekeeper: BeekeeperProfile = {
+      id: `BK${Date.now()}`,
+      name,
+      email,
+      phone,
+      address: null,
+      profile_photo_url: null,
+    };
+    const token = `mock-${Date.now()}`;
+    await persistSession(token, beekeeper);
+    return { token, beekeeper };
+  }
+
+  const raw = await requestJson<Record<string, unknown>>("/auth/register", undefined, {
+    method: "POST",
+    body: JSON.stringify({ name, email, phone, password }),
+  });
+
+  const token = String(raw.token ?? raw.access_token ?? "");
+  const beekeeper = normalizeProfile((raw.beekeeper ?? raw.user ?? raw) as Record<string, unknown>);
+  await persistSession(token, beekeeper);
+  return { token, beekeeper };
+}
+
+export async function logout(): Promise<void> {
+  if (BASE_URL && _authToken) {
+    try {
+      await requestJson<void>("/auth/logout", undefined, { method: "POST" });
+    } catch {
+      // best-effort — always clear local session regardless
+    }
+  }
+  _authToken = null;
+  await Promise.all([
+    AsyncStorage.removeItem(AUTH_TOKEN_KEY),
+    AsyncStorage.removeItem(AUTH_USER_KEY),
+  ]);
+}
+
+export async function fetchProfile(): Promise<BeekeeperProfile> {
+  if (!BASE_URL) {
+    const raw = await AsyncStorage.getItem(AUTH_USER_KEY);
+    return raw ? (JSON.parse(raw) as BeekeeperProfile) : {
+      id: "BK0001", name: "Beekeeper", email: null, phone: "", address: null, profile_photo_url: null,
+    };
+  }
+
+  const raw = await requestJson<Record<string, unknown>>("/profile");
+  const profile = normalizeProfile(raw);
+  await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(profile));
+  return profile;
+}
+
+export async function updateProfile(data: {
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+}): Promise<BeekeeperProfile> {
+  if (!BASE_URL) {
+    const existing = await AsyncStorage.getItem(AUTH_USER_KEY);
+    const base: BeekeeperProfile = existing
+      ? (JSON.parse(existing) as BeekeeperProfile)
+      : { id: "BK0001", name: "Beekeeper", email: null, phone: "", address: null, profile_photo_url: null };
+    const updated: BeekeeperProfile = { ...base, ...data };
+    await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(updated));
+    return updated;
+  }
+
+  const raw = await requestJson<Record<string, unknown>>("/profile", undefined, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+  const profile = normalizeProfile(raw);
+  await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(profile));
+  return profile;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 export async function fetchAdvisory(alertId: string): Promise<Advisory | null> {
   if (!BASE_URL) {

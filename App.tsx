@@ -34,6 +34,7 @@ import {
   AlertItem,
   AlertSeverity,
   Advisory,
+  BeekeeperProfile,
   DashboardData,
   Hive,
   HiveDetailData,
@@ -46,6 +47,12 @@ import {
   fetchHiveDetail,
   fetchHiveAlerts,
   fetchHives,
+  initAuthFromStorage,
+  login,
+  logout,
+  register,
+  fetchProfile,
+  updateProfile,
 } from "./src/api/beeswarmApi";
 import HiveMap from "./src/components/HiveMap";
 import { ClassificationDebugPanel } from "./src/components/ClassificationDebugPanel";
@@ -67,6 +74,7 @@ type MainTabParamList = {
   Alerts: NavigatorScreenParams<AlertsStackParamList>;
   Map: undefined;
   Classification: undefined;
+  Profile: undefined;
 };
 
 type HivesStackParamList = {
@@ -145,6 +153,43 @@ function formatCoordinate(value: number) {
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [currentUser, setCurrentUser] = useState<BeekeeperProfile | null>(null);
+  const [bootstrapping, setBootstrapping] = useState(true);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const user = await initAuthFromStorage();
+        if (user) {
+          setCurrentUser(user);
+          setIsAuthenticated(true);
+        }
+      } catch {
+        // no stored session — stay on auth flow
+      } finally {
+        setBootstrapping(false);
+      }
+    })();
+  }, []);
+
+  const handleAuthSuccess = (user: BeekeeperProfile) => {
+    setCurrentUser(user);
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    setCurrentUser(null);
+    setIsAuthenticated(false);
+  };
+
+  if (bootstrapping) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: THEME.primary }}>
+        <ActivityIndicator size="large" color={THEME.accent} />
+      </View>
+    );
+  }
 
   return (
     <>
@@ -164,7 +209,7 @@ export default function App() {
                 {(props) => (
                   <LoginScreen
                     {...props}
-                    onAuthSuccess={() => setIsAuthenticated(true)}
+                    onAuthSuccess={handleAuthSuccess}
                   />
                 )}
               </RootStack.Screen>
@@ -172,7 +217,7 @@ export default function App() {
                 {(props) => (
                   <SignupScreen
                     {...props}
-                    onAuthSuccess={() => setIsAuthenticated(true)}
+                    onAuthSuccess={handleAuthSuccess}
                   />
                 )}
               </RootStack.Screen>
@@ -183,7 +228,9 @@ export default function App() {
                 {(props) => (
                   <MainTabsScreen
                     {...props}
-                    onLogout={() => setIsAuthenticated(false)}
+                    currentUser={currentUser}
+                    onProfileUpdate={setCurrentUser}
+                    onLogout={() => void handleLogout()}
                   />
                 )}
               </RootStack.Screen>
@@ -210,8 +257,12 @@ export default function App() {
 function MainTabsScreen({
   navigation,
   onLogout,
+  currentUser,
+  onProfileUpdate,
 }: NativeStackScreenProps<RootStackParamList, "MainTabs"> & {
   onLogout: () => void;
+  currentUser: BeekeeperProfile | null;
+  onProfileUpdate: (user: BeekeeperProfile) => void;
 }) {
   const openSettingsPage = () => navigation.navigate("Settings");
 
@@ -340,6 +391,29 @@ function MainTabsScreen({
           ),
         }}
       />
+      <Tab.Screen
+        name="Profile"
+        options={{
+          title: "Profile",
+          tabBarLabel: "Profile",
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? "person-circle" : "person-circle-outline"}
+              size={size}
+              color={color}
+            />
+          ),
+        }}
+      >
+        {() => (
+            <ProfileScreen
+              onLogout={onLogout}
+              onOpenSettings={openSettingsPage}
+              currentUser={currentUser}
+              onProfileUpdate={onProfileUpdate}
+            />
+          )}
+      </Tab.Screen>
     </Tab.Navigator>
   );
 }
@@ -526,6 +600,247 @@ function SettingsScreen({
   );
 }
 
+function ProfileScreen({
+  onLogout,
+  onOpenSettings,
+  currentUser,
+  onProfileUpdate,
+}: {
+  onLogout: () => void;
+  onOpenSettings: () => void;
+  currentUser: BeekeeperProfile | null;
+  onProfileUpdate: (user: BeekeeperProfile) => void;
+}) {
+  const [name, setName] = useState(currentUser?.name ?? "Beekeeper");
+  const [email, setEmail] = useState(currentUser?.email ?? "");
+  const [phone, setPhone] = useState(currentUser?.phone ?? "");
+  const [address, setAddress] = useState(currentUser?.address ?? "");
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(!currentUser);
+
+  useEffect(() => {
+    if (currentUser) {
+      setName(currentUser.name);
+      setEmail(currentUser.email ?? "");
+      setPhone(currentUser.phone);
+      setAddress(currentUser.address ?? "");
+      return;
+    }
+    void (async () => {
+      try {
+        const profile = await fetchProfile();
+        setName(profile.name);
+        setEmail(profile.email ?? "");
+        setPhone(profile.phone);
+        setAddress(profile.address ?? "");
+        onProfileUpdate(profile);
+      } catch {
+        Toast.show({ type: "error", text1: "Could not load profile" });
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [currentUser]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const updated = await updateProfile({ name, email, phone, address });
+      onProfileUpdate(updated);
+      setEditing(false);
+      Toast.show({ type: "success", text1: "Profile saved" });
+    } catch {
+      Toast.show({ type: "error", text1: "Could not save profile" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const initials = name
+    .trim()
+    .split(" ")
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join("");
+
+  if (loading) {
+    return (
+      <View style={styles.centerState}>
+        <ActivityIndicator size="large" color={THEME.accent} />
+        <Text style={styles.stateText}>Loading profile…</Text>
+      </View>
+    );
+  }
+
+  return (
+    <ScrollView
+      style={{ flex: 1, backgroundColor: THEME.page }}
+      contentContainerStyle={styles.profilePage}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Avatar + name */}
+      <View style={styles.profileHeroCard}>
+        <View style={styles.profileAvatarCircle}>
+          <Text style={styles.profileAvatarInitials}>{initials || "BK"}</Text>
+        </View>
+        {editing ? (
+          <TextInput
+            style={styles.profileNameInput}
+            value={name}
+            onChangeText={setName}
+            placeholder="Full name"
+            placeholderTextColor={THEME.placeholder}
+          />
+        ) : (
+          <Text style={styles.profileHeroName}>{name}</Text>
+        )}
+        <Text style={styles.profileHeroRole}>Beekeeper</Text>
+      </View>
+
+      {/* Info section */}
+      <View style={styles.profileSection}>
+        <Text style={styles.profileSectionTitle}>Contact Information</Text>
+
+        <View style={styles.profileFieldRow}>
+          <Ionicons name="mail-outline" size={18} color={THEME.textMuted} style={styles.profileFieldIcon} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.profileFieldLabel}>Email</Text>
+            {editing ? (
+              <TextInput
+                style={styles.profileFieldInput}
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                placeholder="Email address"
+                placeholderTextColor={THEME.placeholder}
+              />
+            ) : (
+              <Text style={styles.profileFieldValue}>{email || "—"}</Text>
+            )}
+          </View>
+        </View>
+
+        <View style={styles.profileDivider} />
+
+        <View style={styles.profileFieldRow}>
+          <Ionicons name="call-outline" size={18} color={THEME.textMuted} style={styles.profileFieldIcon} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.profileFieldLabel}>Phone</Text>
+            {editing ? (
+              <TextInput
+                style={styles.profileFieldInput}
+                value={phone}
+                onChangeText={setPhone}
+                keyboardType="phone-pad"
+                placeholder="Phone number"
+                placeholderTextColor={THEME.placeholder}
+              />
+            ) : (
+              <Text style={styles.profileFieldValue}>{phone || "—"}</Text>
+            )}
+          </View>
+        </View>
+
+        <View style={styles.profileDivider} />
+
+        <View style={styles.profileFieldRow}>
+          <Ionicons name="location-outline" size={18} color={THEME.textMuted} style={styles.profileFieldIcon} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.profileFieldLabel}>Address</Text>
+            {editing ? (
+              <TextInput
+                style={styles.profileFieldInput}
+                value={address}
+                onChangeText={setAddress}
+                placeholder="Your address"
+                placeholderTextColor={THEME.placeholder}
+              />
+            ) : (
+              <Text style={styles.profileFieldValue}>{address || "—"}</Text>
+            )}
+          </View>
+        </View>
+      </View>
+
+      {/* Edit / Save row */}
+      {editing ? (
+        <View style={styles.profileActionsRow}>
+          <Pressable
+            style={styles.profileSecondaryBtn}
+            onPress={() => setEditing(false)}
+          >
+            <Text style={styles.profileSecondaryBtnText}>Cancel</Text>
+          </Pressable>
+          <Pressable
+            style={[styles.profilePrimaryBtn, saving && { opacity: 0.6 }]}
+            onPress={() => void handleSave()}
+            disabled={saving}
+          >
+            <Text style={styles.profilePrimaryBtnText}>
+              {saving ? "Saving…" : "Save Changes"}
+            </Text>
+          </Pressable>
+        </View>
+      ) : (
+        <Pressable
+          style={styles.profileEditBtn}
+          onPress={() => setEditing(true)}
+        >
+          <Ionicons name="create-outline" size={16} color={THEME.primary} />
+          <Text style={styles.profileEditBtnText}>Edit Profile</Text>
+        </Pressable>
+      )}
+
+      {/* Quick links */}
+      <View style={styles.profileSection}>
+        <Text style={styles.profileSectionTitle}>App</Text>
+
+        <Pressable style={styles.profileLinkRow} onPress={onOpenSettings}>
+          <Ionicons name="settings-outline" size={20} color={THEME.primary} />
+          <Text style={styles.profileLinkText}>Settings</Text>
+          <Ionicons name="chevron-forward" size={16} color={THEME.textMuted} style={{ marginLeft: "auto" }} />
+        </Pressable>
+
+        <View style={styles.profileDivider} />
+
+        <Pressable
+          style={styles.profileLinkRow}
+          onPress={() =>
+            Toast.show({ type: "info", text1: "Change password coming soon" })
+          }
+        >
+          <Ionicons name="lock-closed-outline" size={20} color={THEME.primary} />
+          <Text style={styles.profileLinkText}>Change Password</Text>
+          <Ionicons name="chevron-forward" size={16} color={THEME.textMuted} style={{ marginLeft: "auto" }} />
+        </Pressable>
+
+        <View style={styles.profileDivider} />
+
+        <Pressable
+          style={styles.profileLinkRow}
+          onPress={() =>
+            Toast.show({ type: "info", text1: "Help & support coming soon" })
+          }
+        >
+          <Ionicons name="help-circle-outline" size={20} color={THEME.primary} />
+          <Text style={styles.profileLinkText}>Help & Support</Text>
+          <Ionicons name="chevron-forward" size={16} color={THEME.textMuted} style={{ marginLeft: "auto" }} />
+        </Pressable>
+      </View>
+
+      {/* Sign out */}
+      <Pressable style={styles.profileLogoutBtn} onPress={onLogout}>
+        <Ionicons name="log-out-outline" size={18} color="#B42318" />
+        <Text style={styles.profileLogoutText}>Sign Out</Text>
+      </Pressable>
+
+      <Text style={styles.profileVersion}>Beeswarm v1.0.0</Text>
+    </ScrollView>
+  );
+}
+
 function WelcomeScreen({
   navigation,
 }: NativeStackScreenProps<RootStackParamList, "Welcome">) {
@@ -580,12 +895,13 @@ function LoginScreen({
   navigation,
   onAuthSuccess,
 }: NativeStackScreenProps<RootStackParamList, "Login"> & {
-  onAuthSuccess: () => void;
+  onAuthSuccess: (user: BeekeeperProfile) => void;
 }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const [apiError, setApiError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -594,6 +910,7 @@ function LoginScreen({
     let valid = true;
     setEmailError("");
     setPasswordError("");
+    setApiError("");
 
     if (!email.trim()) {
       setEmailError("Email is required.");
@@ -611,9 +928,16 @@ function LoginScreen({
     if (!valid) return;
 
     setSubmitting(true);
-    await new Promise((r) => setTimeout(r, 400));
-    setSubmitting(false);
-    onAuthSuccess();
+    try {
+      const { beekeeper } = await login(email.trim(), password);
+      onAuthSuccess(beekeeper);
+    } catch (err) {
+      setApiError(
+        err instanceof Error ? err.message : "Login failed. Check your credentials and try again."
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -661,6 +985,12 @@ function LoginScreen({
           <Text style={styles.fieldError}>{passwordError}</Text>
         )}
 
+        {!!apiError && (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorBody}>{apiError}</Text>
+          </View>
+        )}
+
         <Pressable
           style={({ pressed }) => [
             styles.primaryButton,
@@ -695,7 +1025,7 @@ function SignupScreen({
   navigation,
   onAuthSuccess,
 }: NativeStackScreenProps<RootStackParamList, "Signup"> & {
-  onAuthSuccess: () => void;
+  onAuthSuccess: (user: BeekeeperProfile) => void;
 }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -703,6 +1033,7 @@ function SignupScreen({
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [apiError, setApiError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -732,9 +1063,17 @@ function SignupScreen({
     if (Object.keys(next).length > 0) return;
 
     setSubmitting(true);
-    await new Promise((r) => setTimeout(r, 400));
-    setSubmitting(false);
-    onAuthSuccess();
+    setApiError("");
+    try {
+      const { beekeeper } = await register(name.trim(), email.trim(), phone.trim(), password);
+      onAuthSuccess(beekeeper);
+    } catch (err) {
+      setApiError(
+        err instanceof Error ? err.message : "Registration failed. Please try again."
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const field = (key: string) => ({
@@ -844,6 +1183,12 @@ function SignupScreen({
         />
         {!!errors.confirmPassword && (
           <Text style={styles.fieldError}>{errors.confirmPassword}</Text>
+        )}
+
+        {!!apiError && (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorBody}>{apiError}</Text>
+          </View>
         )}
 
         <Pressable
@@ -5358,5 +5703,187 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 12,
     marginBottom: 10,
+  },
+
+  // ── Profile screen ────────────────────────────────────────
+  profilePage: {
+    paddingBottom: 48,
+    gap: 16,
+  },
+  profileHeroCard: {
+    backgroundColor: THEME.primary,
+    alignItems: "center",
+    paddingTop: 40,
+    paddingBottom: 32,
+    paddingHorizontal: 24,
+    gap: 6,
+  },
+  profileAvatarCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: THEME.accent,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 8,
+  },
+  profileAvatarInitials: {
+    fontSize: 28,
+    fontWeight: "800",
+    color: THEME.primary,
+  },
+  profileHeroName: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#FFFFFF",
+  },
+  profileNameInput: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.accent,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    minWidth: 180,
+    textAlign: "center",
+  },
+  profileHeroRole: {
+    fontSize: 13,
+    color: THEME.accent,
+    fontWeight: "600",
+  },
+  profileSection: {
+    backgroundColor: THEME.surface,
+    marginHorizontal: 16,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 4,
+    borderWidth: 1,
+    borderColor: THEME.line,
+  },
+  profileSectionTitle: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: THEME.textMuted,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+    marginBottom: 8,
+  },
+  profileFieldRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    paddingVertical: 8,
+    gap: 12,
+  },
+  profileFieldIcon: {
+    marginTop: 2,
+  },
+  profileFieldLabel: {
+    fontSize: 11,
+    color: THEME.textMuted,
+    fontWeight: "600",
+    marginBottom: 2,
+  },
+  profileFieldValue: {
+    fontSize: 15,
+    color: THEME.text,
+    fontWeight: "500",
+  },
+  profileFieldInput: {
+    fontSize: 15,
+    color: THEME.text,
+    fontWeight: "500",
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.accent,
+    paddingVertical: 2,
+  },
+  profileDivider: {
+    height: 1,
+    backgroundColor: THEME.line,
+    marginLeft: 32,
+  },
+  profileActionsRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginHorizontal: 16,
+  },
+  profilePrimaryBtn: {
+    flex: 1,
+    backgroundColor: THEME.primary,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  profilePrimaryBtnText: {
+    color: "#FFFFFF",
+    fontWeight: "700",
+    fontSize: 14,
+  },
+  profileSecondaryBtn: {
+    flex: 1,
+    backgroundColor: THEME.surface,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: THEME.line,
+  },
+  profileSecondaryBtnText: {
+    color: THEME.text,
+    fontWeight: "700",
+    fontSize: 14,
+  },
+  profileEditBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "center",
+    gap: 6,
+    backgroundColor: THEME.surface,
+    borderRadius: 999,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderWidth: 1,
+    borderColor: THEME.line,
+  },
+  profileEditBtnText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: THEME.primary,
+  },
+  profileLinkRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 12,
+  },
+  profileLinkText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: THEME.text,
+  },
+  profileLogoutBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    marginHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: "#FFF3F2",
+    borderWidth: 1,
+    borderColor: "#FECDCA",
+  },
+  profileLogoutText: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#B42318",
+  },
+  profileVersion: {
+    textAlign: "center",
+    fontSize: 12,
+    color: THEME.placeholder,
+    fontWeight: "500",
   },
 });
