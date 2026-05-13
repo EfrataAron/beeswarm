@@ -100,16 +100,16 @@ const STATUS_COLOR: Record<HiveStatus, string> = {
 };
 
 function displayStatus(status: HiveStatus): string {
-  if (status === "Healthy")     return "Harmonious";
-  if (status === "Pre-swarm")   return "2 Queens!";
-  if (status === "Swarm")       return "Swarming";
+  if (status === "Healthy") return "Harmonious";
+  if (status === "Pre-swarm") return "2 Queens!";
+  if (status === "Swarm") return "Swarming";
   return "Absconded";
 }
 
 function statusCondition(status: HiveStatus): string {
-  if (status === "Healthy")     return "Colony stable";
-  if (status === "Pre-swarm")   return "Queen cells detected · Supercedure risk";
-  if (status === "Swarm")       return "Colony splitting · Immediate action needed";
+  if (status === "Healthy") return "Colony stable";
+  if (status === "Pre-swarm") return "Queen cells detected · Supercedure risk";
+  if (status === "Swarm") return "Colony splitting · Immediate action needed";
   return "Missing queen · Colony may have departed";
 }
 
@@ -210,7 +210,14 @@ export default function App() {
 
   if (bootstrapping) {
     return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: THEME.primary }}>
+      <View
+        style={{
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: THEME.primary,
+        }}
+      >
         <ActivityIndicator size="large" color={THEME.accent} />
       </View>
     );
@@ -232,18 +239,12 @@ export default function App() {
               <RootStack.Screen name="Welcome" component={WelcomeScreen} />
               <RootStack.Screen name="Login">
                 {(props) => (
-                  <LoginScreen
-                    {...props}
-                    onAuthSuccess={handleAuthSuccess}
-                  />
+                  <LoginScreen {...props} onAuthSuccess={handleAuthSuccess} />
                 )}
               </RootStack.Screen>
               <RootStack.Screen name="Signup">
                 {(props) => (
-                  <SignupScreen
-                    {...props}
-                    onAuthSuccess={handleAuthSuccess}
-                  />
+                  <SignupScreen {...props} onAuthSuccess={handleAuthSuccess} />
                 )}
               </RootStack.Screen>
             </>
@@ -293,7 +294,9 @@ function MainTabsScreen({
   const [unreadAlertCount, setUnreadAlertCount] = useState(0);
 
   useEffect(() => {
-    void fetchAlerts().then((alerts) => setUnreadAlertCount(alerts.length)).catch(() => {});
+    void fetchAlerts()
+      .then((alerts) => setUnreadAlertCount(alerts.length))
+      .catch(() => {});
   }, []);
 
   return (
@@ -432,13 +435,13 @@ function MainTabsScreen({
         }}
       >
         {() => (
-            <ProfileScreen
-              onLogout={onLogout}
-              onOpenSettings={openSettingsPage}
-              currentUser={currentUser}
-              onProfileUpdate={onProfileUpdate}
-            />
-          )}
+          <ProfileScreen
+            onLogout={onLogout}
+            onOpenSettings={openSettingsPage}
+            currentUser={currentUser}
+            onProfileUpdate={onProfileUpdate}
+          />
+        )}
       </Tab.Screen>
     </Tab.Navigator>
   );
@@ -676,7 +679,13 @@ function ProfileScreen({
   const handleSave = async () => {
     setSaving(true);
     try {
-      const updated = await updateProfile({ name, email, phone, address, api_key: apiKey });
+      const updated = await updateProfile({
+        name,
+        email,
+        phone,
+        address,
+        api_key: apiKey,
+      });
       onProfileUpdate(updated);
       setEditing(false);
       Toast.show({ type: "success", text1: "Profile saved" });
@@ -733,7 +742,12 @@ function ProfileScreen({
         <Text style={styles.profileSectionTitle}>Contact Information</Text>
 
         <View style={styles.profileFieldRow}>
-          <Ionicons name="mail-outline" size={18} color={THEME.textMuted} style={styles.profileFieldIcon} />
+          <Ionicons
+            name="mail-outline"
+            size={18}
+            color={THEME.textMuted}
+            style={styles.profileFieldIcon}
+          />
           <View style={{ flex: 1 }}>
             <Text style={styles.profileFieldLabel}>Email</Text>
             {editing ? (
@@ -755,7 +769,12 @@ function ProfileScreen({
         <View style={styles.profileDivider} />
 
         <View style={styles.profileFieldRow}>
-          <Ionicons name="call-outline" size={18} color={THEME.textMuted} style={styles.profileFieldIcon} />
+          <Ionicons
+            name="call-outline"
+            size={18}
+            color={THEME.textMuted}
+            style={styles.profileFieldIcon}
+          />
           <View style={{ flex: 1 }}>
             <Text style={styles.profileFieldLabel}>Phone</Text>
             {editing ? (
@@ -776,7 +795,12 @@ function ProfileScreen({
         <View style={styles.profileDivider} />
 
         <View style={styles.profileFieldRow}>
-          <Ionicons name="location-outline" size={18} color={THEME.textMuted} style={styles.profileFieldIcon} />
+          <Ionicons
+            name="location-outline"
+            size={18}
+            color={THEME.textMuted}
+            style={styles.profileFieldIcon}
+          />
           <View style={{ flex: 1 }}>
             <Text style={styles.profileFieldLabel}>Address</Text>
             {editing ? (
@@ -796,7 +820,12 @@ function ProfileScreen({
         <View style={styles.profileDivider} />
 
         <View style={styles.profileFieldRow}>
-          <Ionicons name="key-outline" size={18} color={THEME.textMuted} style={styles.profileFieldIcon} />
+          <Ionicons
+            name="key-outline"
+            size={18}
+            color={THEME.textMuted}
+            style={styles.profileFieldIcon}
+          />
           <View style={{ flex: 1 }}>
             <Text style={styles.profileFieldLabel}>API Key</Text>
             {editing ? (
@@ -811,7 +840,10 @@ function ProfileScreen({
                   autoCapitalize="none"
                   autoCorrect={false}
                 />
-                <Pressable onPress={() => setShowApiKey((v) => !v)} style={{ paddingLeft: 8 }}>
+                <Pressable
+                  onPress={() => setShowApiKey((v) => !v)}
+                  style={{ paddingLeft: 8 }}
+                >
                   <Ionicons
                     name={showApiKey ? "eye-off-outline" : "eye-outline"}
                     size={18}
@@ -820,7 +852,9 @@ function ProfileScreen({
                 </Pressable>
               </View>
             ) : (
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+              >
                 <Text style={styles.profileFieldValue}>
                   {apiKey ? (showApiKey ? apiKey : "••••••••••••••••") : "—"}
                 </Text>
@@ -875,7 +909,12 @@ function ProfileScreen({
         <Pressable style={styles.profileLinkRow} onPress={onOpenSettings}>
           <Ionicons name="settings-outline" size={20} color={THEME.primary} />
           <Text style={styles.profileLinkText}>Settings</Text>
-          <Ionicons name="chevron-forward" size={16} color={THEME.textMuted} style={{ marginLeft: "auto" }} />
+          <Ionicons
+            name="chevron-forward"
+            size={16}
+            color={THEME.textMuted}
+            style={{ marginLeft: "auto" }}
+          />
         </Pressable>
 
         <View style={styles.profileDivider} />
@@ -886,9 +925,18 @@ function ProfileScreen({
             Toast.show({ type: "info", text1: "Change password coming soon" })
           }
         >
-          <Ionicons name="lock-closed-outline" size={20} color={THEME.primary} />
+          <Ionicons
+            name="lock-closed-outline"
+            size={20}
+            color={THEME.primary}
+          />
           <Text style={styles.profileLinkText}>Change Password</Text>
-          <Ionicons name="chevron-forward" size={16} color={THEME.textMuted} style={{ marginLeft: "auto" }} />
+          <Ionicons
+            name="chevron-forward"
+            size={16}
+            color={THEME.textMuted}
+            style={{ marginLeft: "auto" }}
+          />
         </Pressable>
 
         <View style={styles.profileDivider} />
@@ -899,9 +947,18 @@ function ProfileScreen({
             Toast.show({ type: "info", text1: "Help & support coming soon" })
           }
         >
-          <Ionicons name="help-circle-outline" size={20} color={THEME.primary} />
+          <Ionicons
+            name="help-circle-outline"
+            size={20}
+            color={THEME.primary}
+          />
           <Text style={styles.profileLinkText}>Help & Support</Text>
-          <Ionicons name="chevron-forward" size={16} color={THEME.textMuted} style={{ marginLeft: "auto" }} />
+          <Ionicons
+            name="chevron-forward"
+            size={16}
+            color={THEME.textMuted}
+            style={{ marginLeft: "auto" }}
+          />
         </Pressable>
       </View>
 
@@ -1008,7 +1065,9 @@ function LoginScreen({
       onAuthSuccess(beekeeper);
     } catch (err) {
       setApiError(
-        err instanceof Error ? err.message : "Login failed. Check your credentials and try again."
+        err instanceof Error
+          ? err.message
+          : "Login failed. Check your credentials and try again.",
       );
     } finally {
       setSubmitting(false);
@@ -1142,11 +1201,19 @@ function SignupScreen({
     setSubmitting(true);
     setApiError("");
     try {
-      const { beekeeper } = await register(name.trim(), email.trim(), phone.trim(), password, apiKey.trim());
+      const { beekeeper } = await register(
+        name.trim(),
+        email.trim(),
+        phone.trim(),
+        password,
+        apiKey.trim(),
+      );
       onAuthSuccess(beekeeper);
     } catch (err) {
       setApiError(
-        err instanceof Error ? err.message : "Registration failed. Please try again."
+        err instanceof Error
+          ? err.message
+          : "Registration failed. Please try again.",
       );
     } finally {
       setSubmitting(false);
@@ -2386,11 +2453,36 @@ function DashboardScreen({
       </View>
 
       {/* ── Overview row ── */}
-      <Pressable style={styles.overviewCardRow} onPress={() => navigation.navigate("Hives", { screen: "HiveList" })}>
-        <View style={[styles.overviewTile, { backgroundColor: dashboard.silentHives.length > 0 ? "#EF4444" : "#22C55E" }]}>
-          <Ionicons name={dashboard.silentHives.length > 0 ? "wifi-outline" : "radio-outline"} size={20} color="#fff" />
-          <Text style={styles.overviewTileValue}>{dashboard.silentHives.length > 0 ? dashboard.silentHives.length : dashboard.totalHives}</Text>
-          <Text style={styles.overviewTileLabel}>{dashboard.silentHives.length > 0 ? "Offline" : "All Online"}</Text>
+      <Pressable
+        style={styles.overviewCardRow}
+        onPress={() => navigation.navigate("Hives", { screen: "HiveList" })}
+      >
+        <View
+          style={[
+            styles.overviewTile,
+            {
+              backgroundColor:
+                dashboard.silentHives.length > 0 ? "#EF4444" : "#22C55E",
+            },
+          ]}
+        >
+          <Ionicons
+            name={
+              dashboard.silentHives.length > 0
+                ? "wifi-outline"
+                : "radio-outline"
+            }
+            size={20}
+            color="#fff"
+          />
+          <Text style={styles.overviewTileValue}>
+            {dashboard.silentHives.length > 0
+              ? dashboard.silentHives.length
+              : dashboard.totalHives}
+          </Text>
+          <Text style={styles.overviewTileLabel}>
+            {dashboard.silentHives.length > 0 ? "Offline" : "All Online"}
+          </Text>
         </View>
         <View style={[styles.overviewTile, { backgroundColor: "#22C55E" }]}>
           <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
@@ -2414,11 +2506,16 @@ function DashboardScreen({
       </Pressable>
 
       {/* ── Hive State Donut ── */}
-      <Pressable style={styles.card} onPress={() => navigation.navigate("Hives", { screen: "HiveList" })}>
+      <Pressable
+        style={styles.card}
+        onPress={() => navigation.navigate("Hives", { screen: "HiveList" })}
+      >
         <View style={styles.rowBetween}>
           <Text style={styles.cardTitle}>Hive State</Text>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-            <Text style={{ fontSize: 12, color: "#2563EB", fontWeight: "700" }}>View Hives</Text>
+            <Text style={{ fontSize: 12, color: "#2563EB", fontWeight: "700" }}>
+              View Hives
+            </Text>
             <Ionicons name="chevron-forward" size={14} color="#2563EB" />
           </View>
         </View>
@@ -2505,8 +2602,6 @@ function DashboardScreen({
           <AllHivesMetricsChart allHives={dashboard.allHives} />
         </View>
       )}
-
-      
 
       {/* ── Hive Status Cards ── */}
       {/* <Text style={styles.sectionTitle}>Status Counts</Text>
@@ -2932,7 +3027,11 @@ function HiveMetricsLineChart({
   metricSeries,
   hiveId,
 }: {
-  metricSeries: Array<{ timeLabel: string; temperatureC: number; humidityPercent: number }>;
+  metricSeries: Array<{
+    timeLabel: string;
+    temperatureC: number;
+    humidityPercent: number;
+  }>;
   hiveId: string;
 }) {
   const [chartWidth, setChartWidth] = useState(0);
@@ -2944,7 +3043,11 @@ function HiveMetricsLineChart({
   const THRESHOLD_TEMP = 34.5;
 
   if (metricSeries.length === 0) {
-    return <Text style={{ textAlign: "center", color: THEME.textMuted }}>No data available</Text>;
+    return (
+      <Text style={{ textAlign: "center", color: THEME.textMuted }}>
+        No data available
+      </Text>
+    );
   }
 
   const tempValues = metricSeries.map((p) => p.temperatureC);
@@ -2953,9 +3056,10 @@ function HiveMetricsLineChart({
   const minTemp = Math.min(...tempValues, THRESHOLD_TEMP - 5, 25);
   const maxHumidity = Math.max(...humidityValues, 100);
   const minHumidity = Math.min(...humidityValues, 0);
-  
+
   const avgTemp = tempValues.reduce((a, b) => a + b) / tempValues.length;
-  const avgHumidity = humidityValues.reduce((a, b) => a + b) / humidityValues.length;
+  const avgHumidity =
+    humidityValues.reduce((a, b) => a + b) / humidityValues.length;
   const maxTempVal = Math.max(...tempValues);
   const minTempVal = Math.min(...tempValues);
   const maxHumidityVal = Math.max(...humidityValues);
@@ -2976,12 +3080,15 @@ function HiveMetricsLineChart({
   // Points for humidity line (scaled to 0-100%)
   const humidityPts = metricSeries.map((d, i) => ({
     x: PAD_LEFT + (n > 1 ? (i / (n - 1)) * plotW : plotW / 2),
-    y: PAD_TOP + ((maxHumidity - d.humidityPercent) / (maxHumidity - minHumidity)) * plotH,
+    y:
+      PAD_TOP +
+      ((maxHumidity - d.humidityPercent) / (maxHumidity - minHumidity)) * plotH,
     label: d.timeLabel,
     value: d.humidityPercent,
   }));
 
-  const thresholdY = PAD_TOP + ((maxTemp - THRESHOLD_TEMP) / (maxTemp - minTemp)) * plotH;
+  const thresholdY =
+    PAD_TOP + ((maxTemp - THRESHOLD_TEMP) / (maxTemp - minTemp)) * plotH;
 
   return (
     <View style={{ marginTop: 12 }}>
@@ -3023,7 +3130,8 @@ function HiveMetricsLineChart({
                   top: PAD_TOP + pct * plotH,
                   width: plotW,
                   height: 1,
-                  backgroundColor: pct === 0 || pct === 1 ? "#E2E8F0" : "#F1F5F9",
+                  backgroundColor:
+                    pct === 0 || pct === 1 ? "#E2E8F0" : "#F1F5F9",
                 }}
               />
             ))}
@@ -3188,41 +3296,139 @@ function HiveMetricsLineChart({
 
       {/* Statistics below chart */}
       <View style={{ marginTop: 12, paddingHorizontal: 0 }}>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 12 }}>
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            gap: 12,
+          }}
+        >
           {/* Temperature Stats */}
-          <View style={{ flex: 1, paddingHorizontal: 8, paddingVertical: 8, backgroundColor: "#FFF8F3", borderRadius: 6 }}>
-            <Text style={{ fontSize: 10, color: THEME.textMuted, fontWeight: "600" }}>Temperature</Text>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 4 }}>
+          <View
+            style={{
+              flex: 1,
+              paddingHorizontal: 8,
+              paddingVertical: 8,
+              backgroundColor: "#FFF8F3",
+              borderRadius: 6,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 10,
+                color: THEME.textMuted,
+                fontWeight: "600",
+              }}
+            >
+              Temperature
+            </Text>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                marginTop: 4,
+              }}
+            >
               <View>
                 <Text style={{ fontSize: 8, color: THEME.textMuted }}>Min</Text>
-                <Text style={{ fontSize: 12, fontWeight: "700", color: THEME.accent }}>{minTempVal.toFixed(1)}°</Text>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: "700",
+                    color: THEME.accent,
+                  }}
+                >
+                  {minTempVal.toFixed(1)}°
+                </Text>
               </View>
               <View>
                 <Text style={{ fontSize: 8, color: THEME.textMuted }}>Avg</Text>
-                <Text style={{ fontSize: 12, fontWeight: "700", color: THEME.accent }}>{avgTemp.toFixed(1)}°</Text>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: "700",
+                    color: THEME.accent,
+                  }}
+                >
+                  {avgTemp.toFixed(1)}°
+                </Text>
               </View>
               <View>
                 <Text style={{ fontSize: 8, color: THEME.textMuted }}>Max</Text>
-                <Text style={{ fontSize: 12, fontWeight: "700", color: THEME.accent }}>{maxTempVal.toFixed(1)}°</Text>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: "700",
+                    color: THEME.accent,
+                  }}
+                >
+                  {maxTempVal.toFixed(1)}°
+                </Text>
               </View>
             </View>
           </View>
 
           {/* Humidity Stats */}
-          <View style={{ flex: 1, paddingHorizontal: 8, paddingVertical: 8, backgroundColor: "#F0F4F8", borderRadius: 6 }}>
-            <Text style={{ fontSize: 10, color: THEME.textMuted, fontWeight: "600" }}>Humidity</Text>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 4 }}>
+          <View
+            style={{
+              flex: 1,
+              paddingHorizontal: 8,
+              paddingVertical: 8,
+              backgroundColor: "#F0F4F8",
+              borderRadius: 6,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 10,
+                color: THEME.textMuted,
+                fontWeight: "600",
+              }}
+            >
+              Humidity
+            </Text>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                marginTop: 4,
+              }}
+            >
               <View>
                 <Text style={{ fontSize: 8, color: THEME.textMuted }}>Min</Text>
-                <Text style={{ fontSize: 12, fontWeight: "700", color: THEME.primary }}>{minHumidityVal.toFixed(0)}%</Text>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: "700",
+                    color: THEME.primary,
+                  }}
+                >
+                  {minHumidityVal.toFixed(0)}%
+                </Text>
               </View>
               <View>
                 <Text style={{ fontSize: 8, color: THEME.textMuted }}>Avg</Text>
-                <Text style={{ fontSize: 12, fontWeight: "700", color: THEME.primary }}>{avgHumidity.toFixed(0)}%</Text>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: "700",
+                    color: THEME.primary,
+                  }}
+                >
+                  {avgHumidity.toFixed(0)}%
+                </Text>
               </View>
               <View>
                 <Text style={{ fontSize: 8, color: THEME.textMuted }}>Max</Text>
-                <Text style={{ fontSize: 12, fontWeight: "700", color: THEME.primary }}>{maxHumidityVal.toFixed(0)}%</Text>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: "700",
+                    color: THEME.primary,
+                  }}
+                >
+                  {maxHumidityVal.toFixed(0)}%
+                </Text>
               </View>
             </View>
           </View>
@@ -3236,7 +3442,11 @@ function HiveMetricsLineChart({
 function AllHivesMetricsChart({
   allHives,
 }: {
-  allHives: Array<{ hiveId: string; temperatureC: number; humidityPercent: number }>;
+  allHives: Array<{
+    hiveId: string;
+    temperatureC: number;
+    humidityPercent: number;
+  }>;
 }) {
   const [chartWidth, setChartWidth] = useState(0);
   const [hoveredHive, setHoveredHive] = useState<string | null>(null);
@@ -3338,7 +3548,8 @@ function AllHivesMetricsChart({
                     top: PAD_TOP,
                     width: 1,
                     height: plotH,
-                    backgroundColor: pct === 0 || pct === 1 ? "#D1D5DB" : "#E5E7EB",
+                    backgroundColor:
+                      pct === 0 || pct === 1 ? "#D1D5DB" : "#E5E7EB",
                   }}
                 />
                 {/* Horizontal grid lines */}
@@ -3349,7 +3560,8 @@ function AllHivesMetricsChart({
                     top: PAD_TOP + pct * plotH,
                     width: plotW,
                     height: 1,
-                    backgroundColor: pct === 0 || pct === 1 ? "#D1D5DB" : "#E5E7EB",
+                    backgroundColor:
+                      pct === 0 || pct === 1 ? "#D1D5DB" : "#E5E7EB",
                   }}
                 />
               </React.Fragment>
@@ -3361,7 +3573,8 @@ function AllHivesMetricsChart({
                 position: "absolute",
                 left: PAD_LEFT,
                 top: PAD_TOP + (1 - THRESHOLD_HUMIDITY / 100) * plotH,
-                width: ((THRESHOLD_TEMP - minTemp) / (maxTemp - minTemp)) * plotW,
+                width:
+                  ((THRESHOLD_TEMP - minTemp) / (maxTemp - minTemp)) * plotW,
                 height: (THRESHOLD_HUMIDITY / 100) * plotH,
                 backgroundColor: "#22C55E",
                 opacity: 0.1,
@@ -3375,7 +3588,9 @@ function AllHivesMetricsChart({
             <View
               style={{
                 position: "absolute",
-                left: PAD_LEFT + ((THRESHOLD_TEMP - minTemp) / (maxTemp - minTemp)) * plotW,
+                left:
+                  PAD_LEFT +
+                  ((THRESHOLD_TEMP - minTemp) / (maxTemp - minTemp)) * plotW,
                 top: PAD_TOP,
                 width: 2,
                 height: plotH,
@@ -3401,7 +3616,10 @@ function AllHivesMetricsChart({
             <Text
               style={{
                 position: "absolute",
-                left: PAD_LEFT + ((THRESHOLD_TEMP - minTemp) / (maxTemp - minTemp)) * plotW - 18,
+                left:
+                  PAD_LEFT +
+                  ((THRESHOLD_TEMP - minTemp) / (maxTemp - minTemp)) * plotW -
+                  18,
                 top: PAD_TOP - 18,
                 fontSize: 8,
                 fontWeight: "700",
@@ -3434,9 +3652,13 @@ function AllHivesMetricsChart({
 
             {/* Hive dots with touch handlers */}
             {allHives.map((hive) => {
-              const x = PAD_LEFT + ((hive.temperatureC - minTemp) / (maxTemp - minTemp)) * plotW;
+              const x =
+                PAD_LEFT +
+                ((hive.temperatureC - minTemp) / (maxTemp - minTemp)) * plotW;
               const y = PAD_TOP + (1 - hive.humidityPercent / 100) * plotH;
-              const isAbnormal = hive.temperatureC > THRESHOLD_TEMP || hive.humidityPercent > THRESHOLD_HUMIDITY;
+              const isAbnormal =
+                hive.temperatureC > THRESHOLD_TEMP ||
+                hive.humidityPercent > THRESHOLD_HUMIDITY;
               const color = isAbnormal ? "#DC2626" : "#22C55E";
               const isHovered = hoveredHive === hive.hiveId;
 
@@ -3510,7 +3732,8 @@ function AllHivesMetricsChart({
                           marginTop: 2,
                         }}
                       >
-                        {hive.temperatureC.toFixed(1)}°C / {hive.humidityPercent.toFixed(0)}%
+                        {hive.temperatureC.toFixed(1)}°C /{" "}
+                        {hive.humidityPercent.toFixed(0)}%
                       </Text>
                     </View>
                   )}
@@ -3523,7 +3746,14 @@ function AllHivesMetricsChart({
 
       {/* Legend */}
       <View style={{ marginTop: 16, paddingHorizontal: 12 }}>
-        <View style={{ flexDirection: "row", gap: 24, flexWrap: "wrap", marginBottom: 12 }}>
+        <View
+          style={{
+            flexDirection: "row",
+            gap: 24,
+            flexWrap: "wrap",
+            marginBottom: 12,
+          }}
+        >
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
             <View
               style={{
@@ -3535,7 +3765,15 @@ function AllHivesMetricsChart({
                 borderColor: "#FFFFFF",
               }}
             />
-            <Text style={{ fontSize: 10, color: THEME.textMuted, fontWeight: "600" }}>Normal</Text>
+            <Text
+              style={{
+                fontSize: 10,
+                color: THEME.textMuted,
+                fontWeight: "600",
+              }}
+            >
+              Normal
+            </Text>
           </View>
 
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
@@ -3549,7 +3787,15 @@ function AllHivesMetricsChart({
                 borderColor: "#FFFFFF",
               }}
             />
-            <Text style={{ fontSize: 10, color: THEME.textMuted, fontWeight: "600" }}>Abnormal</Text>
+            <Text
+              style={{
+                fontSize: 10,
+                color: THEME.textMuted,
+                fontWeight: "600",
+              }}
+            >
+              Abnormal
+            </Text>
           </View>
 
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
@@ -3563,29 +3809,106 @@ function AllHivesMetricsChart({
                 borderStyle: "dashed",
               }}
             />
-            <Text style={{ fontSize: 10, color: THEME.textMuted, fontWeight: "600" }}>Normal Zone</Text>
+            <Text
+              style={{
+                fontSize: 10,
+                color: THEME.textMuted,
+                fontWeight: "600",
+              }}
+            >
+              Normal Zone
+            </Text>
           </View>
         </View>
 
         {/* Summary statistics */}
         <View style={{ flexDirection: "row", gap: 12 }}>
-          <View style={{ flex: 1, paddingHorizontal: 10, paddingVertical: 10, backgroundColor: "#ECFDF5", borderRadius: 6 }}>
-            <Text style={{ fontSize: 9, color: THEME.textMuted, fontWeight: "600" }}>Healthy</Text>
-            <Text style={{ fontSize: 16, fontWeight: "700", color: "#22C55E", marginTop: 4 }}>
-              {allHives.filter((h) => h.temperatureC <= THRESHOLD_TEMP && h.humidityPercent <= THRESHOLD_HUMIDITY).length}
+          <View
+            style={{
+              flex: 1,
+              paddingHorizontal: 10,
+              paddingVertical: 10,
+              backgroundColor: "#ECFDF5",
+              borderRadius: 6,
+            }}
+          >
+            <Text
+              style={{ fontSize: 9, color: THEME.textMuted, fontWeight: "600" }}
+            >
+              Healthy
+            </Text>
+            <Text
+              style={{
+                fontSize: 16,
+                fontWeight: "700",
+                color: "#22C55E",
+                marginTop: 4,
+              }}
+            >
+              {
+                allHives.filter(
+                  (h) =>
+                    h.temperatureC <= THRESHOLD_TEMP &&
+                    h.humidityPercent <= THRESHOLD_HUMIDITY,
+                ).length
+              }
             </Text>
           </View>
 
-          <View style={{ flex: 1, paddingHorizontal: 10, paddingVertical: 10, backgroundColor: "#FCE7E7", borderRadius: 6 }}>
-            <Text style={{ fontSize: 9, color: THEME.textMuted, fontWeight: "600" }}>At Risk</Text>
-            <Text style={{ fontSize: 16, fontWeight: "700", color: "#DC2626", marginTop: 4 }}>
-              {allHives.filter((h) => h.temperatureC > THRESHOLD_TEMP || h.humidityPercent > THRESHOLD_HUMIDITY).length}
+          <View
+            style={{
+              flex: 1,
+              paddingHorizontal: 10,
+              paddingVertical: 10,
+              backgroundColor: "#FCE7E7",
+              borderRadius: 6,
+            }}
+          >
+            <Text
+              style={{ fontSize: 9, color: THEME.textMuted, fontWeight: "600" }}
+            >
+              At Risk
+            </Text>
+            <Text
+              style={{
+                fontSize: 16,
+                fontWeight: "700",
+                color: "#DC2626",
+                marginTop: 4,
+              }}
+            >
+              {
+                allHives.filter(
+                  (h) =>
+                    h.temperatureC > THRESHOLD_TEMP ||
+                    h.humidityPercent > THRESHOLD_HUMIDITY,
+                ).length
+              }
             </Text>
           </View>
 
-          <View style={{ flex: 1, paddingHorizontal: 10, paddingVertical: 10, backgroundColor: "#F0F4F8", borderRadius: 6 }}>
-            <Text style={{ fontSize: 9, color: THEME.textMuted, fontWeight: "600" }}>Total</Text>
-            <Text style={{ fontSize: 16, fontWeight: "700", color: THEME.primary, marginTop: 4 }}>
+          <View
+            style={{
+              flex: 1,
+              paddingHorizontal: 10,
+              paddingVertical: 10,
+              backgroundColor: "#F0F4F8",
+              borderRadius: 6,
+            }}
+          >
+            <Text
+              style={{ fontSize: 9, color: THEME.textMuted, fontWeight: "600" }}
+            >
+              Total
+            </Text>
+            <Text
+              style={{
+                fontSize: 16,
+                fontWeight: "700",
+                color: THEME.primary,
+                marginTop: 4,
+              }}
+            >
               {allHives.length}
             </Text>
           </View>
@@ -3847,7 +4170,9 @@ function HivesListScreen({
                 </Text>
               </View>
               {hive.stateSince && (
-                <Text style={styles.hiveRowDuration}>{formatStateDuration(hive.stateSince)}</Text>
+                <Text style={styles.hiveRowDuration}>
+                  {formatStateDuration(hive.stateSince)}
+                </Text>
               )}
             </Pressable>
           ))}
@@ -3875,14 +4200,29 @@ function HivesListScreen({
               }
             >
               {/* Status dot */}
-              <View style={[styles.hiveRowDot, { backgroundColor: STATUS_COLOR[hive.status] }]} />
+              <View
+                style={[
+                  styles.hiveRowDot,
+                  { backgroundColor: STATUS_COLOR[hive.status] },
+                ]}
+              />
 
               {/* Info: name + state badge on same line, condition below */}
               <View style={styles.hiveRowInfo}>
                 <View style={styles.hiveRowNameRow}>
                   <Text style={styles.hiveName}>{hive.id}</Text>
-                  <View style={[styles.hiveRowStateBadge, { backgroundColor: `${STATUS_COLOR[hive.status]}18` }]}>
-                    <Text style={[styles.hiveRowStateBadgeText, { color: STATUS_COLOR[hive.status] }]}>
+                  <View
+                    style={[
+                      styles.hiveRowStateBadge,
+                      { backgroundColor: `${STATUS_COLOR[hive.status]}18` },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.hiveRowStateBadgeText,
+                        { color: STATUS_COLOR[hive.status] },
+                      ]}
+                    >
                       {label}
                     </Text>
                   </View>
@@ -3899,7 +4239,11 @@ function HivesListScreen({
                 )}
                 <View style={styles.hiveRowMoreBtn}>
                   <Text style={styles.hiveRowMoreText}>more</Text>
-                  <Ionicons name="ellipsis-horizontal" size={14} color="#2563EB" />
+                  <Ionicons
+                    name="ellipsis-horizontal"
+                    size={14}
+                    color="#2563EB"
+                  />
                 </View>
               </View>
             </Pressable>
@@ -3996,7 +4340,11 @@ function HiveDetailsScreen({
           <View style={styles.detailHeroTextWrap}>
             <Text style={styles.detailHiveName}>{detail.name}</Text>
             <View style={styles.detailHeroMetaRow}>
-              <Ionicons name="location-outline" size={12} color={THEME.textMuted} />
+              <Ionicons
+                name="location-outline"
+                size={12}
+                color={THEME.textMuted}
+              />
               <Text style={styles.detailHeroMeta}>{detail.location}</Text>
             </View>
           </View>
@@ -4005,7 +4353,12 @@ function HiveDetailsScreen({
 
         {/* State + duration row */}
         <View style={[styles.detailStateDurationRow]}>
-          <Text style={[styles.detailStateLabel, { color: STATUS_COLOR[detail.status] }]}>
+          <Text
+            style={[
+              styles.detailStateLabel,
+              { color: STATUS_COLOR[detail.status] },
+            ]}
+          >
             {displayStatus(detail.status)}
           </Text>
           {detail.stateSince && (
@@ -4020,102 +4373,110 @@ function HiveDetailsScreen({
 
         <View style={styles.heroDivider} />
 
-          <View style={styles.detailAlertBanner}>
-            <View style={styles.detailAlertIconWrap}>
-              <Ionicons
-                name={detail.status === "Healthy" ? "checkmark-circle-outline" : "warning-outline"}
-                size={18}
-                color={detail.status === "Healthy" ? "#16A34A" : THEME.accent}
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.detailAlertTitle}>{statusCondition(detail.status)}</Text>
-              <Text style={styles.detailAlertSubtitle}>{detail.alertMessage}</Text>
-            </View>
+        <View style={styles.detailAlertBanner}>
+          <View style={styles.detailAlertIconWrap}>
+            <Ionicons
+              name={
+                detail.status === "Healthy"
+                  ? "checkmark-circle-outline"
+                  : "warning-outline"
+              }
+              size={18}
+              color={detail.status === "Healthy" ? "#16A34A" : THEME.accent}
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.detailAlertTitle}>
+              {statusCondition(detail.status)}
+            </Text>
+            <Text style={styles.detailAlertSubtitle}>
+              {detail.alertMessage}
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* ── Notifications ── */}
+      <View style={styles.card}>
+        <View style={styles.rowBetween}>
+          <Text style={styles.cardTitle}>Notifications</Text>
+          <View style={styles.hiveAlertCountBadge}>
+            <Text style={styles.hiveAlertCountText}>
+              {hiveAlerts.length} active
+            </Text>
           </View>
         </View>
 
-        {/* ── Notifications ── */}
-        <View style={styles.card}>
-          <View style={styles.rowBetween}>
-            <Text style={styles.cardTitle}>Notifications</Text>
-            <View style={styles.hiveAlertCountBadge}>
-              <Text style={styles.hiveAlertCountText}>
-                {hiveAlerts.length} active
-              </Text>
-            </View>
+        {hiveAlerts.length === 0 && (
+          <View style={styles.hiveAlertEmpty}>
+            <Ionicons
+              name="checkmark-circle-outline"
+              size={28}
+              color="#16A34A"
+            />
+            <Text style={styles.hiveAlertEmptyText}>
+              No notifications for this hive
+            </Text>
           </View>
+        )}
 
-          {hiveAlerts.length === 0 && (
-            <View style={styles.hiveAlertEmpty}>
-              <Ionicons
-                name="checkmark-circle-outline"
-                size={28}
-                color="#16A34A"
+        {hiveAlerts.map((alert) => {
+          const severityColors: Record<AlertSeverity, string> = {
+            Critical: "#DC2626",
+            Warning: "#D97706",
+            Info: "#2563EB",
+          };
+          const severityBg: Record<AlertSeverity, string> = {
+            Critical: "#FEF2F2",
+            Warning: "#FFFBEB",
+            Info: "#EFF6FF",
+          };
+          const color = severityColors[alert.severity];
+          const bg = severityBg[alert.severity];
+
+          return (
+            <View key={alert.id} style={styles.hiveAlertRow}>
+              {/* Severity indicator */}
+              <View
+                style={[
+                  styles.hiveAlertSeverityBar,
+                  { backgroundColor: color },
+                ]}
               />
-              <Text style={styles.hiveAlertEmptyText}>
-                No notifications for this hive
-              </Text>
-            </View>
-          )}
 
-          {hiveAlerts.map((alert) => {
-            const severityColors: Record<AlertSeverity, string> = {
-              Critical: "#DC2626",
-              Warning: "#D97706",
-              Info: "#2563EB",
-            };
-            const severityBg: Record<AlertSeverity, string> = {
-              Critical: "#FEF2F2",
-              Warning: "#FFFBEB",
-              Info: "#EFF6FF",
-            };
-            const color = severityColors[alert.severity];
-            const bg = severityBg[alert.severity];
-
-            return (
-              <View key={alert.id} style={styles.hiveAlertRow}>
-                {/* Severity indicator */}
-                <View
-                  style={[
-                    styles.hiveAlertSeverityBar,
-                    { backgroundColor: color },
-                  ]}
-                />
-
-                <View style={styles.hiveAlertContent}>
-                  {/* Header */}
-                  <View style={styles.hiveAlertHeader}>
-                    <View
-                      style={[
-                        styles.hiveAlertSeverityBadge,
-                        { backgroundColor: bg },
-                      ]}
-                    >
-                      <Text style={[styles.hiveAlertSeverityText, { color }]}> 
-                        {alert.severity}
-                      </Text>
-                    </View>
-                    <Text style={styles.hiveAlertDate}>{alert.date}</Text>
+              <View style={styles.hiveAlertContent}>
+                {/* Header */}
+                <View style={styles.hiveAlertHeader}>
+                  <View
+                    style={[
+                      styles.hiveAlertSeverityBadge,
+                      { backgroundColor: bg },
+                    ]}
+                  >
+                    <Text style={[styles.hiveAlertSeverityText, { color }]}>
+                      {alert.severity}
+                    </Text>
                   </View>
-
-                  {/* Title + summary */}
-                  <Text style={styles.hiveAlertTitle}>{alert.title}</Text>
-                  <Text style={styles.hiveAlertSummary}>{alert.summary}</Text>
+                  <Text style={styles.hiveAlertDate}>{alert.date}</Text>
                 </View>
+
+                {/* Title + summary */}
+                <Text style={styles.hiveAlertTitle}>{alert.title}</Text>
+                <Text style={styles.hiveAlertSummary}>{alert.summary}</Text>
               </View>
-            );
-          })}
-        </View>
+            </View>
+          );
+        })}
+      </View>
 
-        {/* ── Metrics Highlights ── */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Latest Readings</Text>
-          <Text style={styles.metricsSubtitle}>
-            Temperature & humidity over time with normal threshold
-          </Text>
+      {/* ── Metrics Highlights ── */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Latest Readings</Text>
+        <Text style={styles.metricsSubtitle}>
+          Temperature & humidity over time with normal threshold
+        </Text>
 
-          <View style={styles.metricsHighlightsRow}>
+        <View style={styles.metricsHighlightsRow}>
           <View
             style={[
               styles.metricHighlightCard,
@@ -4174,8 +4535,6 @@ function HiveDetailsScreen({
         {/* Line Chart */}
         <HiveMetricsLineChart metricSeries={metricSeries} hiveId={detail.id} />
       </View>
-
-    
     </ScrollView>
   );
 }
