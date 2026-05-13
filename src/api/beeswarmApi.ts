@@ -9,6 +9,7 @@ export type BeekeeperProfile = {
   phone: string;
   address: string | null;
   profile_photo_url: string | null;
+  api_key: string | null;
 };
 
 export type AuthResponse = {
@@ -51,6 +52,7 @@ function normalizeProfile(raw: Record<string, unknown>): BeekeeperProfile {
     phone:             String(raw.phone ?? ""),
     address:           raw.address != null ? String(raw.address) : null,
     profile_photo_url: raw.profile_photo_url != null ? String(raw.profile_photo_url) : null,
+    api_key:           raw.api_key != null ? String(raw.api_key) : null,
   };
 }
 
@@ -59,6 +61,7 @@ export type Hive = {
   status: HiveStatus;
   latitude?: number;
   longitude?: number;
+  stateSince?: string; // ISO timestamp when the hive entered its current state
 };
 
 export type DashboardData = {
@@ -72,8 +75,7 @@ export type DashboardData = {
     nectarFlowKgPerDay: number;
   };
   // Alerts section
-  mostAtRiskHive: { hiveId: string; alertCount: number };
-  avgAcknowledgeTimeMinutes: number;
+  
   pendingAlerts: number;
   acknowledgedAlerts: number;
   // Pre-swarm trend (last 7 days)
@@ -83,6 +85,8 @@ export type DashboardData = {
   silentHives: Array<{ hiveId: string; lastSeenHoursAgo: number }>;
   // Environmental correlation
   highTempPreSwarmHives: Array<{ hiveId: string; temperatureC: number }>;
+  // All hives metrics
+  allHives: Array<{ hiveId: string; temperatureC: number; humidityPercent: number }>;
   // Advisory
   pendingAdvisoryActions: number;
   // ML confidence
@@ -94,6 +98,7 @@ export type HiveDetailData = {
   name: string;
   location: string;
   status: HiveStatus;
+  stateSince?: string;
   alertTitle: string;
   alertMessage: string;
   metrics: number[];
@@ -157,18 +162,18 @@ const BASE_URL =
     .trim();
 
 const LOCAL_HIVES: Hive[] = [
-  { id: "Hive A01", status: "Healthy", latitude: 0.3476, longitude: 32.5825 },
-  { id: "Hive A02", status: "Pre-swarm", latitude: 0.3492, longitude: 32.5851 },
-  { id: "Hive A03", status: "Healthy", latitude: 0.3459, longitude: 32.5798 },
-  { id: "Hive A04", status: "Swarm", latitude: 0.3511, longitude: 32.5883 },
-  { id: "Hive A05", status: "Abscondment", latitude: 0.3438, longitude: 32.5774 },
-  { id: "Hive A06", status: "Healthy", latitude: 0.3526, longitude: 32.5817 },
-  { id: "Hive A07", status: "Healthy", latitude: 0.3467, longitude: 32.5902 },
-  { id: "Hive A08", status: "Pre-swarm", latitude: 0.3419, longitude: 32.5844 },
-  { id: "Hive A09", status: "Healthy", latitude: 0.3543, longitude: 32.5768 },
-  { id: "Hive A10", status: "Healthy", latitude: 0.3485, longitude: 32.5739 },
-  { id: "Hive A11", status: "Swarm", latitude: 0.3446, longitude: 32.5916 },
-  { id: "Hive A12", status: "Healthy", latitude: 0.3504, longitude: 32.5791 },
+  { id: "Hive A01", status: "Healthy",      latitude: 0.3476, longitude: 32.5825, stateSince: "2026-05-11T08:00:00Z" },
+  { id: "Hive A02", status: "Pre-swarm",    latitude: 0.3492, longitude: 32.5851, stateSince: "2026-05-12T14:30:00Z" },
+  { id: "Hive A03", status: "Healthy",      latitude: 0.3459, longitude: 32.5798, stateSince: "2026-05-09T06:00:00Z" },
+  { id: "Hive A04", status: "Swarm",        latitude: 0.3511, longitude: 32.5883, stateSince: "2026-05-13T07:45:00Z" },
+  { id: "Hive A05", status: "Abscondment",  latitude: 0.3438, longitude: 32.5774, stateSince: "2026-05-10T11:00:00Z" },
+  { id: "Hive A06", status: "Healthy",      latitude: 0.3526, longitude: 32.5817, stateSince: "2026-05-08T09:00:00Z" },
+  { id: "Hive A07", status: "Healthy",      latitude: 0.3467, longitude: 32.5902, stateSince: "2026-05-10T07:00:00Z" },
+  { id: "Hive A08", status: "Pre-swarm",    latitude: 0.3419, longitude: 32.5844, stateSince: "2026-05-13T05:15:00Z" },
+  { id: "Hive A09", status: "Healthy",      latitude: 0.3543, longitude: 32.5768, stateSince: "2026-05-07T10:00:00Z" },
+  { id: "Hive A10", status: "Healthy",      latitude: 0.3485, longitude: 32.5739, stateSince: "2026-05-11T12:00:00Z" },
+  { id: "Hive A11", status: "Swarm",        latitude: 0.3446, longitude: 32.5916, stateSince: "2026-05-13T09:00:00Z" },
+  { id: "Hive A12", status: "Healthy",      latitude: 0.3504, longitude: 32.5791, stateSince: "2026-05-12T08:00:00Z" },
 ];
 
 const LOCAL_ALERTS: AlertItem[] = [
@@ -376,8 +381,7 @@ function buildLocalDashboard(): DashboardData {
       populationKBees: 120,
       nectarFlowKgPerDay: 1.2,
     },
-    mostAtRiskHive: { hiveId: "Hive A04", alertCount: 7 },
-    avgAcknowledgeTimeMinutes: 42,
+    
     pendingAlerts: 5,
     acknowledgedAlerts: 11,
     preSwarmTrend: [
@@ -398,6 +402,45 @@ function buildLocalDashboard(): DashboardData {
       { hiveId: "Hive A02", temperatureC: 37.2 },
       { hiveId: "Hive A08", temperatureC: 36.8 },
     ],
+    allHives: LOCAL_HIVES.map((hive, idx) => {
+      // Create varying temperatures: some cool, some normal, some warm, some hot
+      const hiveNum = parseInt(hive.id.slice(-2), 10); // Extract numeric part (01-12)
+      
+      // Distribute 12 hives across different temperature ranges
+      let baseTemp: number;
+      if (hiveNum <= 3) {
+        // Hives A01-A03: Cool (28-31°C)
+        baseTemp = 28.5 + Math.random() * 2.5;
+      } else if (hiveNum <= 6) {
+        // Hives A04-A06: Normal (32-34.5°C)
+        baseTemp = 32 + Math.random() * 2.5;
+      } else if (hiveNum <= 9) {
+        // Hives A07-A09: Warm (35-37°C) - slightly abnormal
+        baseTemp = 35 + Math.random() * 2;
+      } else {
+        // Hives A10-A12: Hot (37-39°C) - abnormal
+        baseTemp = 37 + Math.random() * 2;
+      }
+      
+      // Humidity varies per hive - create natural variation
+      let baseHumidity: number;
+      if (hiveNum % 3 === 1) {
+        // Lower humidity: 50-60%
+        baseHumidity = 50 + Math.random() * 10;
+      } else if (hiveNum % 3 === 2) {
+        // Medium humidity: 60-70%
+        baseHumidity = 60 + Math.random() * 10;
+      } else {
+        // Higher humidity: 70-80%
+        baseHumidity = 70 + Math.random() * 10;
+      }
+      
+      return {
+        hiveId: hive.id,
+        temperatureC: parseFloat(Math.min(39.9, Math.max(28, baseTemp)).toFixed(1)),
+        humidityPercent: parseFloat(Math.min(100, Math.max(40, baseHumidity)).toFixed(0)),
+      };
+    }),
     pendingAdvisoryActions: 8,
     lowConfidenceInferences: 3,
   };
@@ -445,14 +488,13 @@ export async function fetchDashboard(): Promise<DashboardData> {
           0
       ),
     },
-    mostAtRiskHive: raw.mostAtRiskHive ?? raw.most_at_risk_hive ?? { hiveId: "N/A", alertCount: 0 },
-    avgAcknowledgeTimeMinutes: Number(raw.avgAcknowledgeTimeMinutes ?? raw.avg_ack_time_minutes ?? 0),
     pendingAlerts: Number(raw.pendingAlerts ?? raw.pending_alerts ?? 0),
     acknowledgedAlerts: Number(raw.acknowledgedAlerts ?? raw.acknowledged_alerts ?? 0),
     preSwarmTrend: Array.isArray(raw.preSwarmTrend ?? raw.pre_swarm_trend) ? (raw.preSwarmTrend ?? raw.pre_swarm_trend) : [],
     recordingsToday: Number(raw.recordingsToday ?? raw.recordings_today ?? 0),
     silentHives: Array.isArray(raw.silentHives ?? raw.silent_hives) ? (raw.silentHives ?? raw.silent_hives) : [],
     highTempPreSwarmHives: Array.isArray(raw.highTempPreSwarmHives ?? raw.high_temp_pre_swarm_hives) ? (raw.highTempPreSwarmHives ?? raw.high_temp_pre_swarm_hives) : [],
+    allHives: Array.isArray(raw.allHives ?? raw.all_hives) ? (raw.allHives ?? raw.all_hives) : [],
     pendingAdvisoryActions: Number(raw.pendingAdvisoryActions ?? raw.pending_advisory_actions ?? 0),
     lowConfidenceInferences: Number(raw.lowConfidenceInferences ?? raw.low_confidence_inferences ?? 0),
   };
@@ -504,11 +546,13 @@ export async function fetchHives(search = ""): Promise<Hive[]> {
           fallbackLocation?.longitude
       );
 
+      const rawSince = item.stateSince ?? item.state_since ?? item.state_entered_at ?? null;
       return {
         id,
         status,
         latitude: Number.isFinite(latitude) ? latitude : undefined,
         longitude: Number.isFinite(longitude) ? longitude : undefined,
+        stateSince: rawSince ? String(rawSince) : undefined,
       };
     })
     .sort((a: Hive, b: Hive) => a.id.localeCompare(b.id));
@@ -532,11 +576,13 @@ function buildLocalHiveDetail(hiveId: string): HiveDetailData {
     { timeLabel: "15:00", temperatureC: 34.1, humidityPercent: 65 },
   ];
 
+  const localHive = LOCAL_HIVES.find((h) => h.id === hiveId);
   return {
     id: hiveId,
     name: hiveId,
     location: "North Yard",
-    status: "Pre-swarm",
+    status: localHive?.status ?? "Pre-swarm",
+    stateSince: localHive?.stateSince,
     alertTitle: "Pre-swarm risk",
     alertMessage:
       "Activity and space usage indicate a pre-swarm pattern. Review frames and queen status.",
@@ -585,11 +631,13 @@ export async function fetchHiveDetail(hiveId: string): Promise<HiveDetailData> {
           { timeLabel: "15:00", temperatureC: 34.1, humidityPercent: 65 },
         ];
 
+  const rawSince = raw.stateSince ?? raw.state_since ?? raw.state_entered_at ?? null;
   return {
     id: String(raw.id ?? raw.name ?? hiveId),
     name: String(raw.name ?? raw.id ?? hiveId),
     location: String(raw.location ?? raw.site ?? "Unknown location"),
     status,
+    stateSince: rawSince ? String(rawSince) : undefined,
     alertTitle: String(raw.alertTitle ?? raw.alert_title ?? "Pre-swarm risk"),
     alertMessage: String(
       raw.alertMessage ??
@@ -804,6 +852,7 @@ export async function login(email: string, password: string): Promise<AuthRespon
       phone: "",
       address: null,
       profile_photo_url: null,
+      api_key: null,
     };
     const token = `mock-${Date.now()}`;
     await persistSession(token, beekeeper);
@@ -826,6 +875,7 @@ export async function register(
   email: string,
   phone: string,
   password: string,
+  apiKey: string,
 ): Promise<AuthResponse> {
   if (!BASE_URL) {
     const beekeeper: BeekeeperProfile = {
@@ -835,6 +885,7 @@ export async function register(
       phone,
       address: null,
       profile_photo_url: null,
+      api_key: apiKey || null,
     };
     const token = `mock-${Date.now()}`;
     await persistSession(token, beekeeper);
@@ -843,7 +894,7 @@ export async function register(
 
   const raw = await requestJson<Record<string, unknown>>("/auth/register", undefined, {
     method: "POST",
-    body: JSON.stringify({ name, email, phone, password }),
+    body: JSON.stringify({ name, email, phone, password, api_key: apiKey }),
   });
 
   const token = String(raw.token ?? raw.access_token ?? "");
@@ -871,7 +922,7 @@ export async function fetchProfile(): Promise<BeekeeperProfile> {
   if (!BASE_URL) {
     const raw = await AsyncStorage.getItem(AUTH_USER_KEY);
     return raw ? (JSON.parse(raw) as BeekeeperProfile) : {
-      id: "BK0001", name: "Beekeeper", email: null, phone: "", address: null, profile_photo_url: null,
+      id: "BK0001", name: "Beekeeper", email: null, phone: "", address: null, profile_photo_url: null, api_key: null,
     };
   }
 
@@ -886,12 +937,13 @@ export async function updateProfile(data: {
   email: string;
   phone: string;
   address: string;
+  api_key: string;
 }): Promise<BeekeeperProfile> {
   if (!BASE_URL) {
     const existing = await AsyncStorage.getItem(AUTH_USER_KEY);
     const base: BeekeeperProfile = existing
       ? (JSON.parse(existing) as BeekeeperProfile)
-      : { id: "BK0001", name: "Beekeeper", email: null, phone: "", address: null, profile_photo_url: null };
+      : { id: "BK0001", name: "Beekeeper", email: null, phone: "", address: null, profile_photo_url: null, api_key: null };
     const updated: BeekeeperProfile = { ...base, ...data };
     await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(updated));
     return updated;
