@@ -103,7 +103,7 @@ function displayStatus(status: HiveStatus): string {
   if (status === "Healthy") return "Harmonious";
   if (status === "Pre-swarm") return "2 Queens!";
   if (status === "Swarm") return "Swarming";
-  return "Absconded";
+  return "Empty";
 }
 
 function statusCondition(status: HiveStatus): string {
@@ -2059,7 +2059,13 @@ function DashboardScreen({
     {
       pct: dashboard.statusCounts.Abscondment / total,
       color: "#94A3B8",
-      label: "Absconded",
+      label: "Empty",
+      count: dashboard.statusCounts.Abscondment,
+    },
+    {
+      pct: dashboard.statusCounts.Abscondment / total,
+      color: "#d8f040",
+      label: "Pest Infestation",
       count: dashboard.statusCounts.Abscondment,
     },
   ];
@@ -2462,7 +2468,7 @@ function DashboardScreen({
             styles.overviewTile,
             {
               backgroundColor:
-                dashboard.silentHives.length > 0 ? "#EF4444" : "#22C55E",
+                dashboard.silentHives.length > 0 ? "#152566" : "#22C55E",
             },
           ]}
         >
