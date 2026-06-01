@@ -16,6 +16,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { StatusBar as ExpoStatusBar } from "expo-status-bar";
 import Toast from "react-native-toast-message";
 import {
+  DarkTheme,
+  DefaultTheme,
   NavigationContainer,
   NavigatorScreenParams,
 } from "@react-navigation/native";
@@ -48,15 +50,27 @@ import {
   fetchHiveAlerts,
   fetchHives,
   initAuthFromStorage,
+  getServerUrl,
   login,
   logout,
   register,
   fetchProfile,
+  setServerUrl,
   updateProfile,
 } from "./src/api/beeswarmApi";
 import HiveMap from "./src/components/HiveMap";
 import { ClassificationDebugPanel } from "./src/components/ClassificationDebugPanel";
 import { HeaderOverflowMenu } from "./src/components/HeaderOverflowMenu";
+import {
+  applyThemeMode,
+  THEME,
+  STATUS_COLOR,
+  displayStatus,
+  statusCondition,
+  formatStateDuration,
+  
+} from "./src/theme";
+
 
 const beeLogo = require("./assets/images/bee.png");
 
@@ -92,49 +106,6 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 const HivesStack = createNativeStackNavigator<HivesStackParamList>();
 const AlertsStack = createNativeStackNavigator<AlertsStackParamList>();
 
-const STATUS_COLOR: Record<HiveStatus, string> = {
-  Healthy: "#16A34A",
-  "Pre-swarm": "#D97706",
-  Swarm: "#DC2626",
-  Abscondment: "#6B7280",
-};
-
-function displayStatus(status: HiveStatus): string {
-  if (status === "Healthy") return "Harmonious";
-  if (status === "Pre-swarm") return "2 Queens!";
-  if (status === "Swarm") return "Swarming";
-  return "Empty";
-}
-
-function statusCondition(status: HiveStatus): string {
-  if (status === "Healthy") return "Colony stable";
-  if (status === "Pre-swarm") return "Queen cells detected · Supercedure risk";
-  if (status === "Swarm") return "Colony splitting · Immediate action needed";
-  return "Missing queen · Colony may have departed";
-}
-
-function formatStateDuration(since?: string): string {
-  if (!since) return "";
-  const ms = Date.now() - Date.parse(since);
-  if (!Number.isFinite(ms) || ms < 0) return "";
-  const minutes = Math.floor(ms / 60000);
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h`;
-  return `${Math.floor(hours / 24)}d`;
-}
-
-const THEME = {
-  primary: "#001E37",
-  accent: "#FFB268",
-  page: "#F8F9FB",
-  surface: "#FFFFFF",
-  surfaceSoft: "#FFF5EA",
-  line: "#DCE2EA",
-  text: "#1F2A37",
-  textMuted: "#667085",
-  placeholder: "#98A2B3",
-};
 
 type MapHive = Hive & { latitude: number; longitude: number };
 
@@ -176,18 +147,82 @@ function formatCoordinate(value: number) {
   return value.toFixed(4);
 }
 
+const PREF_PUSH = "@bsads/push_notifications";
+const PREF_CRITICAL = "@bsads/critical_alerts_only";
+const PREF_DARK_MODE = "@bsads/dark_mode";
+
+const APP_COLORS = {
+  light: {
+    page: THEME.page,
+    surface: "#FFFFFF",
+    text: THEME.primary,
+    muted: "#8A97A8",
+    border: THEME.line,
+    statusBar: "dark" as const,
+  },
+  dark: {
+    page: "#0B1220",
+    surface: "#111827",
+    text: THEME.primary,
+    muted: "#94A3B8",
+    border: "#1F2937",
+    statusBar: "light" as const,
+  },
+};
+
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState<BeekeeperProfile | null>(null);
   const [bootstrapping, setBootstrapping] = useState(true);
+  const [darkModeEnabled, setDarkModeEnabled] = useState(false);
+
+  useEffect(() => {
+    applyThemeMode(darkModeEnabled);
+    styles = createStyles();
+  }, [darkModeEnabled]);
+
+  const colors = darkModeEnabled ? APP_COLORS.dark : APP_COLORS.light;
+  const navigationTheme = useMemo(
+    () =>
+      darkModeEnabled
+        ? {
+            ...DarkTheme,
+            colors: {
+              ...DarkTheme.colors,
+              primary: THEME.accent,
+              background: colors.page,
+              card: colors.surface,
+              text: colors.text,
+              border: colors.border,
+            },
+          }
+        : {
+            ...DefaultTheme,
+            colors: {
+              ...DefaultTheme.colors,
+              primary: THEME.accent,
+              background: colors.page,
+              card: colors.surface,
+              text: colors.text,
+              border: colors.border,
+            },
+          },
+    [darkModeEnabled, colors],
+  );
 
   useEffect(() => {
     void (async () => {
       try {
-        const user = await initAuthFromStorage();
+        const [user, darkMode] = await Promise.all([
+          initAuthFromStorage(),
+          AsyncStorage.getItem(PREF_DARK_MODE),
+        ]);
         if (user) {
           setCurrentUser(user);
           setIsAuthenticated(true);
+        }
+        if (darkMode !== null) {
+          setDarkModeEnabled(darkMode === "true");
         }
       } catch {
         // no stored session — stay on auth flow
@@ -208,6 +243,17 @@ export default function App() {
     setIsAuthenticated(false);
   };
 
+  const handleDarkModeChange = async (value: boolean) => {
+    applyThemeMode(value);
+    styles = createStyles();
+    setDarkModeEnabled(value);
+    try {
+      await AsyncStorage.setItem(PREF_DARK_MODE, String(value));
+    } catch {
+      // ignore storage write failures
+    }
+  };
+
   if (bootstrapping) {
     return (
       <View
@@ -215,7 +261,7 @@ export default function App() {
           flex: 1,
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: THEME.primary,
+          backgroundColor: colors.surface,
         }}
       >
         <ActivityIndicator size="large" color={THEME.accent} />
@@ -225,12 +271,12 @@ export default function App() {
 
   return (
     <>
-      <NavigationContainer>
-        <ExpoStatusBar style="dark" />
+      <NavigationContainer theme={navigationTheme}>
+        <ExpoStatusBar style={colors.statusBar} />
         <RootStack.Navigator
           screenOptions={{
             headerShown: false,
-            contentStyle: { backgroundColor: THEME.page },
+            contentStyle: { backgroundColor: colors.page },
             animation: "slide_from_right",
           }}
         >
@@ -257,20 +303,28 @@ export default function App() {
                     currentUser={currentUser}
                     onProfileUpdate={setCurrentUser}
                     onLogout={() => void handleLogout()}
+                    isDarkMode={darkModeEnabled}
                   />
                 )}
               </RootStack.Screen>
               <RootStack.Screen
                 name="Settings"
-                component={SettingsScreen}
                 options={{
                   headerShown: true,
                   title: "Settings",
-                  headerStyle: { backgroundColor: "#FFFFFF" },
-                  headerTintColor: THEME.primary,
+                  headerStyle: { backgroundColor: colors.surface },
+                  headerTintColor: colors.text,
                   headerTitleStyle: { fontWeight: "800" },
                 }}
-              />
+              >
+                {(props) => (
+                  <SettingsScreen
+                    {...props}
+                    darkModeEnabled={darkModeEnabled}
+                    onDarkModeChange={handleDarkModeChange}
+                  />
+                )}
+              </RootStack.Screen>
             </>
           )}
         </RootStack.Navigator>
@@ -285,13 +339,16 @@ function MainTabsScreen({
   onLogout,
   currentUser,
   onProfileUpdate,
+  isDarkMode,
 }: NativeStackScreenProps<RootStackParamList, "MainTabs"> & {
   onLogout: () => void;
   currentUser: BeekeeperProfile | null;
   onProfileUpdate: (user: BeekeeperProfile) => void;
+  isDarkMode: boolean;
 }) {
   const openSettingsPage = () => navigation.navigate("Settings");
   const [unreadAlertCount, setUnreadAlertCount] = useState(0);
+  const colors = isDarkMode ? APP_COLORS.dark : APP_COLORS.light;
 
   useEffect(() => {
     void fetchAlerts()
@@ -302,8 +359,8 @@ function MainTabsScreen({
   return (
     <Tab.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: "#FFFFFF" },
-        headerTintColor: THEME.primary,
+        headerStyle: { backgroundColor: colors.surface },
+        headerTintColor: colors.text,
         headerTitleStyle: { fontWeight: "800" },
         tabBarShowLabel: true,
         tabBarLabelStyle: {
@@ -320,15 +377,15 @@ function MainTabsScreen({
           flex: 1,
         },
         tabBarStyle: {
-          backgroundColor: "#FFFFFF",
-          borderTopColor: THEME.line,
+          backgroundColor: colors.surface,
+          borderTopColor: colors.border,
           borderTopWidth: 1,
           height: Platform.OS === "ios" ? 85 : 70,
           paddingBottom: Platform.OS === "ios" ? 20 : 10,
           paddingTop: 8,
         },
         tabBarActiveTintColor: THEME.accent,
-        tabBarInactiveTintColor: "#8A97A8",
+        tabBarInactiveTintColor: colors.muted,
         headerRight: () => (
           <HeaderOverflowMenu
             onOpenSettings={openSettingsPage}
@@ -447,12 +504,14 @@ function MainTabsScreen({
   );
 }
 
-const PREF_PUSH = "@bsads/push_notifications";
-const PREF_CRITICAL = "@bsads/critical_alerts_only";
-
 function SettingsScreen({
   navigation,
-}: NativeStackScreenProps<RootStackParamList, "Settings">) {
+  darkModeEnabled,
+  onDarkModeChange,
+}: NativeStackScreenProps<RootStackParamList, "Settings"> & {
+  darkModeEnabled: boolean;
+  onDarkModeChange: (value: boolean) => void | Promise<void>;
+}) {
   const [pushNotificationsEnabled, setPushNotificationsEnabled] =
     useState(true);
   const [criticalAlertsOnly, setCriticalAlertsOnly] = useState(false);
@@ -575,6 +634,21 @@ function SettingsScreen({
           />
         </View>
         <View style={styles.settingsDivider} />
+        <View style={styles.settingsRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.settingsRowLabel}>Dark Mode</Text>
+            <Text style={styles.settingsRowHint}>
+              Use a darker color scheme across the app
+            </Text>
+          </View>
+          <Switch
+            value={darkModeEnabled}
+            onValueChange={(v: boolean) => void onDarkModeChange(v)}
+            trackColor={{ false: "#D0D5DD", true: THEME.accent }}
+            thumbColor="#FFFFFF"
+          />
+        </View>
+        <View style={styles.settingsDivider} />
         <View style={styles.settingsRowColumn}>
           <Text style={styles.settingsRowLabel}>Temperature Unit</Text>
           <View style={styles.segmentedControl}>
@@ -645,6 +719,7 @@ function ProfileScreen({
   const [phone, setPhone] = useState(currentUser?.phone ?? "");
   const [address, setAddress] = useState(currentUser?.address ?? "");
   const [apiKey, setApiKey] = useState(currentUser?.api_key ?? "");
+  const [serverUrl, setServerUrlState] = useState(currentUser?.server_url ?? getServerUrl() ?? "");
   const [showApiKey, setShowApiKey] = useState(false);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -657,6 +732,7 @@ function ProfileScreen({
       setPhone(currentUser.phone);
       setAddress(currentUser.address ?? "");
       setApiKey(currentUser.api_key ?? "");
+      setServerUrlState(currentUser.server_url ?? getServerUrl() ?? "");
       return;
     }
     void (async () => {
@@ -667,6 +743,7 @@ function ProfileScreen({
         setPhone(profile.phone);
         setAddress(profile.address ?? "");
         setApiKey(profile.api_key ?? "");
+        setServerUrlState(profile.server_url ?? getServerUrl() ?? "");
         onProfileUpdate(profile);
       } catch {
         Toast.show({ type: "error", text1: "Could not load profile" });
@@ -674,7 +751,7 @@ function ProfileScreen({
         setLoading(false);
       }
     })();
-  }, [currentUser]);
+  }, [currentUser, onProfileUpdate]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -685,7 +762,9 @@ function ProfileScreen({
         phone,
         address,
         api_key: apiKey,
+        server_url: serverUrl,
       });
+      setServerUrl(updated.server_url);
       onProfileUpdate(updated);
       setEditing(false);
       Toast.show({ type: "success", text1: "Profile saved" });
@@ -868,6 +947,33 @@ function ProfileScreen({
                   </Pressable>
                 )}
               </View>
+            )}
+          </View>
+        </View>
+
+        <View style={styles.profileDivider} />
+
+        <View style={styles.profileFieldRow}>
+          <Ionicons
+            name="globe-outline"
+            size={18}
+            color={THEME.textMuted}
+            style={styles.profileFieldIcon}
+          />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.profileFieldLabel}>Server URL</Text>
+            {editing ? (
+              <TextInput
+                style={styles.profileFieldInput}
+                value={serverUrl}
+                onChangeText={setServerUrlState}
+                autoCapitalize="none"
+                autoCorrect={false}
+                placeholder="https://abc123.ngrok-free.dev"
+                placeholderTextColor={THEME.placeholder}
+              />
+            ) : (
+              <Text style={styles.profileFieldValue}>{serverUrl || "—"}</Text>
             )}
           </View>
         </View>
@@ -1165,6 +1271,7 @@ function SignupScreen({
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [apiKey, setApiKey] = useState("");
+  const [serverUrl, setServerUrl] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -1184,6 +1291,7 @@ function SignupScreen({
     }
     if (!phone.trim()) next.phone = "Phone number is required.";
     if (!apiKey.trim()) next.apiKey = "API key is required.";
+    if (!serverUrl.trim()) next.serverUrl = "Server URL is required.";
     if (!password) {
       next.password = "Password is required.";
     } else if (password.length < 8) {
@@ -1207,6 +1315,7 @@ function SignupScreen({
         phone.trim(),
         password,
         apiKey.trim(),
+        serverUrl.trim(),
       );
       onAuthSuccess(beekeeper);
     } catch (err) {
@@ -1307,6 +1416,22 @@ function SignupScreen({
         />
         {!!errors.apiKey && (
           <Text style={styles.fieldError}>{errors.apiKey}</Text>
+        )}
+
+        <TextInput
+          placeholder="Server URL"
+          placeholderTextColor={THEME.placeholder}
+          style={[styles.input, field("serverUrl").hasError && styles.inputError]}
+          autoCapitalize="none"
+          autoCorrect={false}
+          value={serverUrl}
+          onChangeText={(t: string) => {
+            setServerUrl(t);
+            field("serverUrl").clearError();
+          }}
+        />
+        {!!errors.serverUrl && (
+          <Text style={styles.fieldError}>{errors.serverUrl}</Text>
         )}
 
         <TextInput
@@ -4719,7 +4844,8 @@ function LegendItem({ color, text }: { color: string; text: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles() {
+  return StyleSheet.create({
   welcomeShell: {
     flex: 1,
     backgroundColor: THEME.primary,
@@ -7049,4 +7175,7 @@ const styles = StyleSheet.create({
     color: THEME.placeholder,
     fontWeight: "500",
   },
-});
+  });
+}
+
+let styles = createStyles();

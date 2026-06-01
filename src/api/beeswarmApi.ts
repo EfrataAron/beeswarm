@@ -10,6 +10,7 @@ export type BeekeeperProfile = {
   address: string | null;
   profile_photo_url: string | null;
   api_key: string | null;
+  server_url: string | null;
 };
 
 export type AuthResponse = {
@@ -19,8 +20,13 @@ export type AuthResponse = {
 
 const AUTH_TOKEN_KEY = "@bsads/auth_token";
 const AUTH_USER_KEY  = "@bsads/auth_user";
+const SERVER_URL_KEY = "@bsads/server_url";
 
 let _authToken: string | null = null;
+let _serverUrl: string | null = normalizeServerUrl(
+  String((globalThis as { process?: { env?: Record<string, string | undefined> } }).process
+    ?.env?.EXPO_PUBLIC_API_BASE_URL ?? "")
+);
 
 export function setAuthToken(token: string | null): void {
   _authToken = token;
@@ -28,6 +34,38 @@ export function setAuthToken(token: string | null): void {
 
 export function getAuthToken(): string | null {
   return _authToken;
+}
+
+export function getServerUrl(): string | null {
+  return _serverUrl;
+}
+
+export function setServerUrl(serverUrl: string | null): void {
+  _serverUrl = normalizeServerUrl(serverUrl);
+}
+
+function normalizeServerUrl(serverUrl: string | null | undefined): string | null {
+  const normalized = String(serverUrl ?? "").trim().replace(/\/$/, "");
+  return normalized ? normalized : null;
+}
+
+async function resolveServerUrl(explicitServerUrl?: string | null): Promise<string | null> {
+  const explicit = normalizeServerUrl(explicitServerUrl);
+  if (explicit) {
+    _serverUrl = explicit;
+    return explicit;
+  }
+
+  if (_serverUrl) {
+    return _serverUrl;
+  }
+
+  const stored = await AsyncStorage.getItem(SERVER_URL_KEY);
+  const normalized = normalizeServerUrl(stored);
+  if (normalized) {
+    _serverUrl = normalized;
+  }
+  return _serverUrl;
 }
 
 export async function initAuthFromStorage(): Promise<BeekeeperProfile | null> {
@@ -38,7 +76,17 @@ export async function initAuthFromStorage(): Promise<BeekeeperProfile | null> {
     ]);
     if (!token) return null;
     _authToken = token;
-    return raw ? (JSON.parse(raw) as BeekeeperProfile) : null;
+    if (!raw) return null;
+
+    const profile = JSON.parse(raw) as BeekeeperProfile;
+    if (profile.server_url) {
+      setServerUrl(profile.server_url);
+    }
+
+    return {
+      ...profile,
+      server_url: profile.server_url ?? _serverUrl,
+    };
   } catch {
     return null;
   }
@@ -53,6 +101,7 @@ function normalizeProfile(raw: Record<string, unknown>): BeekeeperProfile {
     address:           raw.address != null ? String(raw.address) : null,
     profile_photo_url: raw.profile_photo_url != null ? String(raw.profile_photo_url) : null,
     api_key:           raw.api_key != null ? String(raw.api_key) : null,
+    server_url:        raw.server_url != null ? normalizeServerUrl(String(raw.server_url)) : null,
   };
 }
 
@@ -155,12 +204,6 @@ export type AmbientWeather = {
   source: "open-meteo";
 };
 
-const BASE_URL =
-  String((globalThis as { process?: { env?: Record<string, string | undefined> } }).process
-    ?.env?.EXPO_PUBLIC_API_BASE_URL ?? "")
-    .replace(/\/$/, "")
-    .trim();
-
 const LOCAL_HIVES: Hive[] = [
   { id: "Hive A01", status: "Healthy",      latitude: 0.3476, longitude: 32.5825, stateSince: "2026-05-11T08:00:00Z" },
   { id: "Hive A02", status: "Pre-swarm",    latitude: 0.3492, longitude: 32.5851, stateSince: "2026-05-12T14:30:00Z" },
@@ -243,16 +286,20 @@ const DEFAULT_WEATHER_COORDS = {
 async function requestJson<T>(
   path: string,
   query?: Record<string, string>,
-  init?: RequestInit
+  init?: RequestInit,
+  baseUrl?: string | null,
+  allowApiPrefixRetry = true,
 ): Promise<T> {
-  if (!BASE_URL) {
+  const resolvedBaseUrl = await resolveServerUrl(baseUrl);
+
+  if (!resolvedBaseUrl) {
     throw new Error(
-      "Missing EXPO_PUBLIC_API_BASE_URL. Add it to your environment to connect to backend API."
+      "Missing server_url. Set it on signup or in profile to connect to the backend API."
     );
   }
 
   const params = new URLSearchParams(query).toString();
-  const url = `${BASE_URL}${path}${params ? `?${params}` : ""}`;
+  const url = `${resolvedBaseUrl}${path}${params ? `?${params}` : ""}`;
 
   const response = await fetch(url, {
     method: init?.method ?? "GET",
@@ -265,11 +312,46 @@ async function requestJson<T>(
     body: init?.body,
   });
 
+  const isHtmlResponse = (text: string) => /^<!doctype html|^<html/i.test(text.trim());
+  const apiPrefixedPath = path.startsWith("/api/") ? path : `/api${path.startsWith("/") ? path : `/${path}`}`;
+
   if (!response.ok) {
-    throw new Error(`API request failed (${response.status}) for ${path}`);
+    const responseText = await response.text();
+    const preview = responseText.trim().slice(0, 120);
+    if (allowApiPrefixRetry && !path.startsWith("/api/") && isHtmlResponse(responseText)) {
+      return requestJson<T>(apiPrefixedPath, query, init, resolvedBaseUrl, false);
+    }
+    throw new Error(
+      `API request failed (${response.status}) for ${path}${preview ? `: ${preview}` : ""}`
+    );
   }
 
-  return (await response.json()) as T;
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  const responseText = await response.text();
+  if (!responseText.trim()) {
+    return undefined as T;
+  }
+
+  try {
+    return JSON.parse(responseText) as T;
+  } catch {
+    const preview = responseText.trim().slice(0, 120);
+    const isHtml = isHtmlResponse(responseText);
+    if (allowApiPrefixRetry && !path.startsWith("/api/") && isHtml) {
+      return requestJson<T>(apiPrefixedPath, query, init, resolvedBaseUrl, false);
+    }
+    if (isHtml) {
+      throw new Error(
+        `Received HTML instead of JSON for ${path}. Check server_url; it should point to the backend API base URL, not a web page.`
+      );
+    }
+    throw new Error(
+      `Invalid JSON response for ${path}${preview ? `: ${preview}` : ""}`
+    );
+  }
 }
 
 function getAverageHiveCoordinates() {
@@ -447,66 +529,76 @@ function buildLocalDashboard(): DashboardData {
 }
 
 export async function fetchDashboard(): Promise<DashboardData> {
-  if (!BASE_URL) {
+  try {
+    if (!(await resolveServerUrl())) {
+      return buildLocalDashboard();
+    }
+
+    const raw = await requestJson<any>("/dashboard");
+
+    const totalHives = Number(raw?.totalHives ?? raw?.total_hives ?? 0);
+    const activeHives = Number(raw?.activeHives ?? raw?.active_hives ?? 0);
+    const counts = raw?.statusCounts ?? raw?.status_counts ?? {};
+    const metrics = raw?.keyMetrics ?? raw?.key_metrics ?? {};
+
+    return {
+      totalHives,
+      activeHives,
+      statusCounts: {
+        Healthy: Number(counts.Healthy ?? counts.healthy ?? counts.normal ?? 0),
+        "Pre-swarm": Number(
+          counts["Pre-swarm"] ?? counts.preSwarm ?? counts.pre_swarm ?? 0
+        ),
+        Swarm: Number(counts.Swarm ?? counts.swarm ?? 0),
+        Abscondment: Number(
+          counts.Abscondment ?? counts.abscondment ?? counts.absconded ?? 0
+        ),
+      },
+      keyMetrics: {
+        temperatureC: Number(
+          metrics.temperatureC ?? metrics.temperature_c ?? metrics.avg_temp ?? 0
+        ),
+        humidityPercent: Number(
+          metrics.humidityPercent ?? metrics.humidity_percent ?? metrics.avg_humidity ?? 0
+        ),
+        populationKBees: Number(
+          metrics.populationKBees ?? metrics.population_k_bees ?? metrics.population ?? 0
+        ),
+        nectarFlowKgPerDay: Number(
+          metrics.nectarFlowKgPerDay ??
+            metrics.nectar_flow_kg_per_day ??
+            metrics.nectar_flow ??
+            0
+        ),
+      },
+      pendingAlerts: Number(raw?.pendingAlerts ?? raw?.pending_alerts ?? 0),
+      acknowledgedAlerts: Number(raw?.acknowledgedAlerts ?? raw?.acknowledged_alerts ?? 0),
+      preSwarmTrend: Array.isArray(raw?.preSwarmTrend ?? raw?.pre_swarm_trend) ? (raw?.preSwarmTrend ?? raw?.pre_swarm_trend) : [],
+      recordingsToday: Number(raw?.recordingsToday ?? raw?.recordings_today ?? 0),
+      silentHives: Array.isArray(raw?.silentHives ?? raw?.silent_hives) ? (raw?.silentHives ?? raw?.silent_hives) : [],
+      highTempPreSwarmHives: Array.isArray(raw?.highTempPreSwarmHives ?? raw?.high_temp_pre_swarm_hives) ? (raw?.highTempPreSwarmHives ?? raw?.high_temp_pre_swarm_hives) : [],
+      allHives: Array.isArray(raw?.allHives ?? raw?.all_hives) ? (raw?.allHives ?? raw?.all_hives) : [],
+      pendingAdvisoryActions: Number(raw?.pendingAdvisoryActions ?? raw?.pending_advisory_actions ?? 0),
+      lowConfidenceInferences: Number(raw?.lowConfidenceInferences ?? raw?.low_confidence_inferences ?? 0),
+    };
+  } catch {
     return buildLocalDashboard();
   }
-
-  const raw = await requestJson<any>("/dashboard");
-
-  const totalHives = Number(raw.totalHives ?? raw.total_hives ?? 0);
-  const activeHives = Number(raw.activeHives ?? raw.active_hives ?? 0);
-  const counts = raw.statusCounts ?? raw.status_counts ?? {};
-  const metrics = raw.keyMetrics ?? raw.key_metrics ?? {};
-
-  return {
-    totalHives,
-    activeHives,
-    statusCounts: {
-      Healthy: Number(counts.Healthy ?? counts.healthy ?? counts.normal ?? 0),
-      "Pre-swarm": Number(
-        counts["Pre-swarm"] ?? counts.preSwarm ?? counts.pre_swarm ?? 0
-      ),
-      Swarm: Number(counts.Swarm ?? counts.swarm ?? 0),
-      Abscondment: Number(
-        counts.Abscondment ?? counts.abscondment ?? counts.absconded ?? 0
-      ),
-    },
-    keyMetrics: {
-      temperatureC: Number(
-        metrics.temperatureC ?? metrics.temperature_c ?? metrics.avg_temp ?? 0
-      ),
-      humidityPercent: Number(
-        metrics.humidityPercent ?? metrics.humidity_percent ?? metrics.avg_humidity ?? 0
-      ),
-      populationKBees: Number(
-        metrics.populationKBees ?? metrics.population_k_bees ?? metrics.population ?? 0
-      ),
-      nectarFlowKgPerDay: Number(
-        metrics.nectarFlowKgPerDay ??
-          metrics.nectar_flow_kg_per_day ??
-          metrics.nectar_flow ??
-          0
-      ),
-    },
-    pendingAlerts: Number(raw.pendingAlerts ?? raw.pending_alerts ?? 0),
-    acknowledgedAlerts: Number(raw.acknowledgedAlerts ?? raw.acknowledged_alerts ?? 0),
-    preSwarmTrend: Array.isArray(raw.preSwarmTrend ?? raw.pre_swarm_trend) ? (raw.preSwarmTrend ?? raw.pre_swarm_trend) : [],
-    recordingsToday: Number(raw.recordingsToday ?? raw.recordings_today ?? 0),
-    silentHives: Array.isArray(raw.silentHives ?? raw.silent_hives) ? (raw.silentHives ?? raw.silent_hives) : [],
-    highTempPreSwarmHives: Array.isArray(raw.highTempPreSwarmHives ?? raw.high_temp_pre_swarm_hives) ? (raw.highTempPreSwarmHives ?? raw.high_temp_pre_swarm_hives) : [],
-    allHives: Array.isArray(raw.allHives ?? raw.all_hives) ? (raw.allHives ?? raw.all_hives) : [],
-    pendingAdvisoryActions: Number(raw.pendingAdvisoryActions ?? raw.pending_advisory_actions ?? 0),
-    lowConfidenceInferences: Number(raw.lowConfidenceInferences ?? raw.low_confidence_inferences ?? 0),
-  };
 }
 
 export async function fetchHives(search = ""): Promise<Hive[]> {
-  if (!BASE_URL) {
+  if (!(await resolveServerUrl())) {
     const q = search.trim().toLowerCase();
     return LOCAL_HIVES.filter((hive) => hive.id.toLowerCase().includes(q));
   }
 
-  const raw = await requestJson<any>("/hives", search ? { search } : undefined);
+  let raw: any;
+  try {
+    raw = await requestJson<any>("/hives", search ? { search } : undefined);
+  } catch {
+    const q = search.trim().toLowerCase();
+    return LOCAL_HIVES.filter((hive) => hive.id.toLowerCase().includes(q));
+  }
 
   const rows: any[] = Array.isArray(raw)
     ? raw
@@ -594,11 +686,17 @@ function buildLocalHiveDetail(hiveId: string): HiveDetailData {
 }
 
 export async function fetchHiveDetail(hiveId: string): Promise<HiveDetailData> {
-  if (!BASE_URL) {
+  if (!(await resolveServerUrl())) {
     return buildLocalHiveDetail(hiveId);
   }
 
-  const raw = await requestJson<any>(`/hives/${encodeURIComponent(hiveId)}`);
+  let raw: any;
+  try {
+    raw = await requestJson<any>(`/hives/${encodeURIComponent(hiveId)}`);
+  } catch {
+    return buildLocalHiveDetail(hiveId);
+  }
+
   const status = normalizeStatus(String(raw.status ?? raw.state ?? "Pre-swarm"));
   const rawMetricSeries = Array.isArray(raw.metricSeries)
     ? raw.metricSeries
@@ -655,7 +753,7 @@ export async function fetchHiveDetail(hiveId: string): Promise<HiveDetailData> {
 }
 
 export async function acknowledgeHiveAlert(hiveId: string): Promise<void> {
-  if (!BASE_URL) {
+  if (!(await resolveServerUrl())) {
     return;
   }
 
@@ -665,7 +763,7 @@ export async function acknowledgeHiveAlert(hiveId: string): Promise<void> {
 }
 
 export async function fetchHiveAlerts(hiveId: string): Promise<AlertItem[]> {
-  if (!BASE_URL) {
+  if (!(await resolveServerUrl())) {
     return LOCAL_ALERTS.filter((a) => a.hiveId === hiveId);
   }
   try {
@@ -696,11 +794,17 @@ function normalizeSeverity(value: string): AlertSeverity {
 }
 
 export async function fetchAlerts(): Promise<AlertItem[]> {
-  if (!BASE_URL) {
+  if (!(await resolveServerUrl())) {
     return LOCAL_ALERTS;
   }
 
-  const raw = await requestJson<any[]>("/alerts");
+  let raw: any[];
+  try {
+    raw = await requestJson<any[]>("/alerts");
+  } catch {
+    return LOCAL_ALERTS;
+  }
+
   if (!Array.isArray(raw)) {
     return [];
   }
@@ -716,7 +820,7 @@ export async function fetchAlerts(): Promise<AlertItem[]> {
 }
 
 export async function fetchAlertDetail(alertId: string): Promise<AlertDetailData> {
-  if (!BASE_URL) {
+  if (!(await resolveServerUrl())) {
     const local = LOCAL_ALERTS.find((alert) => alert.id === alertId);
     return {
       id: local?.id ?? alertId,
@@ -731,7 +835,24 @@ export async function fetchAlertDetail(alertId: string): Promise<AlertDetailData
     };
   }
 
-  const raw = await requestJson<any>(`/alerts/${encodeURIComponent(alertId)}`);
+  let raw: any;
+  try {
+    raw = await requestJson<any>(`/alerts/${encodeURIComponent(alertId)}`);
+  } catch {
+    const local = LOCAL_ALERTS.find((alert) => alert.id === alertId);
+    return {
+      id: local?.id ?? alertId,
+      hiveId: local?.hiveId ?? "Hive A01",
+      severity: local?.severity ?? "Info",
+      title: local?.title ?? "Alert",
+      time: local?.date ?? "2026-04-09 09:00",
+      details:
+        local?.summary ??
+        "Sensor patterns indicate a potential issue. Review hive conditions and schedule inspection.",
+      acknowledged: false,
+    };
+  }
+
   return {
     id: String(raw.id ?? alertId),
     hiveId: String(raw.hiveId ?? raw.hive_id ?? raw.hive ?? "Unknown hive"),
@@ -744,7 +865,7 @@ export async function fetchAlertDetail(alertId: string): Promise<AlertDetailData
 }
 
 export async function acknowledgeAlert(alertId: string): Promise<void> {
-  if (!BASE_URL) {
+  if (!(await resolveServerUrl())) {
     return;
   }
 
@@ -837,14 +958,22 @@ const LOCAL_ADVISORIES: Advisory[] = [
 
 async function persistSession(token: string, beekeeper: BeekeeperProfile): Promise<void> {
   _authToken = token;
+  const profileWithServerUrl: BeekeeperProfile = {
+    ...beekeeper,
+    server_url: normalizeServerUrl(beekeeper.server_url) ?? _serverUrl,
+  };
+  if (profileWithServerUrl.server_url) {
+    setServerUrl(profileWithServerUrl.server_url);
+    await AsyncStorage.setItem(SERVER_URL_KEY, profileWithServerUrl.server_url);
+  }
   await Promise.all([
     AsyncStorage.setItem(AUTH_TOKEN_KEY, token),
-    AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(beekeeper)),
+    AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(profileWithServerUrl)),
   ]);
 }
 
 export async function login(email: string, password: string): Promise<AuthResponse> {
-  if (!BASE_URL) {
+  if (!(await resolveServerUrl())) {
     const beekeeper: BeekeeperProfile = {
       id: "BK0001",
       name: "Beekeeper",
@@ -853,6 +982,7 @@ export async function login(email: string, password: string): Promise<AuthRespon
       address: null,
       profile_photo_url: null,
       api_key: null,
+      server_url: _serverUrl,
     };
     const token = `mock-${Date.now()}`;
     await persistSession(token, beekeeper);
@@ -876,8 +1006,15 @@ export async function register(
   phone: string,
   password: string,
   apiKey: string,
+  serverUrl: string,
 ): Promise<AuthResponse> {
-  if (!BASE_URL) {
+  const resolvedServerUrl = normalizeServerUrl(serverUrl);
+
+  if (!resolvedServerUrl) {
+    throw new Error("Server URL is required.");
+  }
+
+  if (!(await resolveServerUrl(resolvedServerUrl))) {
     const beekeeper: BeekeeperProfile = {
       id: `BK${Date.now()}`,
       name,
@@ -886,8 +1023,10 @@ export async function register(
       address: null,
       profile_photo_url: null,
       api_key: apiKey || null,
+      server_url: resolvedServerUrl,
     };
     const token = `mock-${Date.now()}`;
+    await AsyncStorage.setItem(SERVER_URL_KEY, resolvedServerUrl);
     await persistSession(token, beekeeper);
     return { token, beekeeper };
   }
@@ -895,16 +1034,17 @@ export async function register(
   const raw = await requestJson<Record<string, unknown>>("/auth/register", undefined, {
     method: "POST",
     body: JSON.stringify({ name, email, phone, password, api_key: apiKey }),
-  });
+  }, resolvedServerUrl);
 
   const token = String(raw.token ?? raw.access_token ?? "");
   const beekeeper = normalizeProfile((raw.beekeeper ?? raw.user ?? raw) as Record<string, unknown>);
-  await persistSession(token, beekeeper);
-  return { token, beekeeper };
+  const storedBeekeeper = { ...beekeeper, server_url: resolvedServerUrl };
+  await persistSession(token, storedBeekeeper);
+  return { token, beekeeper: storedBeekeeper };
 }
 
 export async function logout(): Promise<void> {
-  if (BASE_URL && _authToken) {
+  if ((await resolveServerUrl()) && _authToken) {
     try {
       await requestJson<void>("/auth/logout", undefined, { method: "POST" });
     } catch {
@@ -919,17 +1059,45 @@ export async function logout(): Promise<void> {
 }
 
 export async function fetchProfile(): Promise<BeekeeperProfile> {
-  if (!BASE_URL) {
+  if (!(await resolveServerUrl())) {
     const raw = await AsyncStorage.getItem(AUTH_USER_KEY);
-    return raw ? (JSON.parse(raw) as BeekeeperProfile) : {
-      id: "BK0001", name: "Beekeeper", email: null, phone: "", address: null, profile_photo_url: null, api_key: null,
+    const profile = raw ? (JSON.parse(raw) as BeekeeperProfile) : {
+      id: "BK0001", name: "Beekeeper", email: null, phone: "", address: null, profile_photo_url: null, api_key: null, server_url: _serverUrl,
     };
+    const stored = { ...profile, server_url: profile.server_url ?? _serverUrl };
+    if (stored.server_url) {
+      await AsyncStorage.setItem(SERVER_URL_KEY, stored.server_url);
+    }
+    await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(stored));
+    return stored;
   }
 
-  const raw = await requestJson<Record<string, unknown>>("/profile");
-  const profile = normalizeProfile(raw);
-  await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(profile));
-  return profile;
+  let profile: BeekeeperProfile;
+  try {
+    const raw = await requestJson<Record<string, unknown>>("/profile");
+    profile = normalizeProfile(raw);
+  } catch {
+    const storedRaw = await AsyncStorage.getItem(AUTH_USER_KEY);
+    profile = storedRaw
+      ? (JSON.parse(storedRaw) as BeekeeperProfile)
+      : {
+          id: "BK0001",
+          name: "Beekeeper",
+          email: null,
+          phone: "",
+          address: null,
+          profile_photo_url: null,
+          api_key: null,
+          server_url: _serverUrl,
+        };
+  }
+
+  const stored = { ...profile, server_url: profile.server_url ?? _serverUrl };
+  if (stored.server_url) {
+    await AsyncStorage.setItem(SERVER_URL_KEY, stored.server_url);
+  }
+  await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(stored));
+  return stored;
 }
 
 export async function updateProfile(data: {
@@ -938,30 +1106,61 @@ export async function updateProfile(data: {
   phone: string;
   address: string;
   api_key: string;
+  server_url: string;
 }): Promise<BeekeeperProfile> {
-  if (!BASE_URL) {
-    const existing = await AsyncStorage.getItem(AUTH_USER_KEY);
-    const base: BeekeeperProfile = existing
-      ? (JSON.parse(existing) as BeekeeperProfile)
-      : { id: "BK0001", name: "Beekeeper", email: null, phone: "", address: null, profile_photo_url: null, api_key: null };
-    const updated: BeekeeperProfile = { ...base, ...data };
-    await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(updated));
-    return updated;
+  const resolvedServerUrl = normalizeServerUrl(data.server_url) ?? _serverUrl;
+
+  const existing = await AsyncStorage.getItem(AUTH_USER_KEY);
+  const base: BeekeeperProfile = existing
+    ? (JSON.parse(existing) as BeekeeperProfile)
+    : { id: "BK0001", name: "Beekeeper", email: null, phone: "", address: null, profile_photo_url: null, api_key: null, server_url: resolvedServerUrl };
+  const localUpdated: BeekeeperProfile = { ...base, ...data, server_url: resolvedServerUrl };
+
+  if (resolvedServerUrl) {
+    setServerUrl(resolvedServerUrl);
+    await AsyncStorage.setItem(SERVER_URL_KEY, resolvedServerUrl);
   }
 
-  const raw = await requestJson<Record<string, unknown>>("/profile", undefined, {
-    method: "PUT",
-    body: JSON.stringify(data),
-  });
-  const profile = normalizeProfile(raw);
-  await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(profile));
-  return profile;
+  await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(localUpdated));
+
+  const activeServerUrl = await resolveServerUrl(resolvedServerUrl);
+  if (!activeServerUrl) {
+    return localUpdated;
+  }
+
+  const payload = {
+    name: data.name,
+    email: data.email,
+    phone: data.phone,
+    address: data.address,
+    api_key: data.api_key,
+  };
+  try {
+    const raw = await requestJson<Record<string, unknown>>("/profile", undefined, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }, activeServerUrl);
+    const profile = normalizeProfile(raw);
+    const synced: BeekeeperProfile = {
+      ...localUpdated,
+      ...profile,
+      server_url: resolvedServerUrl ?? profile.server_url ?? localUpdated.server_url,
+    };
+    if (synced.server_url) {
+      setServerUrl(synced.server_url);
+      await AsyncStorage.setItem(SERVER_URL_KEY, synced.server_url);
+    }
+    await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(synced));
+    return synced;
+  } catch {
+    return localUpdated;
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function fetchAdvisory(alertId: string): Promise<Advisory | null> {
-  if (!BASE_URL) {
+  if (!(await resolveServerUrl())) {
     return LOCAL_ADVISORIES.find((a) => a.alertId === alertId) ?? null;
   }
   try {
