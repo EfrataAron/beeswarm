@@ -12,9 +12,7 @@ import {
   createNativeStackNavigator,
   NativeStackScreenProps,
 } from "@react-navigation/native-stack";
-import {
-  createBottomTabNavigator,
-} from "@react-navigation/bottom-tabs";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import {
   BeekeeperProfile,
@@ -197,9 +195,17 @@ function MainTabsScreen({
         headerTintColor: colors.text,
         headerTitleStyle: { fontWeight: "800" },
         tabBarShowLabel: true,
-        tabBarLabelStyle: { fontSize: 11, fontWeight: "700", includeFontPadding: false },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: "700",
+          includeFontPadding: false,
+        },
         tabBarIconStyle: { marginBottom: 2 },
-        tabBarItemStyle: { alignItems: "center", justifyContent: "center", flex: 1 },
+        tabBarItemStyle: {
+          alignItems: "center",
+          justifyContent: "center",
+          flex: 1,
+        },
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
@@ -225,7 +231,11 @@ function MainTabsScreen({
           title: "Dashboard",
           tabBarLabel: "Home",
           tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? "home" : "home-outline"} size={size} color={color} />
+            <Ionicons
+              name={focused ? "home" : "home-outline"}
+              size={size}
+              color={color}
+            />
           ),
         }}
       />
@@ -252,7 +262,11 @@ function MainTabsScreen({
           tabBarLabel: "Alerts",
           tabBarBadge: unreadAlertCount > 0 ? unreadAlertCount : undefined,
           tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? "notifications" : "notifications-outline"} size={size} color={color} />
+            <Ionicons
+              name={focused ? "notifications" : "notifications-outline"}
+              size={size}
+              color={color}
+            />
           ),
         }}
       >
@@ -270,7 +284,11 @@ function MainTabsScreen({
           title: "Map",
           tabBarLabel: "Map",
           tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? "location" : "location-outline"} size={size} color={color} />
+            <Ionicons
+              name={focused ? "location" : "location-outline"}
+              size={size}
+              color={color}
+            />
           ),
         }}
       />
@@ -281,7 +299,11 @@ function MainTabsScreen({
           title: "Classification API",
           tabBarLabel: "ML Model",
           tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? "flask" : "flask-outline"} size={size} color={color} />
+            <Ionicons
+              name={focused ? "flask" : "flask-outline"}
+              size={size}
+              color={color}
+            />
           ),
         }}
       />
@@ -291,7 +313,11 @@ function MainTabsScreen({
           title: "Profile",
           tabBarLabel: "Profile",
           tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? "person-circle" : "person-circle-outline"} size={size} color={color} />
+            <Ionicons
+              name={focused ? "person-circle" : "person-circle-outline"}
+              size={size}
+              color={color}
+            />
           ),
         }}
       >
