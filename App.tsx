@@ -71,6 +71,43 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 const HivesStack = createNativeStackNavigator<HivesStackParamList>();
 const AlertsStack = createNativeStackNavigator<AlertsStackParamList>();
 
+function getInitialWebPath(): string {
+  if (Platform.OS !== "web" || typeof window === "undefined") {
+    return "";
+  }
+
+  const path = window.location.pathname.replace(/\/$/, "");
+  return path || "/";
+}
+
+function getInitialTabRoute(path: string): keyof MainTabParamList {
+  switch (path) {
+    case "/hives":
+      return "Hives";
+    case "/alerts":
+      return "Alerts";
+    case "/map":
+      return "Map";
+    case "/classification":
+      return "Classification";
+    case "/profile":
+      return "Profile";
+    default:
+      return "Dashboard";
+  }
+}
+
+function getInitialAuthRoute(path: string): keyof RootStackParamList {
+  switch (path) {
+    case "/login":
+      return "Login";
+    case "/signup":
+      return "Signup";
+    default:
+      return "Welcome";
+  }
+}
+
 const linking = {
   prefixes: ["http://localhost:8081", "http://localhost:8081/"],
   config: {
@@ -172,11 +209,13 @@ function MainTabsScreen({
   currentUser,
   onProfileUpdate,
   isDarkMode,
+  initialTabRoute,
 }: NativeStackScreenProps<RootStackParamList, "MainTabs"> & {
   onLogout: () => void;
   currentUser: BeekeeperProfile | null;
   onProfileUpdate: (user: BeekeeperProfile) => void;
   isDarkMode: boolean;
+  initialTabRoute: keyof MainTabParamList;
 }) {
   const openSettingsPage = () => navigation.navigate("Settings");
   const [unreadAlertCount, setUnreadAlertCount] = useState(0);
@@ -190,6 +229,7 @@ function MainTabsScreen({
 
   return (
     <Tab.Navigator
+      initialRouteName={initialTabRoute}
       screenOptions={{
         headerStyle: { backgroundColor: colors.surface },
         headerTintColor: colors.text,
@@ -341,6 +381,7 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<BeekeeperProfile | null>(null);
   const [bootstrapping, setBootstrapping] = useState(true);
   const [darkModeEnabled, setDarkModeEnabled] = useState(false);
+  const initialWebPath = useMemo(() => getInitialWebPath(), []);
 
   const colors = darkModeEnabled ? APP_COLORS.dark : APP_COLORS.light;
 
@@ -437,6 +478,13 @@ export default function App() {
       <NavigationContainer theme={navigationTheme} linking={linking}>
         <ExpoStatusBar style={colors.statusBar} />
         <RootStack.Navigator
+          initialRouteName={
+            isAuthenticated
+              ? initialWebPath === "/settings"
+                ? "Settings"
+                : "MainTabs"
+              : getInitialAuthRoute(initialWebPath)
+          }
           screenOptions={{
             headerShown: false,
             contentStyle: { backgroundColor: colors.page },
@@ -467,6 +515,7 @@ export default function App() {
                     onProfileUpdate={setCurrentUser}
                     onLogout={() => void handleLogout()}
                     isDarkMode={darkModeEnabled}
+                    initialTabRoute={getInitialTabRoute(initialWebPath)}
                   />
                 )}
               </RootStack.Screen>
