@@ -1,0 +1,157 @@
+import { StyleSheet } from "react-native";
+import { THEME } from "../../theme";
+
+export const mapStyles = StyleSheet.create({
+  appPage: {
+    paddingHorizontal: 14,
+    paddingTop: 14,
+    paddingBottom: 32,
+  },
+  mapCard: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: THEME.line,
+    borderRadius: 14,
+    padding: 12,
+  },
+  mapHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    marginBottom: 12,
+  },
+  cardTitle: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: THEME.primary,
+    marginBottom: 2,
+  },
+  mapHeaderSub: {
+    marginTop: 4,
+    color: "#667085",
+    fontWeight: "600",
+    fontSize: 12,
+  },
+  mapRefreshButton: {
+    backgroundColor: THEME.surfaceSoft,
+    borderWidth: 1,
+    borderColor: THEME.line,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  mapRefreshText: {
+    color: "#344054",
+    fontWeight: "700",
+    fontSize: 12,
+  },
+  mapViewport: {
+    height: 320,
+    borderRadius: 12,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: THEME.line,
+    backgroundColor: THEME.surfaceSoft,
+  },
+  mapOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(248, 249, 251, 0.88)",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+  },
+  stateTextSmall: {
+    fontSize: 13,
+    color: THEME.textMuted,
+    fontWeight: "600",
+  },
+  mapFallback: {
+    minHeight: 320,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: THEME.line,
+    backgroundColor: THEME.surfaceSoft,
+    padding: 12,
+  },
+  mapFallbackTitle: {
+    color: "#253242",
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  mapFallbackText: {
+    marginTop: 6,
+    color: "#667085",
+    lineHeight: 20,
+    fontWeight: "600",
+  },
+  mapFallbackList: {
+    marginTop: 12,
+    gap: 10,
+  },
+  mapFallbackRow: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: THEME.line,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  mapFallbackRowTitle: {
+    color: "#253242",
+    fontWeight: "800",
+  },
+  mapFallbackRowSub: {
+    marginTop: 4,
+    color: "#667085",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  hiveStatus: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: THEME.textMuted,
+    marginTop: 2,
+  },
+  emptyMapState: {
+    marginTop: 12,
+    backgroundColor: THEME.surfaceSoft,
+    borderWidth: 1,
+    borderColor: THEME.line,
+    borderRadius: 12,
+    padding: 12,
+  },
+  stateTitle: {
+    color: "#253242",
+    fontWeight: "800",
+    fontSize: 15,
+  },
+  errorText: {
+    marginTop: 12,
+    color: "#B42318",
+    fontWeight: "700",
+    lineHeight: 20,
+  },
+  legendWrap: {
+    marginTop: 12,
+    gap: 6,
+  },
+  legendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  legendDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 10,
+    marginRight: 8,
+  },
+  legendText: {
+    color: "#475467",
+    fontWeight: "600",
+  },
+});

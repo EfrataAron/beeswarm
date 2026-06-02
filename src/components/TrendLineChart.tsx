@@ -2,11 +2,13 @@ import React, { useState } from "react";
 import { Text, View } from "react-native";
 import { THEME } from "../theme";
 
-export function TrendLineChart({
-  data,
-}: {
-  data: Array<{ label: string; count: number }>;
-}) {
+type DataPoint = { label: string; count: number };
+
+type Props = {
+  data: DataPoint[];
+};
+
+export function TrendLineChart({ data }: Props) {
   const [chartWidth, setChartWidth] = useState(0);
   const CHART_HEIGHT = 140;
   const PAD_TOP = 22;

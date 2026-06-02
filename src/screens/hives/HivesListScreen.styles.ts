@@ -1,0 +1,238 @@
+import { StyleSheet } from "react-native";
+import { THEME } from "../../theme";
+
+export const hivesListStyles = StyleSheet.create({
+  appPage: {
+    paddingHorizontal: 14,
+    paddingTop: 14,
+    paddingBottom: 32,
+  },
+  inlineState: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 20,
+  },
+  stateTextSmall: {
+    fontSize: 13,
+    color: THEME.textMuted,
+    fontWeight: "600",
+  },
+  errorBox: {
+    backgroundColor: "#FEF2F2",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#FCA5A5",
+    padding: 10,
+    marginBottom: 10,
+    gap: 8,
+  },
+  errorBody: {
+    color: "#B91C1C",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  primaryButtonSmall: {
+    marginTop: 4,
+    backgroundColor: THEME.accent,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    alignSelf: "center",
+  },
+  primaryButtonText: {
+    color: THEME.primary,
+    fontWeight: "800",
+    fontSize: 15,
+  },
+  hiveSummaryStrip: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    marginBottom: 10,
+  },
+  hiveSummaryPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 5,
+    borderWidth: 1,
+    borderColor: THEME.line,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: "#FFFFFF",
+  },
+  hiveSummaryPillActive: {
+    backgroundColor: THEME.primary,
+    borderColor: THEME.primary,
+  },
+  hiveSummaryPillText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: THEME.textMuted,
+  },
+  hiveSummaryPillTextActive: {
+    color: "#FFFFFF",
+  },
+  hiveSummaryDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  hiveToolbarRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  searchBarWrap: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: THEME.line,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    marginBottom: 14,
+  },
+  searchInput: {
+    flex: 1,
+    color: THEME.text,
+    paddingVertical: 10,
+    fontSize: 14,
+  },
+  viewToggle: {
+    flexDirection: "row",
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: THEME.line,
+    borderRadius: 10,
+    overflow: "hidden",
+  },
+  viewToggleBtn: {
+    padding: 9,
+  },
+  viewToggleBtnActive: {
+    backgroundColor: THEME.surfaceSoft,
+  },
+  hiveListCount: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: THEME.textMuted,
+    marginBottom: 10,
+  },
+  // Tile view
+  hiveTileGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  hiveTileCard: {
+    width: "47.5%",
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: THEME.line,
+    borderRadius: 16,
+    padding: 16,
+    alignItems: "center",
+    gap: 10,
+  },
+  hiveTileIconWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  hiveTileName: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: THEME.primary,
+    textAlign: "center",
+  },
+  hiveStatusBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+  },
+  hiveStatusBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  // List view
+  hiveRowFlat: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 4,
+    paddingVertical: 14,
+    gap: 12,
+  },
+  hiveRowFlatBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.line,
+  },
+  hiveRowDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    flexShrink: 0,
+  },
+  hiveRowInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  hiveRowNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    flexWrap: "wrap",
+  },
+  hiveName: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: THEME.primary,
+  },
+  hiveRowStateBadge: {
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 20,
+  },
+  hiveRowStateBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  hiveRowCondition: {
+    fontSize: 12,
+    color: THEME.textMuted,
+    fontWeight: "500",
+    marginTop: 3,
+  },
+  hiveRowRight: {
+    alignItems: "flex-end",
+    gap: 2,
+  },
+  hiveRowDuration: {
+    fontSize: 11,
+    color: THEME.textMuted,
+    fontWeight: "500",
+  },
+  hiveRowMoreBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+    marginTop: 4,
+  },
+  hiveRowMoreText: {
+    fontSize: 12,
+    color: "#2563EB",
+    fontWeight: "700",
+  },
+  pressedRow: {
+    opacity: 0.85,
+  },
+});

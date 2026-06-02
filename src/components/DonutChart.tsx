@@ -9,13 +9,12 @@ type Segment = {
   count: number;
 };
 
-export function DonutChart({
-  segments,
-  total,
-}: {
+type Props = {
   segments: Segment[];
   total: number;
-}) {
+};
+
+export function DonutChart({ segments, total }: Props) {
   const SIZE = 120;
   const STROKE = 18;
 
@@ -83,14 +82,8 @@ export function DonutChart({
       })}
       {/* Center label */}
       <View style={{ alignItems: "center" }}>
-        <Text style={{ fontSize: 22, fontWeight: "800", color: THEME.primary }}>
-          {total}
-        </Text>
-        <Text
-          style={{ fontSize: 10, color: THEME.textMuted, fontWeight: "600" }}
-        >
-          Hives
-        </Text>
+        <Text style={{ fontSize: 22, fontWeight: "800", color: THEME.primary }}>{total}</Text>
+        <Text style={{ fontSize: 10, color: THEME.textMuted, fontWeight: "600" }}>Hives</Text>
       </View>
     </View>
   );

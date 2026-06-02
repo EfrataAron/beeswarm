@@ -1,0 +1,141 @@
+import { StyleSheet } from "react-native";
+import { THEME } from "../../theme";
+
+export const alertsListStyles = StyleSheet.create({
+  centerState: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    padding: 24,
+  },
+  stateText: {
+    color: THEME.textMuted,
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  errorTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: THEME.primary,
+  },
+  errorBody: {
+    color: "#B91C1C",
+    fontSize: 13,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  primaryButtonSmall: {
+    marginTop: 12,
+    backgroundColor: THEME.accent,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    alignSelf: "center",
+  },
+  primaryButtonText: {
+    color: THEME.primary,
+    fontWeight: "800",
+    fontSize: 15,
+  },
+  appPage: {
+    paddingHorizontal: 14,
+    paddingTop: 14,
+    paddingBottom: 32,
+  },
+  hiveSummaryStrip: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    marginBottom: 10,
+  },
+  hiveSummaryPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 5,
+    borderWidth: 1,
+    borderColor: THEME.line,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: "#FFFFFF",
+  },
+  hiveSummaryPillActive: {
+    backgroundColor: THEME.primary,
+    borderColor: THEME.primary,
+  },
+  hiveSummaryPillText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: THEME.textMuted,
+  },
+  hiveSummaryPillTextActive: {
+    color: "#FFFFFF",
+  },
+  hiveSummaryDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  hiveListCount: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: THEME.textMuted,
+    marginBottom: 10,
+  },
+  inlineState: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 20,
+  },
+  stateTextSmall: {
+    fontSize: 13,
+    color: THEME.textMuted,
+    fontWeight: "600",
+  },
+  alertCard: {
+    flexDirection: "row",
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: THEME.line,
+    borderRadius: 14,
+    marginBottom: 10,
+    overflow: "hidden",
+  },
+  alertCardBody: { flex: 1, padding: 14, gap: 8 },
+  alertCardTopRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+  alertCardIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: THEME.surfaceSoft,
+  },
+  alertCardTitle: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: THEME.primary,
+    marginBottom: 3,
+  },
+  alertCardMeta: { flexDirection: "row", alignItems: "center", gap: 4 },
+  alertCardMetaText: {
+    fontSize: 11,
+    color: THEME.textMuted,
+    fontWeight: "500",
+  },
+  alertCardMetaDot: { color: THEME.textMuted, fontSize: 11 },
+  alertCardSummary: { fontSize: 12, color: THEME.textMuted, lineHeight: 17 },
+  pressedRow: {
+    opacity: 0.85,
+  },
+});

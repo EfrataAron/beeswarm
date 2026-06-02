@@ -49,6 +49,45 @@ function normalizeServerUrl(serverUrl: string | null | undefined): string | null
   return normalized ? normalized : null;
 }
 
+function looksLikeWebPageUrl(serverUrl: string): boolean {
+  try {
+    const parsed = new URL(serverUrl);
+    const pathname = parsed.pathname.replace(/\/$/, "");
+
+    if (!pathname || pathname === "/") {
+      return false;
+    }
+
+    if (pathname.startsWith("/api")) {
+      return false;
+    }
+
+    return /(^|\/)(login|signup|home|dashboard|profile|settings|index\.html)(\/|$)/i.test(pathname);
+  } catch {
+    return false;
+  }
+}
+
+export function validateServerUrl(serverUrl: string | null | undefined): string | null {
+  const normalized = normalizeServerUrl(serverUrl);
+
+  if (!normalized) {
+    return "Server URL is required.";
+  }
+
+  try {
+    new URL(normalized);
+  } catch {
+    return "Enter a valid backend API URL, for example http://10.0.2.2:8000.";
+  }
+
+  if (looksLikeWebPageUrl(normalized)) {
+    return "Use the backend API base URL, not a web page URL.";
+  }
+
+  return null;
+}
+
 async function resolveServerUrl(explicitServerUrl?: string | null): Promise<string | null> {
   const explicit = normalizeServerUrl(explicitServerUrl);
   if (explicit) {
@@ -296,6 +335,11 @@ async function requestJson<T>(
     throw new Error(
       "Missing server_url. Set it on signup or in profile to connect to the backend API."
     );
+  }
+
+  const serverUrlError = validateServerUrl(resolvedBaseUrl);
+  if (serverUrlError) {
+    throw new Error(serverUrlError);
   }
 
   const params = new URLSearchParams(query).toString();
@@ -1010,6 +1054,11 @@ export async function register(
 ): Promise<AuthResponse> {
   const resolvedServerUrl = normalizeServerUrl(serverUrl);
 
+  const serverUrlError = validateServerUrl(resolvedServerUrl);
+  if (serverUrlError) {
+    throw new Error(serverUrlError);
+  }
+
   if (!resolvedServerUrl) {
     throw new Error("Server URL is required.");
   }
@@ -1109,6 +1158,11 @@ export async function updateProfile(data: {
   server_url: string;
 }): Promise<BeekeeperProfile> {
   const resolvedServerUrl = normalizeServerUrl(data.server_url) ?? _serverUrl;
+
+  const serverUrlError = validateServerUrl(resolvedServerUrl);
+  if (serverUrlError) {
+    throw new Error(serverUrlError);
+  }
 
   const existing = await AsyncStorage.getItem(AUTH_USER_KEY);
   const base: BeekeeperProfile = existing
