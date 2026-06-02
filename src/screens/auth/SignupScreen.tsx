@@ -9,7 +9,11 @@ import {
   View,
 } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { BeekeeperProfile, register, validateServerUrl } from "../../api/beeswarmApi";
+import {
+  BeekeeperProfile,
+  register,
+  validateServerUrl,
+} from "../../api/beeswarmApi";
 import { THEME } from "../../theme";
 import { RootStackParamList } from "../../navigation/types";
 import { signupStyles as styles } from "./SignupScreen.styles";
@@ -118,7 +122,10 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
           placeholderTextColor={THEME.placeholder}
           style={[styles.input, !!errors.name && styles.inputError]}
           value={name}
-          onChangeText={(t) => { setName(t); clearError("name"); }}
+          onChangeText={(t) => {
+            setName(t);
+            clearError("name");
+          }}
         />
         {!!errors.name && <Text style={styles.fieldError}>{errors.name}</Text>}
 
@@ -131,9 +138,14 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
           keyboardType="email-address"
           autoCapitalize="none"
           value={email}
-          onChangeText={(t) => { setEmail(t); clearError("email"); }}
+          onChangeText={(t) => {
+            setEmail(t);
+            clearError("email");
+          }}
         />
-        {!!errors.email && <Text style={styles.fieldError}>{errors.email}</Text>}
+        {!!errors.email && (
+          <Text style={styles.fieldError}>{errors.email}</Text>
+        )}
 
         <TextInput
           id="signup-phone"
@@ -143,9 +155,14 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
           style={[styles.input, !!errors.phone && styles.inputError]}
           keyboardType="phone-pad"
           value={phone}
-          onChangeText={(t) => { setPhone(t); clearError("phone"); }}
+          onChangeText={(t) => {
+            setPhone(t);
+            clearError("phone");
+          }}
         />
-        {!!errors.phone && <Text style={styles.fieldError}>{errors.phone}</Text>}
+        {!!errors.phone && (
+          <Text style={styles.fieldError}>{errors.phone}</Text>
+        )}
 
         <TextInput
           id="signup-api-key"
@@ -156,9 +173,14 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
           autoCapitalize="none"
           autoCorrect={false}
           value={apiKey}
-          onChangeText={(t) => { setApiKey(t); clearError("apiKey"); }}
+          onChangeText={(t) => {
+            setApiKey(t);
+            clearError("apiKey");
+          }}
         />
-        {!!errors.apiKey && <Text style={styles.fieldError}>{errors.apiKey}</Text>}
+        {!!errors.apiKey && (
+          <Text style={styles.fieldError}>{errors.apiKey}</Text>
+        )}
 
         <TextInput
           id="signup-server-url"
@@ -169,11 +191,17 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
           autoCapitalize="none"
           autoCorrect={false}
           value={serverUrl}
-          onChangeText={(t) => { setServerUrl(t); clearError("serverUrl"); }}
+          onChangeText={(t) => {
+            setServerUrl(t);
+            clearError("serverUrl");
+          }}
         />
-        {!!errors.serverUrl && <Text style={styles.fieldError}>{errors.serverUrl}</Text>}
+        {!!errors.serverUrl && (
+          <Text style={styles.fieldError}>{errors.serverUrl}</Text>
+        )}
         <Text style={styles.fieldError}>
-          Use the API host, for example http://10.0.2.2:8000, not the web app URL.
+          Use the API host, for example http://10.0.2.2:8000, not the web app
+          URL.
         </Text>
 
         <TextInput
@@ -184,9 +212,14 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
           secureTextEntry
           style={[styles.input, !!errors.password && styles.inputError]}
           value={password}
-          onChangeText={(t) => { setPassword(t); clearError("password"); }}
+          onChangeText={(t) => {
+            setPassword(t);
+            clearError("password");
+          }}
         />
-        {!!errors.password && <Text style={styles.fieldError}>{errors.password}</Text>}
+        {!!errors.password && (
+          <Text style={styles.fieldError}>{errors.password}</Text>
+        )}
 
         <TextInput
           id="signup-confirm-password"
@@ -196,7 +229,10 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
           secureTextEntry
           style={[styles.input, !!errors.confirmPassword && styles.inputError]}
           value={confirmPassword}
-          onChangeText={(t) => { setConfirmPassword(t); clearError("confirmPassword"); }}
+          onChangeText={(t) => {
+            setConfirmPassword(t);
+            clearError("confirmPassword");
+          }}
         />
         {!!errors.confirmPassword && (
           <Text style={styles.fieldError}>{errors.confirmPassword}</Text>

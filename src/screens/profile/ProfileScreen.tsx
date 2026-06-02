@@ -143,7 +143,12 @@ export function ProfileScreen({
         <Text style={styles.profileSectionTitle}>Contact Information</Text>
 
         <View style={styles.profileFieldRow}>
-          <Ionicons name="mail-outline" size={18} color={THEME.textMuted} style={styles.profileFieldIcon} />
+          <Ionicons
+            name="mail-outline"
+            size={18}
+            color={THEME.textMuted}
+            style={styles.profileFieldIcon}
+          />
           <View style={{ flex: 1 }}>
             <Text style={styles.profileFieldLabel}>Email</Text>
             {editing ? (
@@ -166,7 +171,12 @@ export function ProfileScreen({
         <View style={styles.profileDivider} />
 
         <View style={styles.profileFieldRow}>
-          <Ionicons name="call-outline" size={18} color={THEME.textMuted} style={styles.profileFieldIcon} />
+          <Ionicons
+            name="call-outline"
+            size={18}
+            color={THEME.textMuted}
+            style={styles.profileFieldIcon}
+          />
           <View style={{ flex: 1 }}>
             <Text style={styles.profileFieldLabel}>Phone</Text>
             {editing ? (
@@ -188,7 +198,12 @@ export function ProfileScreen({
         <View style={styles.profileDivider} />
 
         <View style={styles.profileFieldRow}>
-          <Ionicons name="location-outline" size={18} color={THEME.textMuted} style={styles.profileFieldIcon} />
+          <Ionicons
+            name="location-outline"
+            size={18}
+            color={THEME.textMuted}
+            style={styles.profileFieldIcon}
+          />
           <View style={{ flex: 1 }}>
             <Text style={styles.profileFieldLabel}>Address</Text>
             {editing ? (
@@ -209,7 +224,12 @@ export function ProfileScreen({
         <View style={styles.profileDivider} />
 
         <View style={styles.profileFieldRow}>
-          <Ionicons name="key-outline" size={18} color={THEME.textMuted} style={styles.profileFieldIcon} />
+          <Ionicons
+            name="key-outline"
+            size={18}
+            color={THEME.textMuted}
+            style={styles.profileFieldIcon}
+          />
           <View style={{ flex: 1 }}>
             <Text style={styles.profileFieldLabel}>API Key</Text>
             {editing ? (
@@ -226,18 +246,31 @@ export function ProfileScreen({
                   autoCapitalize="none"
                   autoCorrect={false}
                 />
-                <Pressable onPress={() => setShowApiKey((v) => !v)} style={{ paddingLeft: 8 }}>
-                  <Ionicons name={showApiKey ? "eye-off-outline" : "eye-outline"} size={18} color={THEME.textMuted} />
+                <Pressable
+                  onPress={() => setShowApiKey((v) => !v)}
+                  style={{ paddingLeft: 8 }}
+                >
+                  <Ionicons
+                    name={showApiKey ? "eye-off-outline" : "eye-outline"}
+                    size={18}
+                    color={THEME.textMuted}
+                  />
                 </Pressable>
               </View>
             ) : (
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+              >
                 <Text style={styles.profileFieldValue}>
                   {apiKey ? (showApiKey ? apiKey : "••••••••••••••••") : "—"}
                 </Text>
                 {apiKey !== "" && (
                   <Pressable onPress={() => setShowApiKey((v) => !v)}>
-                    <Ionicons name={showApiKey ? "eye-off-outline" : "eye-outline"} size={16} color={THEME.textMuted} />
+                    <Ionicons
+                      name={showApiKey ? "eye-off-outline" : "eye-outline"}
+                      size={16}
+                      color={THEME.textMuted}
+                    />
                   </Pressable>
                 )}
               </View>
@@ -247,7 +280,12 @@ export function ProfileScreen({
         <View style={styles.profileDivider} />
 
         <View style={styles.profileFieldRow}>
-          <Ionicons name="globe-outline" size={18} color={THEME.textMuted} style={styles.profileFieldIcon} />
+          <Ionicons
+            name="globe-outline"
+            size={18}
+            color={THEME.textMuted}
+            style={styles.profileFieldIcon}
+          />
           <View style={{ flex: 1 }}>
             <Text style={styles.profileFieldLabel}>Server URL</Text>
             {editing ? (
@@ -272,7 +310,10 @@ export function ProfileScreen({
       {/* Edit / Save row */}
       {editing ? (
         <View style={styles.profileActionsRow}>
-          <Pressable style={styles.profileSecondaryBtn} onPress={() => setEditing(false)}>
+          <Pressable
+            style={styles.profileSecondaryBtn}
+            onPress={() => setEditing(false)}
+          >
             <Text style={styles.profileSecondaryBtnText}>Cancel</Text>
           </Pressable>
           <Pressable
@@ -286,7 +327,10 @@ export function ProfileScreen({
           </Pressable>
         </View>
       ) : (
-        <Pressable style={styles.profileEditBtn} onPress={() => setEditing(true)}>
+        <Pressable
+          style={styles.profileEditBtn}
+          onPress={() => setEditing(true)}
+        >
           <Ionicons name="create-outline" size={16} color={THEME.primary} />
           <Text style={styles.profileEditBtnText}>Edit Profile</Text>
         </Pressable>
@@ -299,27 +343,54 @@ export function ProfileScreen({
         <Pressable style={styles.profileLinkRow} onPress={onOpenSettings}>
           <Ionicons name="settings-outline" size={20} color={THEME.primary} />
           <Text style={styles.profileLinkText}>Settings</Text>
-          <Ionicons name="chevron-forward" size={16} color={THEME.textMuted} style={{ marginLeft: "auto" }} />
+          <Ionicons
+            name="chevron-forward"
+            size={16}
+            color={THEME.textMuted}
+            style={{ marginLeft: "auto" }}
+          />
         </Pressable>
         <View style={styles.profileDivider} />
 
         <Pressable
           style={styles.profileLinkRow}
-          onPress={() => Toast.show({ type: "info", text1: "Change password coming soon" })}
+          onPress={() =>
+            Toast.show({ type: "info", text1: "Change password coming soon" })
+          }
         >
-          <Ionicons name="lock-closed-outline" size={20} color={THEME.primary} />
+          <Ionicons
+            name="lock-closed-outline"
+            size={20}
+            color={THEME.primary}
+          />
           <Text style={styles.profileLinkText}>Change Password</Text>
-          <Ionicons name="chevron-forward" size={16} color={THEME.textMuted} style={{ marginLeft: "auto" }} />
+          <Ionicons
+            name="chevron-forward"
+            size={16}
+            color={THEME.textMuted}
+            style={{ marginLeft: "auto" }}
+          />
         </Pressable>
         <View style={styles.profileDivider} />
 
         <Pressable
           style={styles.profileLinkRow}
-          onPress={() => Toast.show({ type: "info", text1: "Help & support coming soon" })}
+          onPress={() =>
+            Toast.show({ type: "info", text1: "Help & support coming soon" })
+          }
         >
-          <Ionicons name="help-circle-outline" size={20} color={THEME.primary} />
+          <Ionicons
+            name="help-circle-outline"
+            size={20}
+            color={THEME.primary}
+          />
           <Text style={styles.profileLinkText}>Help & Support</Text>
-          <Ionicons name="chevron-forward" size={16} color={THEME.textMuted} style={{ marginLeft: "auto" }} />
+          <Ionicons
+            name="chevron-forward"
+            size={16}
+            color={THEME.textMuted}
+            style={{ marginLeft: "auto" }}
+          />
         </Pressable>
       </View>
 
