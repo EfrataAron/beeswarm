@@ -1,6 +1,18 @@
+/**
+ * BSADS API client — Railway production backend only.
+ *
+ * Base URL: https://bsads-api-production.up.railway.app
+ *
+ * All functions make real HTTP requests. There is no mock data fallback.
+ * Screens handle loading/error states themselves.
+ */
+
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+
 export type HiveStatus = "Healthy" | "Pre-swarm" | "Swarm" | "Abscondment";
+export type AlertSeverity = "Critical" | "Warning" | "Info";
 
 export type BeekeeperProfile = {
   id: string;
@@ -18,167 +30,12 @@ export type AuthResponse = {
   beekeeper: BeekeeperProfile;
 };
 
-const AUTH_TOKEN_KEY = "@bsads/auth_token";
-const AUTH_USER_KEY  = "@bsads/auth_user";
-const SERVER_URL_KEY = "@bsads/server_url";
-
-let _authToken: string | null = null;
-let _serverUrl: string | null = normalizeServerUrl(
-  String((globalThis as { process?: { env?: Record<string, string | undefined> } }).process
-    ?.env?.EXPO_PUBLIC_API_BASE_URL ?? "")
-);
-
-export function setAuthToken(token: string | null): void {
-  _authToken = token;
-}
-
-export function getAuthToken(): string | null {
-  return _authToken;
-}
-
-export function getServerUrl(): string | null {
-  return _serverUrl;
-}
-
-export function setServerUrl(serverUrl: string | null): void {
-  _serverUrl = normalizeServerUrl(serverUrl);
-}
-
-function normalizeServerUrl(serverUrl: string | null | undefined): string | null {
-  const normalized = String(serverUrl ?? "").trim().replace(/\/$/, "");
-  return normalized ? normalized : null;
-}
-
-function looksLikeWebPageUrl(serverUrl: string): boolean {
-  try {
-    const parsed = new URL(serverUrl);
-    const pathname = parsed.pathname.replace(/\/$/, "");
-
-    if (!pathname || pathname === "/") {
-      return false;
-    }
-
-    if (pathname.startsWith("/api")) {
-      return false;
-    }
-
-    return /(^|\/)(login|signup|home|dashboard|profile|settings|index\.html)(\/|$)/i.test(pathname);
-  } catch {
-    return false;
-  }
-}
-
-export function validateServerUrl(serverUrl: string | null | undefined): string | null {
-  const normalized = normalizeServerUrl(serverUrl);
-
-  if (!normalized) {
-    return "Server URL is required.";
-  }
-
-  try {
-    new URL(normalized);
-  } catch {
-    return "Enter a valid backend API URL, for example http://10.0.2.2:8000.";
-  }
-
-  if (looksLikeWebPageUrl(normalized)) {
-    return "Use the backend API base URL, not a web page URL.";
-  }
-
-  return null;
-}
-
-async function resolveServerUrl(explicitServerUrl?: string | null): Promise<string | null> {
-  const explicit = normalizeServerUrl(explicitServerUrl);
-  if (explicit) {
-    _serverUrl = explicit;
-    return explicit;
-  }
-
-  if (_serverUrl) {
-    return _serverUrl;
-  }
-
-  const stored = await AsyncStorage.getItem(SERVER_URL_KEY);
-  const normalized = normalizeServerUrl(stored);
-  if (normalized) {
-    _serverUrl = normalized;
-  }
-  return _serverUrl;
-}
-
-export async function initAuthFromStorage(): Promise<BeekeeperProfile | null> {
-  try {
-    const [token, raw] = await Promise.all([
-      AsyncStorage.getItem(AUTH_TOKEN_KEY),
-      AsyncStorage.getItem(AUTH_USER_KEY),
-    ]);
-    if (!token) return null;
-    _authToken = token;
-    if (!raw) return null;
-
-    const profile = JSON.parse(raw) as BeekeeperProfile;
-    if (profile.server_url) {
-      setServerUrl(profile.server_url);
-    }
-
-    return {
-      ...profile,
-      server_url: profile.server_url ?? _serverUrl,
-    };
-  } catch {
-    return null;
-  }
-}
-
-function normalizeProfile(raw: Record<string, unknown>): BeekeeperProfile {
-  return {
-    id:                String(raw.id ?? ""),
-    name:              String(raw.name ?? "Beekeeper"),
-    email:             raw.email != null ? String(raw.email) : null,
-    phone:             String(raw.phone ?? ""),
-    address:           raw.address != null ? String(raw.address) : null,
-    profile_photo_url: raw.profile_photo_url != null ? String(raw.profile_photo_url) : null,
-    api_key:           raw.api_key != null ? String(raw.api_key) : null,
-    server_url:        raw.server_url != null ? normalizeServerUrl(String(raw.server_url)) : null,
-  };
-}
-
 export type Hive = {
   id: string;
   status: HiveStatus;
   latitude?: number;
   longitude?: number;
-  stateSince?: string; // ISO timestamp when the hive entered its current state
-};
-
-export type DashboardData = {
-  totalHives: number;
-  activeHives: number;
-  statusCounts: Record<HiveStatus, number>;
-  keyMetrics: {
-    temperatureC: number;
-    humidityPercent: number;
-    populationKBees: number;
-    nectarFlowKgPerDay: number;
-  };
-  // Alerts section
-  
-  pendingAlerts: number;
-  acknowledgedAlerts: number;
-  // Pre-swarm trend (last 7 days)
-  preSwarmTrend: Array<{ day: string; count: number }>;
-  // Audio ingestion
-  recordingsToday: number;
-  silentHives: Array<{ hiveId: string; lastSeenHoursAgo: number }>;
-  // Environmental correlation
-  highTempPreSwarmHives: Array<{ hiveId: string; temperatureC: number }>;
-  // All hives metrics
-  allHives: Array<{ hiveId: string; temperatureC: number; humidityPercent: number }>;
-  // Advisory
-  pendingAdvisoryActions: number;
-  // ML confidence
-  lowConfidenceInferences: number;
+  stateSince?: string;
 };
 
 export type HiveDetailData = {
@@ -199,24 +56,6 @@ export type HiveDetailData = {
   acknowledged: boolean;
 };
 
-export type AdvisoryAction = {
-  id: string;
-  description: string;
-  priority: "High" | "Medium" | "Low";
-};
-
-export type Advisory = {
-  id: string;
-  alertId: string;
-  type: "Preventive" | "Reactive";
-  summary: string;
-  actions: AdvisoryAction[];
-};
-
-export type AlertSeverity = "Critical" | "Warning" | "Info";
-
-
-
 export type AlertItem = {
   id: string;
   hiveId: string;
@@ -236,6 +75,41 @@ export type AlertDetailData = {
   acknowledged: boolean;
 };
 
+export type AdvisoryAction = {
+  id: string;
+  description: string;
+  priority: "High" | "Medium" | "Low";
+};
+
+export type Advisory = {
+  id: string;
+  alertId: string;
+  type: "Preventive" | "Reactive";
+  summary: string;
+  actions: AdvisoryAction[];
+};
+
+export type DashboardData = {
+  totalHives: number;
+  activeHives: number;
+  statusCounts: Record<HiveStatus, number>;
+  keyMetrics: {
+    temperatureC: number;
+    humidityPercent: number;
+    populationKBees: number;
+    nectarFlowKgPerDay: number;
+  };
+  pendingAlerts: number;
+  acknowledgedAlerts: number;
+  preSwarmTrend: Array<{ day: string; count: number }>;
+  recordingsToday: number;
+  silentHives: Array<{ hiveId: string; lastSeenHoursAgo: number }>;
+  highTempPreSwarmHives: Array<{ hiveId: string; temperatureC: number }>;
+  allHives: Array<{ hiveId: string; temperatureC: number; humidityPercent: number }>;
+  pendingAdvisoryActions: number;
+  lowConfidenceInferences: number;
+};
+
 export type AmbientWeather = {
   temperatureC: number;
   humidityPercent: number;
@@ -243,1012 +117,543 @@ export type AmbientWeather = {
   source: "open-meteo";
 };
 
-const LOCAL_HIVES: Hive[] = [
-  { id: "Hive A01", status: "Healthy",      latitude: 0.3476, longitude: 32.5825, stateSince: "2026-05-11T08:00:00Z" },
-  { id: "Hive A02", status: "Pre-swarm",    latitude: 0.3492, longitude: 32.5851, stateSince: "2026-05-12T14:30:00Z" },
-  { id: "Hive A03", status: "Healthy",      latitude: 0.3459, longitude: 32.5798, stateSince: "2026-05-09T06:00:00Z" },
-  { id: "Hive A04", status: "Swarm",        latitude: 0.3511, longitude: 32.5883, stateSince: "2026-05-13T07:45:00Z" },
-  { id: "Hive A05", status: "Abscondment",  latitude: 0.3438, longitude: 32.5774, stateSince: "2026-05-10T11:00:00Z" },
-  { id: "Hive A06", status: "Healthy",      latitude: 0.3526, longitude: 32.5817, stateSince: "2026-05-08T09:00:00Z" },
-  { id: "Hive A07", status: "Healthy",      latitude: 0.3467, longitude: 32.5902, stateSince: "2026-05-10T07:00:00Z" },
-  { id: "Hive A08", status: "Pre-swarm",    latitude: 0.3419, longitude: 32.5844, stateSince: "2026-05-13T05:15:00Z" },
-  { id: "Hive A09", status: "Healthy",      latitude: 0.3543, longitude: 32.5768, stateSince: "2026-05-07T10:00:00Z" },
-  { id: "Hive A10", status: "Healthy",      latitude: 0.3485, longitude: 32.5739, stateSince: "2026-05-11T12:00:00Z" },
-  { id: "Hive A11", status: "Swarm",        latitude: 0.3446, longitude: 32.5916, stateSince: "2026-05-13T09:00:00Z" },
-  { id: "Hive A12", status: "Healthy",      latitude: 0.3504, longitude: 32.5791, stateSince: "2026-05-12T08:00:00Z" },
-];
+// ─── Constants ────────────────────────────────────────────────────────────────
 
-const LOCAL_ALERTS: AlertItem[] = [
-  {
-    id: "ALT-001",
-    hiveId: "Hive A04",
-    severity: "Critical",
-    title: "Swarming risk detected",
-    date: "2026-04-21 08:14",
-    summary: "Rapid population rise and high queen cell activity detected. Immediate inspection recommended.",
-  },
-  {
-    id: "ALT-002",
-    hiveId: "Hive A02",
-    severity: "Warning",
-    title: "Pre-swarm pattern",
-    date: "2026-04-21 07:30",
-    summary: "Brood chamber congestion and reduced laying space. Monitor closely.",
-  },
-  {
-    id: "ALT-003",
-    hiveId: "Hive A09",
-    severity: "Info",
-    title: "Humidity deviation",
-    date: "2026-04-20 15:00",
-    summary: "Humidity trending above recommended threshold. Check ventilation.",
-  },
-  {
-    id: "ALT-004",
-    hiveId: "Hive A04",
-    severity: "Warning",
-    title: "Temperature spike",
-    date: "2026-04-20 13:45",
-    summary: "Internal hive temperature exceeded 37°C. Possible overcrowding.",
-  },
-  {
-    id: "ALT-005",
-    hiveId: "Hive A04",
-    severity: "Info",
-    title: "Acoustic anomaly",
-    date: "2026-04-19 10:00",
-    summary: "Unusual acoustic pattern detected. Model confidence: 72%.",
-  },
-  {
-    id: "ALT-006",
-    hiveId: "Hive A08",
-    severity: "Warning",
-    title: "Pre-swarm behaviour",
-    date: "2026-04-21 06:50",
-    summary: "Increased bee clustering near entrance. Pre-swarm indicators present.",
-  },
-  {
-    id: "ALT-007",
-    hiveId: "Hive A11",
-    severity: "Critical",
-    title: "Swarm detected",
-    date: "2026-04-21 09:00",
-    summary: "Active swarm event detected. Immediate action required.",
-  },
-];
+const RAILWAY_URL = "https://bsads-api-production.up.railway.app";
 
-const DEFAULT_WEATHER_COORDS = {
-  latitude: 0.3476,
-  longitude: 32.5825,
-};
+const AUTH_TOKEN_KEY = "@bsads/auth_token";
+const AUTH_USER_KEY  = "@bsads/auth_user";
+const SERVER_URL_KEY = "@bsads/server_url";
 
-async function requestJson<T>(
+// ─── In-memory state ──────────────────────────────────────────────────────────
+
+let _authToken: string | null = null;
+let _serverUrl: string = RAILWAY_URL;
+
+// Called when the backend returns 401 — allows App.tsx to redirect to login
+let _onUnauthorized: (() => void) | null = null;
+
+export function setUnauthorizedHandler(handler: () => void): void {
+  _onUnauthorized = handler;
+}
+
+// ─── URL helpers ──────────────────────────────────────────────────────────────
+
+function normalizeUrl(url: string | null | undefined): string | null {
+  const s = String(url ?? "").trim().replace(/\/$/, "");
+  return s || null;
+}
+
+export function getServerUrl(): string {
+  return _serverUrl;
+}
+
+export function setServerUrl(url: string | null): void {
+  _serverUrl = normalizeUrl(url) ?? RAILWAY_URL;
+}
+
+export function getAuthToken(): string | null {
+  return _authToken;
+}
+
+export function setAuthToken(token: string | null): void {
+  _authToken = token;
+}
+
+// ─── Core HTTP function ───────────────────────────────────────────────────────
+
+async function api<T>(
   path: string,
-  query?: Record<string, string>,
-  init?: RequestInit,
-  baseUrl?: string | null,
-  allowApiPrefixRetry = true,
+  init?: RequestInit & { query?: Record<string, string> },
 ): Promise<T> {
-  const resolvedBaseUrl = await resolveServerUrl(baseUrl);
+  const base = _serverUrl || RAILWAY_URL;
+  const qs = init?.query
+    ? "?" + new URLSearchParams(init.query).toString()
+    : "";
+  const url = `${base}${path}${qs}`;
 
-  if (!resolvedBaseUrl) {
-    throw new Error(
-      "Missing server_url. Set it on signup or in profile to connect to the backend API."
-    );
-  }
-
-  const serverUrlError = validateServerUrl(resolvedBaseUrl);
-  if (serverUrlError) {
-    throw new Error(serverUrlError);
-  }
-
-  const params = new URLSearchParams(query).toString();
-  const url = `${resolvedBaseUrl}${path}${params ? `?${params}` : ""}`;
-
-  const response = await fetch(url, {
-    method: init?.method ?? "GET",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      ...(_authToken ? { Authorization: `Bearer ${_authToken}` } : {}),
-      ...(init?.headers ?? {}),
-    },
-    body: init?.body,
-  });
-
-  const isHtmlResponse = (text: string) => /^<!doctype html|^<html/i.test(text.trim());
-  const apiPrefixedPath = path.startsWith("/api/") ? path : `/api${path.startsWith("/") ? path : `/${path}`}`;
-
-  if (!response.ok) {
-    const responseText = await response.text();
-    const preview = responseText.trim().slice(0, 120);
-    if (allowApiPrefixRetry && !path.startsWith("/api/") && isHtmlResponse(responseText)) {
-      return requestJson<T>(apiPrefixedPath, query, init, resolvedBaseUrl, false);
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: init?.method ?? "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        ...(_authToken ? { Authorization: `Bearer ${_authToken}` } : {}),
+        ...(init?.headers ?? {}),
+      },
+      body: init?.body,
+    });
+  } catch (networkErr) {
+    // fetch() itself threw — no network, DNS failure, or CORS
+    const msg = networkErr instanceof Error ? networkErr.message : String(networkErr);
+    if (msg.toLowerCase().includes("network request failed") ||
+        msg.toLowerCase().includes("failed to fetch") ||
+        msg.toLowerCase().includes("network error")) {
+      throw new Error(
+        "Cannot reach the server. Check your internet connection and try again."
+      );
     }
-    throw new Error(
-      `API request failed (${response.status}) for ${path}${preview ? `: ${preview}` : ""}`
-    );
+    throw new Error(`Network error: ${msg}`);
   }
 
-  if (response.status === 204) {
-    return undefined as T;
-  }
+  // Empty response
+  if (response.status === 204) return undefined as T;
 
-  const responseText = await response.text();
-  if (!responseText.trim()) {
-    return undefined as T;
+  const text = await response.text();
+  if (!text.trim()) return undefined as T;
+
+  // Error response — try to extract FastAPI detail message
+  if (!response.ok) {
+    // 401 = token expired or invalid → clear session and redirect to login
+    if (response.status === 401) {
+      _authToken = null;
+      await Promise.all([
+        AsyncStorage.removeItem(AUTH_TOKEN_KEY),
+        AsyncStorage.removeItem(AUTH_USER_KEY),
+      ]).catch(() => {});
+      _onUnauthorized?.();
+    }
+
+    let message = `Request failed (${response.status})`;
+    try {
+      const err = JSON.parse(text);
+      if (typeof err?.detail === "string") message = err.detail;
+      else if (Array.isArray(err?.detail))
+        message = err.detail.map((d: any) => d?.msg ?? d).join(", ");
+    } catch {}
+    throw new Error(message);
   }
 
   try {
-    return JSON.parse(responseText) as T;
+    return JSON.parse(text) as T;
   } catch {
-    const preview = responseText.trim().slice(0, 120);
-    const isHtml = isHtmlResponse(responseText);
-    if (allowApiPrefixRetry && !path.startsWith("/api/") && isHtml) {
-      return requestJson<T>(apiPrefixedPath, query, init, resolvedBaseUrl, false);
-    }
-    if (isHtml) {
-      throw new Error(
-        `Received HTML instead of JSON for ${path}. Check server_url; it should point to the backend API base URL, not a web page.`
-      );
-    }
-    throw new Error(
-      `Invalid JSON response for ${path}${preview ? `: ${preview}` : ""}`
-    );
+    throw new Error(`Invalid JSON from ${path}: ${text.slice(0, 100)}`);
   }
 }
 
-function getAverageHiveCoordinates() {
-  const withCoords = LOCAL_HIVES.filter(
-    (hive) =>
-      typeof hive.latitude === "number" &&
-      Number.isFinite(hive.latitude) &&
-      typeof hive.longitude === "number" &&
-      Number.isFinite(hive.longitude),
-  );
+// ─── Normalisation helpers ────────────────────────────────────────────────────
 
-  if (withCoords.length === 0) {
-    return DEFAULT_WEATHER_COORDS;
-  }
-
-  const latitude =
-    withCoords.reduce((sum, hive) => sum + (hive.latitude ?? 0), 0) /
-    withCoords.length;
-  const longitude =
-    withCoords.reduce((sum, hive) => sum + (hive.longitude ?? 0), 0) /
-    withCoords.length;
-
-  return {
-    latitude,
-    longitude,
-  };
-}
-
-export async function fetchAmbientWeather(
-  latitude?: number,
-  longitude?: number,
-): Promise<AmbientWeather> {
-  const coords =
-    typeof latitude === "number" &&
-    Number.isFinite(latitude) &&
-    typeof longitude === "number" &&
-    Number.isFinite(longitude)
-      ? { latitude, longitude }
-      : getAverageHiveCoordinates();
-
-  const params = new URLSearchParams({
-    latitude: String(coords.latitude),
-    longitude: String(coords.longitude),
-    current: "temperature_2m,relative_humidity_2m",
-    timezone: "auto",
-  });
-
-  const response = await fetch(
-    `https://api.open-meteo.com/v1/forecast?${params.toString()}`,
-  );
-
-  if (!response.ok) {
-    throw new Error(`Weather API request failed (${response.status})`);
-  }
-
-  const raw = await response.json();
-  const current = raw?.current;
-  const temperatureC = Number(current?.temperature_2m);
-  const humidityPercent = Number(current?.relative_humidity_2m);
-
-  if (!Number.isFinite(temperatureC) || !Number.isFinite(humidityPercent)) {
-    throw new Error("Weather API returned invalid weather values");
-  }
-
-  return {
-    temperatureC,
-    humidityPercent,
-    observedAt: String(current?.time ?? new Date().toISOString()),
-    source: "open-meteo",
-  };
-}
-
-function normalizeStatus(value: string): HiveStatus {
-  const normalized = value.trim().toLowerCase();
-
-  if (normalized === "healthy" || normalized === "normal") {
-    return "Healthy";
-  }
-  if (
-    normalized === "pre-swarm" ||
-    normalized === "preswarm" ||
-    normalized === "pre_swarm"
-  ) {
-    return "Pre-swarm";
-  }
-  if (normalized === "swarm") {
-    return "Swarm";
-  }
-
+function normalizeStatus(raw: string): HiveStatus {
+  const s = raw.trim().toLowerCase();
+  if (s === "healthy" || s === "normal" || s === "active_colony") return "Healthy";
+  if (s === "pre-swarm" || s === "preswarm" || s === "pre_swarm" ||
+      s === "queenbee_present") return "Pre-swarm";
+  if (s === "swarm" || s === "swarming") return "Swarm";
   return "Abscondment";
 }
 
-function buildLocalDashboard(): DashboardData {
-  const totalHives = LOCAL_HIVES.length;
-  const activeHives = LOCAL_HIVES.filter((hive) => hive.status !== "Abscondment").length;
-
-  return {
-    totalHives,
-    activeHives,
-    statusCounts: {
-      Healthy: LOCAL_HIVES.filter((hive) => hive.status === "Healthy").length,
-      "Pre-swarm": LOCAL_HIVES.filter((hive) => hive.status === "Pre-swarm").length,
-      Swarm: LOCAL_HIVES.filter((hive) => hive.status === "Swarm").length,
-      Abscondment: LOCAL_HIVES.filter((hive) => hive.status === "Abscondment").length,
-    },
-    keyMetrics: {
-      temperatureC: 34.5,
-      humidityPercent: 68,
-      populationKBees: 120,
-      nectarFlowKgPerDay: 1.2,
-    },
-    
-    pendingAlerts: 5,
-    acknowledgedAlerts: 11,
-    preSwarmTrend: [
-      { day: "Mon", count: 1 },
-      { day: "Tue", count: 1 },
-      { day: "Wed", count: 2 },
-      { day: "Thu", count: 2 },
-      { day: "Fri", count: 3 },
-      { day: "Sat", count: 2 },
-      { day: "Sun", count: 2 },
-    ],
-    recordingsToday: 34,
-    silentHives: [
-      { hiveId: "Hive A05", lastSeenHoursAgo: 14 },
-      { hiveId: "Hive A11", lastSeenHoursAgo: 9 },
-    ],
-    highTempPreSwarmHives: [
-      { hiveId: "Hive A02", temperatureC: 37.2 },
-      { hiveId: "Hive A08", temperatureC: 36.8 },
-    ],
-    allHives: LOCAL_HIVES.map((hive, idx) => {
-      // Create varying temperatures: some cool, some normal, some warm, some hot
-      const hiveNum = parseInt(hive.id.slice(-2), 10); // Extract numeric part (01-12)
-      
-      // Distribute 12 hives across different temperature ranges
-      let baseTemp: number;
-      if (hiveNum <= 3) {
-        // Hives A01-A03: Cool (28-31°C)
-        baseTemp = 28.5 + Math.random() * 2.5;
-      } else if (hiveNum <= 6) {
-        // Hives A04-A06: Normal (32-34.5°C)
-        baseTemp = 32 + Math.random() * 2.5;
-      } else if (hiveNum <= 9) {
-        // Hives A07-A09: Warm (35-37°C) - slightly abnormal
-        baseTemp = 35 + Math.random() * 2;
-      } else {
-        // Hives A10-A12: Hot (37-39°C) - abnormal
-        baseTemp = 37 + Math.random() * 2;
-      }
-      
-      // Humidity varies per hive - create natural variation
-      let baseHumidity: number;
-      if (hiveNum % 3 === 1) {
-        // Lower humidity: 50-60%
-        baseHumidity = 50 + Math.random() * 10;
-      } else if (hiveNum % 3 === 2) {
-        // Medium humidity: 60-70%
-        baseHumidity = 60 + Math.random() * 10;
-      } else {
-        // Higher humidity: 70-80%
-        baseHumidity = 70 + Math.random() * 10;
-      }
-      
-      return {
-        hiveId: hive.id,
-        temperatureC: parseFloat(Math.min(39.9, Math.max(28, baseTemp)).toFixed(1)),
-        humidityPercent: parseFloat(Math.min(100, Math.max(40, baseHumidity)).toFixed(0)),
-      };
-    }),
-    pendingAdvisoryActions: 8,
-    lowConfidenceInferences: 3,
-  };
-}
-
-export async function fetchDashboard(): Promise<DashboardData> {
-  try {
-    if (!(await resolveServerUrl())) {
-      return buildLocalDashboard();
-    }
-
-    const raw = await requestJson<any>("/dashboard");
-
-    const totalHives = Number(raw?.totalHives ?? raw?.total_hives ?? 0);
-    const activeHives = Number(raw?.activeHives ?? raw?.active_hives ?? 0);
-    const counts = raw?.statusCounts ?? raw?.status_counts ?? {};
-    const metrics = raw?.keyMetrics ?? raw?.key_metrics ?? {};
-
-    return {
-      totalHives,
-      activeHives,
-      statusCounts: {
-        Healthy: Number(counts.Healthy ?? counts.healthy ?? counts.normal ?? 0),
-        "Pre-swarm": Number(
-          counts["Pre-swarm"] ?? counts.preSwarm ?? counts.pre_swarm ?? 0
-        ),
-        Swarm: Number(counts.Swarm ?? counts.swarm ?? 0),
-        Abscondment: Number(
-          counts.Abscondment ?? counts.abscondment ?? counts.absconded ?? 0
-        ),
-      },
-      keyMetrics: {
-        temperatureC: Number(
-          metrics.temperatureC ?? metrics.temperature_c ?? metrics.avg_temp ?? 0
-        ),
-        humidityPercent: Number(
-          metrics.humidityPercent ?? metrics.humidity_percent ?? metrics.avg_humidity ?? 0
-        ),
-        populationKBees: Number(
-          metrics.populationKBees ?? metrics.population_k_bees ?? metrics.population ?? 0
-        ),
-        nectarFlowKgPerDay: Number(
-          metrics.nectarFlowKgPerDay ??
-            metrics.nectar_flow_kg_per_day ??
-            metrics.nectar_flow ??
-            0
-        ),
-      },
-      pendingAlerts: Number(raw?.pendingAlerts ?? raw?.pending_alerts ?? 0),
-      acknowledgedAlerts: Number(raw?.acknowledgedAlerts ?? raw?.acknowledged_alerts ?? 0),
-      preSwarmTrend: Array.isArray(raw?.preSwarmTrend ?? raw?.pre_swarm_trend) ? (raw?.preSwarmTrend ?? raw?.pre_swarm_trend) : [],
-      recordingsToday: Number(raw?.recordingsToday ?? raw?.recordings_today ?? 0),
-      silentHives: Array.isArray(raw?.silentHives ?? raw?.silent_hives) ? (raw?.silentHives ?? raw?.silent_hives) : [],
-      highTempPreSwarmHives: Array.isArray(raw?.highTempPreSwarmHives ?? raw?.high_temp_pre_swarm_hives) ? (raw?.highTempPreSwarmHives ?? raw?.high_temp_pre_swarm_hives) : [],
-      allHives: Array.isArray(raw?.allHives ?? raw?.all_hives) ? (raw?.allHives ?? raw?.all_hives) : [],
-      pendingAdvisoryActions: Number(raw?.pendingAdvisoryActions ?? raw?.pending_advisory_actions ?? 0),
-      lowConfidenceInferences: Number(raw?.lowConfidenceInferences ?? raw?.low_confidence_inferences ?? 0),
-    };
-  } catch {
-    return buildLocalDashboard();
-  }
-}
-
-export async function fetchHives(search = ""): Promise<Hive[]> {
-  if (!(await resolveServerUrl())) {
-    const q = search.trim().toLowerCase();
-    return LOCAL_HIVES.filter((hive) => hive.id.toLowerCase().includes(q));
-  }
-
-  let raw: any;
-  try {
-    raw = await requestJson<any>("/hives", search ? { search } : undefined);
-  } catch {
-    const q = search.trim().toLowerCase();
-    return LOCAL_HIVES.filter((hive) => hive.id.toLowerCase().includes(q));
-  }
-
-  const rows: any[] = Array.isArray(raw)
-    ? raw
-    : Array.isArray(raw?.items)
-      ? raw.items
-      : Array.isArray(raw?.data)
-        ? raw.data
-        : Array.isArray(raw?.results)
-          ? raw.results
-          : [];
-
-  const mapped = rows
-    .map((item: any, index: number) => {
-      const id = String(item.id ?? item.name ?? item.hiveId ?? `Hive-${index + 1}`);
-      const status = normalizeStatus(String(item.status ?? item.state ?? "Healthy"));
-      const fallbackLocation =
-        LOCAL_HIVES.find((localHive) => localHive.id === id) ??
-        LOCAL_HIVES[index % LOCAL_HIVES.length];
-      const latitude = Number(
-        item.latitude ??
-          item.lat ??
-          item.location?.latitude ??
-          item.coordinates?.latitude ??
-          item.coordinates?.lat ??
-          item.position?.latitude ??
-          item.position?.lat ??
-          fallbackLocation?.latitude
-      );
-      const longitude = Number(
-        item.longitude ??
-          item.lng ??
-          item.location?.longitude ??
-          item.coordinates?.longitude ??
-          item.coordinates?.lng ??
-          item.position?.longitude ??
-          item.position?.lng ??
-          fallbackLocation?.longitude
-      );
-
-      const rawSince = item.stateSince ?? item.state_since ?? item.state_entered_at ?? null;
-      return {
-        id,
-        status,
-        latitude: Number.isFinite(latitude) ? latitude : undefined,
-        longitude: Number.isFinite(longitude) ? longitude : undefined,
-        stateSince: rawSince ? String(rawSince) : undefined,
-      };
-    })
-    .sort((a: Hive, b: Hive) => a.id.localeCompare(b.id));
-
-  if (mapped.length > 0) {
-    return mapped;
-  }
-
-  const q = search.trim().toLowerCase();
-  return LOCAL_HIVES.filter((hive) => hive.id.toLowerCase().includes(q));
-}
-
-function buildLocalHiveDetail(hiveId: string): HiveDetailData {
-  const metricSeries = [
-    { timeLabel: "09:00", temperatureC: 32.4, humidityPercent: 63 },
-    { timeLabel: "10:00", temperatureC: 33.1, humidityPercent: 64 },
-    { timeLabel: "11:00", temperatureC: 33.8, humidityPercent: 66 },
-    { timeLabel: "12:00", temperatureC: 34.5, humidityPercent: 68 },
-    { timeLabel: "13:00", temperatureC: 35.2, humidityPercent: 69 },
-    { timeLabel: "14:00", temperatureC: 34.8, humidityPercent: 67 },
-    { timeLabel: "15:00", temperatureC: 34.1, humidityPercent: 65 },
-  ];
-
-  const localHive = LOCAL_HIVES.find((h) => h.id === hiveId);
-  return {
-    id: hiveId,
-    name: hiveId,
-    location: "North Yard",
-    status: localHive?.status ?? "Pre-swarm",
-    stateSince: localHive?.stateSince,
-    alertTitle: "Pre-swarm risk",
-    alertMessage:
-      "Activity and space usage indicate a pre-swarm pattern. Review frames and queen status.",
-    metrics: metricSeries.map((point) => point.temperatureC),
-    metricSeries,
-    mapLabel: hiveId,
-    acknowledged: false,
-  };
-}
-
-export async function fetchHiveDetail(hiveId: string): Promise<HiveDetailData> {
-  if (!(await resolveServerUrl())) {
-    return buildLocalHiveDetail(hiveId);
-  }
-
-  let raw: any;
-  try {
-    raw = await requestJson<any>(`/hives/${encodeURIComponent(hiveId)}`);
-  } catch {
-    return buildLocalHiveDetail(hiveId);
-  }
-
-  const status = normalizeStatus(String(raw.status ?? raw.state ?? "Pre-swarm"));
-  const rawMetricSeries = Array.isArray(raw.metricSeries)
-    ? raw.metricSeries
-    : Array.isArray(raw.metric_series)
-      ? raw.metric_series
-      : Array.isArray(raw.history)
-        ? raw.history
-        : [];
-
-  const metricSeries =
-    rawMetricSeries.length > 0
-      ? rawMetricSeries.map((point: any, index: number) => ({
-          timeLabel: String(
-            point.timeLabel ?? point.time_label ?? point.time ?? `R${index + 1}`
-          ),
-          temperatureC: Number(
-            point.temperatureC ?? point.temperature_c ?? point.temp ?? 0
-          ),
-          humidityPercent: Number(
-            point.humidityPercent ?? point.humidity_percent ?? point.humidity ?? 0
-          ),
-        }))
-      : [
-          { timeLabel: "09:00", temperatureC: 32.4, humidityPercent: 63 },
-          { timeLabel: "10:00", temperatureC: 33.1, humidityPercent: 64 },
-          { timeLabel: "11:00", temperatureC: 33.8, humidityPercent: 66 },
-          { timeLabel: "12:00", temperatureC: 34.5, humidityPercent: 68 },
-          { timeLabel: "13:00", temperatureC: 35.2, humidityPercent: 69 },
-          { timeLabel: "14:00", temperatureC: 34.8, humidityPercent: 67 },
-          { timeLabel: "15:00", temperatureC: 34.1, humidityPercent: 65 },
-        ];
-
-  const rawSince = raw.stateSince ?? raw.state_since ?? raw.state_entered_at ?? null;
-  return {
-    id: String(raw.id ?? raw.name ?? hiveId),
-    name: String(raw.name ?? raw.id ?? hiveId),
-    location: String(raw.location ?? raw.site ?? "Unknown location"),
-    status,
-    stateSince: rawSince ? String(rawSince) : undefined,
-    alertTitle: String(raw.alertTitle ?? raw.alert_title ?? "Pre-swarm risk"),
-    alertMessage: String(
-      raw.alertMessage ??
-        raw.alert_message ??
-        raw.message ??
-        "Hive activity requires attention."
-    ),
-    metrics: Array.isArray(raw.metrics)
-      ? raw.metrics.map((value: unknown) => Number(value) || 0)
-      : metricSeries.map((point: { temperatureC: number }) => point.temperatureC),
-    metricSeries,
-    mapLabel: String(raw.mapLabel ?? raw.map_label ?? hiveId),
-    acknowledged: Boolean(raw.acknowledged ?? raw.isAcknowledged ?? false),
-  };
-}
-
-export async function acknowledgeHiveAlert(hiveId: string): Promise<void> {
-  if (!(await resolveServerUrl())) {
-    return;
-  }
-
-  await requestJson<void>(`/hives/${encodeURIComponent(hiveId)}/acknowledge`, undefined, {
-    method: "POST",
-  });
-}
-
-export async function fetchHiveAlerts(hiveId: string): Promise<AlertItem[]> {
-  if (!(await resolveServerUrl())) {
-    return LOCAL_ALERTS.filter((a) => a.hiveId === hiveId);
-  }
-  try {
-    const raw = await requestJson<any[]>(`/hives/${encodeURIComponent(hiveId)}/alerts`);
-    if (!Array.isArray(raw)) return [];
-    return raw.map((item, index) => ({
-      id: String(item.id ?? `ALT-${index + 1}`),
-      hiveId: String(item.hiveId ?? item.hive_id ?? hiveId),
-      severity: normalizeSeverity(String(item.severity ?? item.level ?? "info")),
-      title: String(item.title ?? item.alert ?? "Alert"),
-      date: String(item.date ?? item.createdAt ?? item.created_at ?? ""),
-      summary: String(item.summary ?? item.message ?? ""),
-    }));
-  } catch {
-    return LOCAL_ALERTS.filter((a) => a.hiveId === hiveId);
-  }
-}
-
-function normalizeSeverity(value: string): AlertSeverity {
-  const normalized = value.trim().toLowerCase();
-  if (normalized === "critical") {
-    return "Critical";
-  }
-  if (normalized === "warning") {
-    return "Warning";
-  }
+function normalizeSeverity(raw: string): AlertSeverity {
+  const s = raw.trim().toLowerCase();
+  if (s === "critical") return "Critical";
+  if (s === "warning")  return "Warning";
   return "Info";
 }
 
-export async function fetchAlerts(): Promise<AlertItem[]> {
-  if (!(await resolveServerUrl())) {
-    return LOCAL_ALERTS;
-  }
-
-  let raw: any[];
-  try {
-    raw = await requestJson<any[]>("/alerts");
-  } catch {
-    return LOCAL_ALERTS;
-  }
-
-  if (!Array.isArray(raw)) {
-    return [];
-  }
-
-  return raw.map((item, index) => ({
-    id: String(item.id ?? `ALT-${index + 1}`),
-    hiveId: String(item.hiveId ?? item.hive_id ?? item.hive ?? "Unknown hive"),
-    severity: normalizeSeverity(String(item.severity ?? item.level ?? "info")),
-    title: String(item.title ?? item.alert ?? "Alert"),
-    date: String(item.date ?? item.createdAt ?? item.created_at ?? ""),
-    summary: String(item.summary ?? item.message ?? ""),
-  }));
-}
-
-export async function fetchAlertDetail(alertId: string): Promise<AlertDetailData> {
-  if (!(await resolveServerUrl())) {
-    const local = LOCAL_ALERTS.find((alert) => alert.id === alertId);
-    return {
-      id: local?.id ?? alertId,
-      hiveId: local?.hiveId ?? "Hive A01",
-      severity: local?.severity ?? "Info",
-      title: local?.title ?? "Alert",
-      time: local?.date ?? "2026-04-09 09:00",
-      details:
-        local?.summary ??
-        "Sensor patterns indicate a potential issue. Review hive conditions and schedule inspection.",
-      acknowledged: false,
-    };
-  }
-
-  let raw: any;
-  try {
-    raw = await requestJson<any>(`/alerts/${encodeURIComponent(alertId)}`);
-  } catch {
-    const local = LOCAL_ALERTS.find((alert) => alert.id === alertId);
-    return {
-      id: local?.id ?? alertId,
-      hiveId: local?.hiveId ?? "Hive A01",
-      severity: local?.severity ?? "Info",
-      title: local?.title ?? "Alert",
-      time: local?.date ?? "2026-04-09 09:00",
-      details:
-        local?.summary ??
-        "Sensor patterns indicate a potential issue. Review hive conditions and schedule inspection.",
-      acknowledged: false,
-    };
-  }
-
+function normalizeProfile(raw: Record<string, unknown>): BeekeeperProfile {
   return {
-    id: String(raw.id ?? alertId),
-    hiveId: String(raw.hiveId ?? raw.hive_id ?? raw.hive ?? "Unknown hive"),
-    severity: normalizeSeverity(String(raw.severity ?? raw.level ?? "info")),
-    title: String(raw.title ?? raw.alert ?? "Alert"),
-    time: String(raw.time ?? raw.createdAt ?? raw.created_at ?? ""),
-    details: String(raw.details ?? raw.summary ?? raw.message ?? ""),
-    acknowledged: Boolean(raw.acknowledged ?? raw.isAcknowledged ?? false),
+    // Backend returns user_id, not id
+    id:                String(raw.user_id ?? raw.id ?? ""),
+    // Backend returns full_name, not name
+    name:              String(raw.full_name ?? raw.name ?? "Beekeeper"),
+    email:             raw.email != null ? String(raw.email) : null,
+    phone:             String(raw.phone ?? ""),
+    address:           raw.address != null ? String(raw.address) : null,
+    profile_photo_url: raw.profile_photo_url != null ? String(raw.profile_photo_url) : null,
+    api_key:           raw.api_key != null ? String(raw.api_key) : null,
+    server_url:        raw.server_url != null ? normalizeUrl(String(raw.server_url)) : null,
   };
 }
 
-export async function acknowledgeAlert(alertId: string): Promise<void> {
-  if (!(await resolveServerUrl())) {
-    return;
-  }
-
-  await requestJson<void>(`/alerts/${encodeURIComponent(alertId)}/acknowledge`, undefined, {
-    method: "POST",
-  });
+function normalizeAlertItem(item: any, index: number, fallbackHiveId = ""): AlertItem {
+  return {
+    id:       String(item.id ?? `ALT-${index + 1}`),
+    // Backend sends hive_id (MobileAlertResponse schema)
+    hiveId:   String(item.hive_id ?? item.hiveId ?? fallbackHiveId),
+    severity: normalizeSeverity(String(item.severity ?? item.level ?? "info")),
+    title:    String(item.title ?? item.alert ?? "Alert"),
+    date:     String(item.date ?? item.createdAt ?? item.created_at ?? ""),
+    summary:  String(item.summary ?? item.message ?? ""),
+  };
 }
 
-const LOCAL_ADVISORIES: Advisory[] = [
-  {
-    id: "ADV-001",
-    alertId: "ALT-001",
-    type: "Reactive",
-    summary: "Swarming is imminent. Immediate intervention is required to prevent colony loss.",
-    actions: [
-      { id: "ACT-001-1", description: "Inspect hive frames for queen cells and remove excess ones", priority: "High" },
-      { id: "ACT-001-2", description: "Add a super or additional brood box to relieve congestion", priority: "High" },
-      { id: "ACT-001-3", description: "Consider splitting the colony to simulate a swarm", priority: "Medium" },
-      { id: "ACT-001-4", description: "Mark and monitor the queen's activity over the next 48 hours", priority: "Medium" },
-    ],
-  },
-  {
-    id: "ADV-002",
-    alertId: "ALT-002",
-    type: "Preventive",
-    summary: "Pre-swarm indicators detected. Act now to prevent a full swarm event.",
-    actions: [
-      { id: "ACT-002-1", description: "Check brood chamber for congestion and available laying space", priority: "High" },
-      { id: "ACT-002-2", description: "Ensure adequate ventilation in the hive", priority: "Medium" },
-      { id: "ACT-002-3", description: "Schedule a full hive inspection within 24 hours", priority: "High" },
-    ],
-  },
-  {
-    id: "ADV-003",
-    alertId: "ALT-003",
-    type: "Preventive",
-    summary: "Humidity levels are above the recommended range. Address ventilation to avoid disease risk.",
-    actions: [
-      { id: "ACT-003-1", description: "Open hive entrance reducer to improve airflow", priority: "Medium" },
-      { id: "ACT-003-2", description: "Check for water ingress or condensation inside the hive", priority: "Medium" },
-      { id: "ACT-003-3", description: "Monitor humidity readings over the next 12 hours", priority: "Low" },
-    ],
-  },
-  {
-    id: "ADV-004",
-    alertId: "ALT-004",
-    type: "Reactive",
-    summary: "Temperature spike detected. Overcrowding or disease may be the cause.",
-    actions: [
-      { id: "ACT-004-1", description: "Inspect hive for signs of disease or pest infestation", priority: "High" },
-      { id: "ACT-004-2", description: "Provide shade or relocate hive if in direct sunlight", priority: "Medium" },
-      { id: "ACT-004-3", description: "Add ventilation by propping the hive lid slightly", priority: "Low" },
-    ],
-  },
-  {
-    id: "ADV-005",
-    alertId: "ALT-005",
-    type: "Preventive",
-    summary: "Acoustic anomaly detected with moderate model confidence. Monitor closely.",
-    actions: [
-      { id: "ACT-005-1", description: "Perform a visual inspection to rule out obvious issues", priority: "Medium" },
-      { id: "ACT-005-2", description: "Re-run acoustic analysis in 6 hours to confirm pattern", priority: "Low" },
-    ],
-  },
-  {
-    id: "ADV-006",
-    alertId: "ALT-006",
-    type: "Preventive",
-    summary: "Pre-swarm clustering observed near entrance. Early intervention recommended.",
-    actions: [
-      { id: "ACT-006-1", description: "Inspect entrance area and remove any clustering bees gently", priority: "High" },
-      { id: "ACT-006-2", description: "Check internal space and add frames if needed", priority: "Medium" },
-    ],
-  },
-  {
-    id: "ADV-007",
-    alertId: "ALT-007",
-    type: "Reactive",
-    summary: "Active swarm event in progress. Immediate action required to recover the colony.",
-    actions: [
-      { id: "ACT-007-1", description: "Locate the swarm cluster and prepare a capture box", priority: "High" },
-      { id: "ACT-007-2", description: "Capture the swarm and re-hive in a prepared hive body", priority: "High" },
-      { id: "ACT-007-3", description: "Inspect the original hive for a new queen or queen cells", priority: "High" },
-      { id: "ACT-007-4", description: "Feed the captured swarm with sugar syrup to encourage settling", priority: "Medium" },
-    ],
-  },
-];
+// AlertResponse (from GET /hives/{id}/alerts) uses different field names
+// than MobileAlertResponse (from GET /alerts)
+function normalizeHiveAlertItem(item: any, index: number, fallbackHiveId = ""): AlertItem {
+  return {
+    // AlertResponse uses alert_id not id
+    id:       String(item.alert_id ?? item.id ?? `ALT-${index + 1}`),
+    hiveId:   String(item.hive_id  ?? item.hiveId ?? fallbackHiveId),
+    // AlertResponse uses severity_level not severity
+    severity: normalizeSeverity(String(item.severity_level ?? item.severity ?? item.level ?? "info")),
+    // AlertResponse has no title — use recommended_action or action_status
+    title:    String(item.title ?? item.recommended_action ?? item.action_status ?? "Alert"),
+    // AlertResponse uses alert_timestamp not date
+    date:     String(item.alert_timestamp ?? item.date ?? item.createdAt ?? item.created_at ?? ""),
+    summary:  String(item.recommended_action ?? item.summary ?? item.message ?? ""),
+  };
+}
 
-// ── Auth & Profile ────────────────────────────────────────────────────────────
+// ─── Session persistence ──────────────────────────────────────────────────────
 
-async function persistSession(token: string, beekeeper: BeekeeperProfile): Promise<void> {
+async function persistSession(token: string, profile: BeekeeperProfile): Promise<void> {
   _authToken = token;
-  const profileWithServerUrl: BeekeeperProfile = {
-    ...beekeeper,
-    server_url: normalizeServerUrl(beekeeper.server_url) ?? _serverUrl,
-  };
-  if (profileWithServerUrl.server_url) {
-    setServerUrl(profileWithServerUrl.server_url);
-    await AsyncStorage.setItem(SERVER_URL_KEY, profileWithServerUrl.server_url);
-  }
   await Promise.all([
     AsyncStorage.setItem(AUTH_TOKEN_KEY, token),
-    AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(profileWithServerUrl)),
+    AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(profile)),
   ]);
 }
 
-export async function login(email: string, password: string): Promise<AuthResponse> {
-  if (!(await resolveServerUrl())) {
-    const beekeeper: BeekeeperProfile = {
-      id: "BK0001",
-      name: "Beekeeper",
-      email,
-      phone: "",
-      address: null,
-      profile_photo_url: null,
-      api_key: null,
-      server_url: _serverUrl,
-    };
-    const token = `mock-${Date.now()}`;
-    await persistSession(token, beekeeper);
-    return { token, beekeeper };
-  }
+// ─── Auth ─────────────────────────────────────────────────────────────────────
 
-  const raw = await requestJson<Record<string, unknown>>("/auth/login", undefined, {
+export async function initAuthFromStorage(): Promise<BeekeeperProfile | null> {
+  try {
+    const [token, raw] = await Promise.all([
+      AsyncStorage.getItem(AUTH_TOKEN_KEY),
+      AsyncStorage.getItem(AUTH_USER_KEY),
+    ]);
+    if (!token || !raw) return null;
+    _authToken = token;
+    return JSON.parse(raw) as BeekeeperProfile;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * POST /auth/login
+ * Router: api/routers/auth.py
+ */
+export async function login(email: string, password: string): Promise<AuthResponse> {
+  const raw = await api<any>("/auth/login", {
     method: "POST",
     body: JSON.stringify({ email, password }),
   });
 
-  const token = String(raw.token ?? raw.access_token ?? "");
-  const beekeeper = normalizeProfile((raw.beekeeper ?? raw.user ?? raw) as Record<string, unknown>);
+  // Backend response: { access_token: string, token_type: string, user: UserResponse }
+  const token = String(raw.access_token ?? raw.token ?? "");
+  if (!token) throw new Error("Login succeeded but no token was returned.");
+
+  // Backend user object: { user_id, full_name, email, role, created_at }
+  const userRaw = (raw.user ?? raw.beekeeper ?? raw) as Record<string, unknown>;
+  const beekeeper = normalizeProfile(userRaw);
+
   await persistSession(token, beekeeper);
   return { token, beekeeper };
 }
 
+/**
+ * POST /auth/register
+ * Router: api/routers/auth.py
+ */
 export async function register(
   name: string,
   email: string,
   phone: string,
   password: string,
   apiKey?: string | null,
-  serverUrl?: string | null,
 ): Promise<AuthResponse> {
-  const resolvedServerUrl = normalizeServerUrl(serverUrl);
-
-  if (!resolvedServerUrl) {
-    const beekeeper: BeekeeperProfile = {
-      id: `BK${Date.now()}`,
-      name,
-      email,
-      phone,
-      address: null,
-      profile_photo_url: null,
-      api_key: apiKey?.trim() ? apiKey.trim() : null,
-      server_url: null,
-    };
-    const token = `mock-${Date.now()}`;
-    await persistSession(token, beekeeper);
-    return { token, beekeeper };
-  }
-
-  const serverUrlError = validateServerUrl(resolvedServerUrl);
-  if (serverUrlError) {
-    throw new Error(serverUrlError);
-  }
-
-  if (!(await resolveServerUrl(resolvedServerUrl))) {
-    const beekeeper: BeekeeperProfile = {
-      id: `BK${Date.now()}`,
-      name,
-      email,
-      phone,
-      address: null,
-      profile_photo_url: null,
-      api_key: apiKey?.trim() ? apiKey.trim() : null,
-      server_url: resolvedServerUrl,
-    };
-    const token = `mock-${Date.now()}`;
-    await AsyncStorage.setItem(SERVER_URL_KEY, resolvedServerUrl);
-    await persistSession(token, beekeeper);
-    return { token, beekeeper };
-  }
-
-  const raw = await requestJson<Record<string, unknown>>("/auth/register", undefined, {
+  const raw = await api<any>("/auth/register", {
     method: "POST",
     body: JSON.stringify({
-      name,
+      full_name: name,   // backend expects full_name not name
       email,
       phone,
       password,
       ...(apiKey?.trim() ? { api_key: apiKey.trim() } : {}),
     }),
-  }, resolvedServerUrl);
+  });
 
-  const token = String(raw.token ?? raw.access_token ?? "");
-  const beekeeper = normalizeProfile((raw.beekeeper ?? raw.user ?? raw) as Record<string, unknown>);
-  const storedBeekeeper = { ...beekeeper, server_url: resolvedServerUrl };
-  await persistSession(token, storedBeekeeper);
-  return { token, beekeeper: storedBeekeeper };
+  // Backend response: { access_token: string, token_type: string, user: UserResponse }
+  const token = String(raw.access_token ?? raw.token ?? "");
+  if (!token) throw new Error("Registration succeeded but no token was returned.");
+
+  const userRaw = (raw.user ?? raw.beekeeper ?? raw) as Record<string, unknown>;
+  const beekeeper = normalizeProfile(userRaw);
+
+  await persistSession(token, beekeeper);
+  return { token, beekeeper };
 }
 
+/**
+ * POST /auth/logout
+ * Router: api/routers/auth.py
+ */
 export async function logout(): Promise<void> {
-  if ((await resolveServerUrl()) && _authToken) {
-    try {
-      await requestJson<void>("/auth/logout", undefined, { method: "POST" });
-    } catch {
-      // best-effort — always clear local session regardless
-    }
-  }
-  _authToken = null;
-  await Promise.all([
-    AsyncStorage.removeItem(AUTH_TOKEN_KEY),
-    AsyncStorage.removeItem(AUTH_USER_KEY),
-  ]);
-}
-
-export async function fetchProfile(): Promise<BeekeeperProfile> {
-  if (!(await resolveServerUrl())) {
-    const raw = await AsyncStorage.getItem(AUTH_USER_KEY);
-    const profile = raw ? (JSON.parse(raw) as BeekeeperProfile) : {
-      id: "BK0001", name: "Beekeeper", email: null, phone: "", address: null, profile_photo_url: null, api_key: null, server_url: _serverUrl,
-    };
-    const stored = { ...profile, server_url: profile.server_url ?? _serverUrl };
-    if (stored.server_url) {
-      await AsyncStorage.setItem(SERVER_URL_KEY, stored.server_url);
-    }
-    await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(stored));
-    return stored;
-  }
-
-  let profile: BeekeeperProfile;
   try {
-    const raw = await requestJson<Record<string, unknown>>("/profile");
-    profile = normalizeProfile(raw);
+    if (_authToken) {
+      await api<void>("/auth/logout", { method: "POST" });
+    }
   } catch {
-    const storedRaw = await AsyncStorage.getItem(AUTH_USER_KEY);
-    profile = storedRaw
-      ? (JSON.parse(storedRaw) as BeekeeperProfile)
-      : {
-          id: "BK0001",
-          name: "Beekeeper",
-          email: null,
-          phone: "",
-          address: null,
-          profile_photo_url: null,
-          api_key: null,
-          server_url: _serverUrl,
-        };
+    // Always clear local session even if server call fails
+  } finally {
+    _authToken = null;
+    await Promise.all([
+      AsyncStorage.removeItem(AUTH_TOKEN_KEY),
+      AsyncStorage.removeItem(AUTH_USER_KEY),
+    ]);
   }
-
-  const stored = { ...profile, server_url: profile.server_url ?? _serverUrl };
-  if (stored.server_url) {
-    await AsyncStorage.setItem(SERVER_URL_KEY, stored.server_url);
-  }
-  await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(stored));
-  return stored;
 }
 
+// ─── Profile ─────────────────────────────────────────────────────────────────
+
+/**
+ * GET /auth/me
+ * Router: api/routers/auth.py
+ */
+export async function fetchProfile(): Promise<BeekeeperProfile> {
+  const raw = await api<any>("/auth/me");
+  const profile = normalizeProfile(raw);
+  await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(profile));
+  return profile;
+}
+
+/**
+ * PUT /auth/me
+ * Router: api/routers/auth.py
+ * Backend ProfileUpdate only accepts: full_name, phone, address
+ */
 export async function updateProfile(data: {
   name: string;
-  email: string;
+  email?: string;
   phone: string;
   address: string;
-  api_key: string;
-  server_url: string;
+  api_key?: string;
+  server_url?: string;
 }): Promise<BeekeeperProfile> {
-  const resolvedServerUrl = normalizeServerUrl(data.server_url) ?? _serverUrl;
-
-  const serverUrlError = validateServerUrl(resolvedServerUrl);
-  if (serverUrlError) {
-    throw new Error(serverUrlError);
-  }
-
-  const existing = await AsyncStorage.getItem(AUTH_USER_KEY);
-  const base: BeekeeperProfile = existing
-    ? (JSON.parse(existing) as BeekeeperProfile)
-    : { id: "BK0001", name: "Beekeeper", email: null, phone: "", address: null, profile_photo_url: null, api_key: null, server_url: resolvedServerUrl };
-  const localUpdated: BeekeeperProfile = { ...base, ...data, server_url: resolvedServerUrl };
-
-  if (resolvedServerUrl) {
-    setServerUrl(resolvedServerUrl);
-    await AsyncStorage.setItem(SERVER_URL_KEY, resolvedServerUrl);
-  }
-
-  await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(localUpdated));
-
-  const activeServerUrl = await resolveServerUrl(resolvedServerUrl);
-  if (!activeServerUrl) {
-    return localUpdated;
-  }
-
-  const payload = {
-    name: data.name,
-    email: data.email,
-    phone: data.phone,
-    address: data.address,
-    api_key: data.api_key,
-  };
-  try {
-    const raw = await requestJson<Record<string, unknown>>("/profile", undefined, {
-      method: "PUT",
-      body: JSON.stringify(payload),
-    }, activeServerUrl);
-    const profile = normalizeProfile(raw);
-    const synced: BeekeeperProfile = {
-      ...localUpdated,
-      ...profile,
-      server_url: resolvedServerUrl ?? profile.server_url ?? localUpdated.server_url,
-    };
-    if (synced.server_url) {
-      setServerUrl(synced.server_url);
-      await AsyncStorage.setItem(SERVER_URL_KEY, synced.server_url);
-    }
-    await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(synced));
-    return synced;
-  } catch {
-    return localUpdated;
-  }
+  const raw = await api<any>("/auth/me", {
+    method: "PUT",
+    body: JSON.stringify({
+      full_name: data.name,   // backend field is full_name
+      phone:     data.phone,
+      address:   data.address,
+    }),
+  });
+  const profile = normalizeProfile(raw);
+  await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(profile));
+  return profile;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Dashboard ────────────────────────────────────────────────────────────────
 
-export async function fetchAdvisory(alertId: string): Promise<Advisory | null> {
-  if (!(await resolveServerUrl())) {
-    return LOCAL_ADVISORIES.find((a) => a.alertId === alertId) ?? null;
+/**
+ * GET /dashboard
+ * Router: api/routers/dashboard.py
+ * Backend schema: DashboardResponse → { total_hives, active_hives, status_counts, key_metrics }
+ */
+export async function fetchDashboard(): Promise<DashboardData> {
+  const raw = await api<any>("/dashboard");
+
+  // Backend: DashboardStatusCounts { normal, pre_swarm, swarm, abscondment, other }
+  const counts  = raw?.status_counts ?? raw?.statusCounts ?? {};
+  // Backend: DashboardKeyMetrics { temperature_c, humidity_percent, population_k_bees, nectar_flow_kg_per_day }
+  const metrics = raw?.key_metrics   ?? raw?.keyMetrics   ?? {};
+
+  return {
+    totalHives:  Number(raw?.total_hives  ?? raw?.totalHives  ?? 0),
+    activeHives: Number(raw?.active_hives ?? raw?.activeHives ?? 0),
+    statusCounts: {
+      // Backend uses "normal" not "Healthy"
+      Healthy:     Number(counts.normal      ?? counts.Healthy     ?? counts.healthy ?? 0),
+      "Pre-swarm": Number(counts.pre_swarm   ?? counts["Pre-swarm"] ?? counts.preSwarm ?? 0),
+      Swarm:       Number(counts.swarm       ?? counts.Swarm       ?? 0),
+      Abscondment: Number(counts.abscondment ?? counts.Abscondment ?? 0),
+    },
+    keyMetrics: {
+      temperatureC:       Number(metrics.temperature_c        ?? metrics.temperatureC       ?? 0),
+      humidityPercent:    Number(metrics.humidity_percent     ?? metrics.humidityPercent    ?? 0),
+      populationKBees:    Number(metrics.population_k_bees   ?? metrics.populationKBees    ?? 0),
+      nectarFlowKgPerDay: Number(metrics.nectar_flow_kg_per_day ?? metrics.nectarFlowKgPerDay ?? 0),
+    },
+    // Fields not in DashboardResponse schema — default to 0/[]
+    // Backend may add these later or they come from separate endpoints
+    pendingAlerts:           Number(raw?.pending_alerts           ?? raw?.pendingAlerts           ?? 0),
+    acknowledgedAlerts:      Number(raw?.acknowledged_alerts      ?? raw?.acknowledgedAlerts      ?? 0),
+    preSwarmTrend:           Array.isArray(raw?.pre_swarm_trend   ?? raw?.preSwarmTrend)    ? (raw?.pre_swarm_trend ?? raw?.preSwarmTrend) : [],
+    recordingsToday:         Number(raw?.recordings_today         ?? raw?.recordingsToday         ?? 0),
+    silentHives:             Array.isArray(raw?.silent_hives      ?? raw?.silentHives)      ? (raw?.silent_hives   ?? raw?.silentHives)   : [],
+    highTempPreSwarmHives:   Array.isArray(raw?.high_temp_pre_swarm_hives ?? raw?.highTempPreSwarmHives)
+      ? (raw?.high_temp_pre_swarm_hives ?? raw?.highTempPreSwarmHives) : [],
+    allHives:                Array.isArray(raw?.all_hives         ?? raw?.allHives)         ? (raw?.all_hives      ?? raw?.allHives)       : [],
+    pendingAdvisoryActions:  Number(raw?.pending_advisory_actions  ?? raw?.pendingAdvisoryActions  ?? 0),
+    lowConfidenceInferences: Number(raw?.low_confidence_inferences ?? raw?.lowConfidenceInferences ?? 0),
+  };
+}
+
+// ─── Hives ────────────────────────────────────────────────────────────────────
+
+/**
+ * GET /hives
+ * Router: api/routers/hives.py
+ * Backend schema: HiveResponse { hive_id, owner_id, hive_name, hive_location,
+ *   hive_type, installation_date, current_state, latitude, longitude }
+ */
+export async function fetchHives(search = ""): Promise<Hive[]> {
+  const raw = await api<any>("/hives", search ? { query: { search } } : undefined);
+
+  const rows: any[] = Array.isArray(raw)      ? raw
+    : Array.isArray(raw?.items)               ? raw.items
+    : Array.isArray(raw?.data)                ? raw.data
+    : Array.isArray(raw?.results)             ? raw.results
+    : [];
+
+  return rows
+    .map((item: any, i: number) => ({
+      // Backend uses hive_id not id
+      id:        String(item.hive_id ?? item.id ?? item.name ?? `Hive-${i + 1}`),
+      // Backend uses current_state not status/state
+      status:    normalizeStatus(String(item.current_state ?? item.status ?? item.state ?? "normal")),
+      latitude:  toFiniteOrUndefined(item.latitude  ?? item.lat),
+      longitude: toFiniteOrUndefined(item.longitude ?? item.lng),
+      // Not in HiveResponse schema but keep for forward compat
+      stateSince: item.state_since ?? item.stateSince ?? item.state_entered_at ?? undefined,
+    }))
+    .sort((a, b) => a.id.localeCompare(b.id));
+}
+
+/**
+ * GET /hives/{id}
+ * Router: api/routers/hives.py
+ * Backend schema: HiveDetailResponse { hive_id, hive_name, hive_location,
+ *   current_state, latitude, longitude, alert_title, alert_message,
+ *   acknowledged, metric_series: MetricPoint[] }
+ */
+export async function fetchHiveDetail(hiveId: string): Promise<HiveDetailData> {
+  const raw = await api<any>(`/hives/${encodeURIComponent(hiveId)}`);
+
+  // Backend: metric_series: [{ time_label, temperature_c, humidity_percent }]
+  const rawSeries: any[] = raw.metric_series ?? raw.metricSeries ?? [];
+  const metricSeries = rawSeries.map((p: any, i: number) => ({
+    timeLabel:       String(p.time_label   ?? p.timeLabel  ?? p.time ?? `R${i + 1}`),
+    temperatureC:    Number(p.temperature_c   ?? p.temperatureC  ?? p.temp     ?? 0),
+    humidityPercent: Number(p.humidity_percent ?? p.humidityPercent ?? p.humidity ?? 0),
+  }));
+
+  return {
+    id:           String(raw.hive_id   ?? raw.id   ?? hiveId),
+    name:         String(raw.hive_name ?? raw.name ?? hiveId),
+    location:     String(raw.hive_location ?? raw.location ?? raw.site ?? ""),
+    status:       normalizeStatus(String(raw.current_state ?? raw.status ?? raw.state ?? "normal")),
+    stateSince:   raw.state_since ?? raw.stateSince ?? undefined,
+    alertTitle:   String(raw.alert_title   ?? raw.alertTitle   ?? ""),
+    alertMessage: String(raw.alert_message ?? raw.alertMessage ?? raw.message ?? ""),
+    metrics:      metricSeries.map((p) => p.temperatureC),
+    metricSeries,
+    mapLabel:     String(raw.hive_name ?? raw.hive_id ?? hiveId),
+    acknowledged: Boolean(raw.acknowledged ?? raw.is_acknowledged ?? false),
+  };
+}
+
+/**
+ * POST /hives/{id}/acknowledge
+ * Router: api/routers/hives.py
+ */
+export async function acknowledgeHiveAlert(hiveId: string): Promise<void> {
+  await api<void>(`/hives/${encodeURIComponent(hiveId)}/acknowledge`, { method: "POST" });
+}
+
+/**
+ * GET /hives/{id}/alerts
+ * Router: api/routers/alerts.py (hive_alerts_router)
+ * Backend schema: AlertResponse { alert_id, hive_id, severity_level,
+ *   recommended_action, action_status, alert_timestamp }
+ */
+export async function fetchHiveAlerts(hiveId: string): Promise<AlertItem[]> {
+  const raw = await api<any[]>(`/hives/${encodeURIComponent(hiveId)}/alerts`);
+  if (!Array.isArray(raw)) return [];
+  return raw.map((item, i) => normalizeHiveAlertItem(item, i, hiveId));
+}
+
+/**
+ * GET /alerts
+ * Router: api/routers/alerts.py (mobile_alerts_router)
+ * Backend schema: MobileAlertResponse { id, hive_id, severity, title, date, summary }
+ */
+export async function fetchAlerts(): Promise<AlertItem[]> {
+  const raw = await api<any[]>("/alerts");
+  if (!Array.isArray(raw)) return [];
+  return raw.map((item, i) => normalizeAlertItem(item, i));
+}
+
+/**
+ * GET /alerts/{id}
+ * Router: api/routers/alerts.py (mobile_alerts_router)
+ * Backend schema: MobileAlertDetailResponse { id, hive_id, severity, title, time, details, acknowledged }
+ */
+export async function fetchAlertDetail(alertId: string): Promise<AlertDetailData> {
+  const raw = await api<any>(`/alerts/${encodeURIComponent(alertId)}`);
+  return {
+    id:           String(raw.id ?? alertId),
+    hiveId:       String(raw.hive_id ?? raw.hiveId ?? ""),
+    severity:     normalizeSeverity(String(raw.severity ?? raw.level ?? "info")),
+    title:        String(raw.title ?? raw.alert ?? "Alert"),
+    time:         String(raw.time  ?? raw.createdAt ?? raw.created_at ?? ""),
+    details:      String(raw.details ?? raw.summary ?? raw.message ?? ""),
+    acknowledged: Boolean(raw.acknowledged ?? raw.is_acknowledged ?? false),
+  };
+}
+
+/**
+ * POST /alerts/{id}/acknowledge
+ * Router: api/routers/alerts.py (mobile_alerts_router)
+ */
+export async function acknowledgeAlert(alertId: string): Promise<void> {
+  await api<void>(`/alerts/${encodeURIComponent(alertId)}/acknowledge`, { method: "POST" });
+}
+
+// ─── Advisory ─────────────────────────────────────────────────────────────────
+
+/**
+ * Advisory endpoint does not exist in the Railway backend OpenAPI spec.
+ * Returns null to prevent crashes in AlertDetailsScreen.
+ */
+export async function fetchAdvisory(_alertId: string): Promise<Advisory | null> {
+  return null;
+}
+
+// ─── Ambient weather (Open-Meteo, no backend needed) ─────────────────────────
+
+export async function fetchAmbientWeather(
+  latitude = 0.3476,
+  longitude = 32.5825,
+): Promise<AmbientWeather> {
+  const params = new URLSearchParams({
+    latitude:  String(latitude),
+    longitude: String(longitude),
+    current:   "temperature_2m,relative_humidity_2m",
+    timezone:  "auto",
+  });
+
+  const resp = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`);
+  if (!resp.ok) throw new Error(`Weather API failed (${resp.status})`);
+
+  const data = await resp.json();
+  const cur  = data?.current;
+  const tempC = Number(cur?.temperature_2m);
+  const hum   = Number(cur?.relative_humidity_2m);
+
+  if (!Number.isFinite(tempC) || !Number.isFinite(hum)) {
+    throw new Error("Weather API returned unexpected values");
   }
-  try {
-    const raw = await requestJson<any>(`/alerts/${encodeURIComponent(alertId)}/advisory`);
-    return {
-      id: String(raw.id ?? ""),
-      alertId,
-      type: raw.type === "Preventive" ? "Preventive" : "Reactive",
-      summary: String(raw.summary ?? ""),
-      actions: Array.isArray(raw.actions) ? raw.actions.map((a: any, i: number) => ({
-        id: String(a.id ?? `act-${i}`),
-        description: String(a.description ?? a.action_description ?? ""),
-        priority: (["High", "Medium", "Low"].includes(a.priority) ? a.priority : "Medium") as "High" | "Medium" | "Low",
-      })) : [],
-    };
-  } catch {
-    return LOCAL_ADVISORIES.find((a) => a.alertId === alertId) ?? null;
-  }
+
+  return {
+    temperatureC:    tempC,
+    humidityPercent: hum,
+    observedAt:      String(cur?.time ?? new Date().toISOString()),
+    source:          "open-meteo",
+  };
+}
+
+// ─── Utilities ────────────────────────────────────────────────────────────────
+
+function toFiniteOrUndefined(value: unknown): number | undefined {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : undefined;
+}
+
+export function validateServerUrl(url: string | null | undefined): string | null {
+  const s = normalizeUrl(url);
+  if (!s) return "Server URL is required.";
+  try { new URL(s); return null; }
+  catch { return "Enter a valid URL, e.g. https://bsads-api-production.up.railway.app"; }
 }

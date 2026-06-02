@@ -9,11 +9,7 @@ import {
   View,
 } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import {
-  BeekeeperProfile,
-  register,
-  validateServerUrl,
-} from "../../api/beeswarmApi";
+import { BeekeeperProfile, register } from "../../api/beeswarmApi";
 import { THEME } from "../../theme";
 import { RootStackParamList } from "../../navigation/types";
 import { signupStyles as styles } from "./SignupScreen.styles";
@@ -28,8 +24,6 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [apiKey, setApiKey] = useState("");
-  const [serverUrl, setServerUrl] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -65,20 +59,17 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
     setSubmitting(true);
     setApiError("");
     try {
+      // serverUrl is omitted — the Railway backend is hardcoded as the default
       const { beekeeper } = await register(
         name.trim(),
         email.trim(),
         phone.trim(),
         password,
-        apiKey.trim() || null,
-        serverUrl.trim() || null,
       );
       onAuthSuccess(beekeeper);
     } catch (err) {
       setApiError(
-        err instanceof Error
-          ? err.message
-          : "Registration failed. Please try again.",
+        err instanceof Error ? err.message : "Registration failed. Please try again.",
       );
     } finally {
       setSubmitting(false);
@@ -86,11 +77,7 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
   };
 
   const clearError = (key: string) =>
-    setErrors((e) => {
-      const n = { ...e };
-      delete n[key];
-      return n;
-    });
+    setErrors((e) => { const n = { ...e }; delete n[key]; return n; });
 
   return (
     <ScrollView
@@ -103,129 +90,58 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
 
       <View style={styles.formCard}>
         <View style={styles.brandMark}>
-          <Image
-            source={beeLogo}
-            style={styles.brandLogo}
-            resizeMode="contain"
-          />
+          <Image source={beeLogo} style={styles.brandLogo} resizeMode="contain" />
         </View>
         <Text style={styles.brandText}>BSADS</Text>
         <Text style={styles.heading}>Create Your Account</Text>
 
         <TextInput
-          id="signup-name"
           placeholder="Full Name"
           placeholderTextColor={THEME.placeholder}
           style={[styles.input, !!errors.name && styles.inputError]}
           value={name}
-          onChangeText={(t) => {
-            setName(t);
-            clearError("name");
-          }}
+          onChangeText={(t) => { setName(t); clearError("name"); }}
         />
         {!!errors.name && <Text style={styles.fieldError}>{errors.name}</Text>}
 
         <TextInput
-          id="signup-email"
           placeholder="Email"
           placeholderTextColor={THEME.placeholder}
           style={[styles.input, !!errors.email && styles.inputError]}
           keyboardType="email-address"
           autoCapitalize="none"
           value={email}
-          onChangeText={(t) => {
-            setEmail(t);
-            clearError("email");
-          }}
+          onChangeText={(t) => { setEmail(t); clearError("email"); }}
         />
-        {!!errors.email && (
-          <Text style={styles.fieldError}>{errors.email}</Text>
-        )}
+        {!!errors.email && <Text style={styles.fieldError}>{errors.email}</Text>}
 
         <TextInput
-          id="signup-phone"
           placeholder="Phone Number"
           placeholderTextColor={THEME.placeholder}
           style={[styles.input, !!errors.phone && styles.inputError]}
           keyboardType="phone-pad"
           value={phone}
-          onChangeText={(t) => {
-            setPhone(t);
-            clearError("phone");
-          }}
+          onChangeText={(t) => { setPhone(t); clearError("phone"); }}
         />
-        {!!errors.phone && (
-          <Text style={styles.fieldError}>{errors.phone}</Text>
-        )}
+        {!!errors.phone && <Text style={styles.fieldError}>{errors.phone}</Text>}
 
         <TextInput
-          id="signup-api-key"
-          placeholder="API Key (optional)"
-          placeholderTextColor={THEME.placeholder}
-          style={[styles.input, !!errors.apiKey && styles.inputError]}
-          autoCapitalize="none"
-          autoCorrect={false}
-          value={apiKey}
-          onChangeText={(t) => {
-            setApiKey(t);
-            clearError("apiKey");
-          }}
-        />
-        {!!errors.apiKey && (
-          <Text style={styles.fieldError}>{errors.apiKey}</Text>
-        )}
-        <Text style={styles.fieldError}>
-          You can leave the API key blank if you do not have one yet.
-        </Text>
-
-        <TextInput
-          id="signup-server-url"
-          placeholder="Backend API base URL (optional)"
-          placeholderTextColor={THEME.placeholder}
-          style={[styles.input, !!errors.serverUrl && styles.inputError]}
-          autoCapitalize="none"
-          autoCorrect={false}
-          value={serverUrl}
-          onChangeText={(t) => {
-            setServerUrl(t);
-            clearError("serverUrl");
-          }}
-        />
-        {!!errors.serverUrl && (
-          <Text style={styles.fieldError}>{errors.serverUrl}</Text>
-        )}
-        <Text style={styles.fieldError}>
-          Leave this blank for a local account, or enter your API host such as
-          http://10.0.2.2:8000.
-        </Text>
-
-        <TextInput
-          id="signup-password"
           placeholder="Password (min 8 characters)"
           placeholderTextColor={THEME.placeholder}
           secureTextEntry
           style={[styles.input, !!errors.password && styles.inputError]}
           value={password}
-          onChangeText={(t) => {
-            setPassword(t);
-            clearError("password");
-          }}
+          onChangeText={(t) => { setPassword(t); clearError("password"); }}
         />
-        {!!errors.password && (
-          <Text style={styles.fieldError}>{errors.password}</Text>
-        )}
+        {!!errors.password && <Text style={styles.fieldError}>{errors.password}</Text>}
 
         <TextInput
-          id="signup-confirm-password"
           placeholder="Confirm Password"
           placeholderTextColor={THEME.placeholder}
           secureTextEntry
           style={[styles.input, !!errors.confirmPassword && styles.inputError]}
           value={confirmPassword}
-          onChangeText={(t) => {
-            setConfirmPassword(t);
-            clearError("confirmPassword");
-          }}
+          onChangeText={(t) => { setConfirmPassword(t); clearError("confirmPassword"); }}
         />
         {!!errors.confirmPassword && (
           <Text style={styles.fieldError}>{errors.confirmPassword}</Text>
@@ -255,10 +171,7 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
 
         <Text style={styles.footerPrompt}>
           Already have an account?{" "}
-          <Text
-            style={styles.footerLink}
-            onPress={() => navigation.navigate("Login")}
-          >
+          <Text style={styles.footerLink} onPress={() => navigation.navigate("Login")}>
             Login
           </Text>
         </Text>

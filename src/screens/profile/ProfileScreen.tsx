@@ -12,8 +12,6 @@ import { Ionicons } from "@expo/vector-icons";
 import {
   BeekeeperProfile,
   fetchProfile,
-  getServerUrl,
-  setServerUrl,
   updateProfile,
 } from "../../api/beeswarmApi";
 import { THEME } from "../../theme";
@@ -37,9 +35,6 @@ export function ProfileScreen({
   const [phone, setPhone] = useState(currentUser?.phone ?? "");
   const [address, setAddress] = useState(currentUser?.address ?? "");
   const [apiKey, setApiKey] = useState(currentUser?.api_key ?? "");
-  const [serverUrl, setServerUrlState] = useState(
-    currentUser?.server_url ?? getServerUrl() ?? "",
-  );
   const [showApiKey, setShowApiKey] = useState(false);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -52,7 +47,6 @@ export function ProfileScreen({
       setPhone(currentUser.phone);
       setAddress(currentUser.address ?? "");
       setApiKey(currentUser.api_key ?? "");
-      setServerUrlState(currentUser.server_url ?? getServerUrl() ?? "");
       return;
     }
     void (async () => {
@@ -63,7 +57,6 @@ export function ProfileScreen({
         setPhone(profile.phone);
         setAddress(profile.address ?? "");
         setApiKey(profile.api_key ?? "");
-        setServerUrlState(profile.server_url ?? getServerUrl() ?? "");
         onProfileUpdate(profile);
       } catch {
         Toast.show({ type: "error", text1: "Could not load profile" });
@@ -82,9 +75,8 @@ export function ProfileScreen({
         phone,
         address,
         api_key: apiKey,
-        server_url: serverUrl,
+        // server_url omitted — Railway URL is the fixed backend
       });
-      setServerUrl(updated.server_url);
       onProfileUpdate(updated);
       setEditing(false);
       Toast.show({ type: "success", text1: "Profile saved" });
@@ -274,31 +266,7 @@ export function ProfileScreen({
         </View>
         <View style={styles.profileDivider} />
 
-        <View style={styles.profileFieldRow}>
-          <Ionicons
-            name="globe-outline"
-            size={18}
-            color={THEME.textMuted}
-            style={styles.profileFieldIcon}
-          />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.profileFieldLabel}>Server URL</Text>
-            {editing ? (
-              <TextInput
-                id="profile-server-url"
-                style={styles.profileFieldInput}
-                value={serverUrl}
-                onChangeText={setServerUrlState}
-                autoCapitalize="none"
-                autoCorrect={false}
-                placeholder="https://abc123.ngrok-free.dev"
-                placeholderTextColor={THEME.placeholder}
-              />
-            ) : (
-              <Text style={styles.profileFieldValue}>{serverUrl || "—"}</Text>
-            )}
-          </View>
-        </View>
+        {/* Server URL is fixed (Railway) — not shown to end users */}
       </View>
 
       {/* Edit / Save row */}

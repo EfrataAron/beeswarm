@@ -1,3 +1,5 @@
+// gesture-handler MUST be the very first import in the entry file
+import "react-native-gesture-handler";
 import React, { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Platform, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -19,6 +21,7 @@ import {
   fetchAlerts,
   initAuthFromStorage,
   logout,
+  setUnauthorizedHandler,
 } from "./src/api/beeswarmApi";
 import { HeaderOverflowMenu } from "./src/components/HeaderOverflowMenu";
 import { applyThemeMode, THEME } from "./src/theme";
@@ -447,6 +450,14 @@ export default function App() {
     setCurrentUser(null);
     setIsAuthenticated(false);
   };
+
+  // Register the 401 handler so expired tokens auto-redirect to login
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      setCurrentUser(null);
+      setIsAuthenticated(false);
+    });
+  }, []);
 
   const handleDarkModeChange = async (value: boolean) => {
     applyThemeMode(value);
