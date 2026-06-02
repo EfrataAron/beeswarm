@@ -4,14 +4,14 @@ import {
   getPrediction,
   getHivePredictions,
   getPredictionForClassification,
-} from "../api/mockPredictionApi";
+} from "../api/predictionApi";
 import { showClassificationAlert } from "../utils/alertNotification";
 
 interface UsePredictionFetcherOptions {
   hiveIds: string[];
   enabled?: boolean;
-  interval?: number; // milliseconds between fetches
-  showAlerts?: boolean; // Show toast alerts for each prediction
+  interval?: number;
+  showAlerts?: boolean;
 }
 
 interface PredictionState {
@@ -21,19 +21,8 @@ interface PredictionState {
   lastFetchTime: Date | null;
 }
 
-/**
- * Hook to fetch predictions from the API periodically
- * Integrates with alert system to display notifications
- */
-export function usePredictionFetcher(
-  options: UsePredictionFetcherOptions
-) {
-  const {
-    hiveIds,
-    enabled = true,
-    interval = 30000, // 30 seconds default
-    showAlerts = true,
-  } = options;
+export function usePredictionFetcher(options: UsePredictionFetcherOptions) {
+  const { hiveIds, enabled = true, interval = 30000, showAlerts = true } = options;
 
   const [state, setState] = useState<PredictionState>({
     predictions: [],
@@ -42,56 +31,31 @@ export function usePredictionFetcher(
     lastFetchTime: null,
   });
 
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Fetch predictions for all hives
   const fetchPredictions = async () => {
     if (hiveIds.length === 0) return;
-
     setState((prev) => ({ ...prev, loading: true, error: null }));
-
     try {
       const predictions = await getHivePredictions(hiveIds);
-
-      setState({
-        predictions,
-        loading: false,
-        error: null,
-        lastFetchTime: new Date(),
-      });
-
-      // Show alerts for new predictions
-      if (showAlerts) {
-        predictions.forEach((prediction) => {
-          showClassificationAlert(prediction);
-        });
-      }
-
+      setState({ predictions, loading: false, error: null, lastFetchTime: new Date() });
+      if (showAlerts) predictions.forEach((p) => showClassificationAlert(p));
       return predictions;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
       setState((prev) => ({
         ...prev,
         loading: false,
-        error: errorMessage,
+        error: error instanceof Error ? error.message : "Unknown error",
       }));
     }
   };
 
-  // Start periodic fetching
   const startFetching = () => {
-    if (intervalRef.current) return; // Already running
-
-    // Fetch immediately
-    fetchPredictions();
-
-    // Then fetch at intervals
-    intervalRef.current = setInterval(() => {
-      fetchPredictions();
-    }, interval);
+    if (intervalRef.current) return;
+    void fetchPredictions();
+    intervalRef.current = setInterval(() => void fetchPredictions(), interval);
   };
 
-  // Stop periodic fetching
   const stopFetching = () => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
@@ -99,32 +63,23 @@ export function usePredictionFetcher(
     }
   };
 
-  // Fetch a single hive prediction on demand
   const fetchSinglePrediction = async (hiveId: string) => {
+    setState((prev) => ({ ...prev, loading: true, error: null }));
     try {
-      setState((prev) => ({ ...prev, loading: true, error: null }));
-
       const prediction = await getPrediction(hiveId);
-
       setState((prev) => ({
         ...prev,
         predictions: [prediction, ...prev.predictions],
         loading: false,
-        error: null,
         lastFetchTime: new Date(),
       }));
-
-      if (showAlerts) {
-        showClassificationAlert(prediction);
-      }
-
+      if (showAlerts) showClassificationAlert(prediction);
       return prediction;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
       setState((prev) => ({
         ...prev,
         loading: false,
-        error: errorMessage,
+        error: error instanceof Error ? error.message : "Unknown error",
       }));
     }
   };
@@ -133,45 +88,33 @@ export function usePredictionFetcher(
     hiveId: string,
     classification: string
   ) => {
+    setState((prev) => ({ ...prev, loading: true, error: null }));
     try {
-      setState((prev) => ({ ...prev, loading: true, error: null }));
-
       const prediction = await getPredictionForClassification(hiveId, classification);
-
       setState((prev) => ({
         ...prev,
         predictions: [prediction, ...prev.predictions],
         loading: false,
-        error: null,
         lastFetchTime: new Date(),
       }));
-
-      if (showAlerts) {
-        showClassificationAlert(prediction);
-      }
-
+      if (showAlerts) showClassificationAlert(prediction);
       return prediction;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
       setState((prev) => ({
         ...prev,
         loading: false,
-        error: errorMessage,
+        error: error instanceof Error ? error.message : "Unknown error",
       }));
     }
   };
 
-  // Setup and cleanup
   useEffect(() => {
     if (enabled) {
       startFetching();
     } else {
       stopFetching();
     }
-
-    return () => {
-      stopFetching();
-    };
+    return stopFetching;
   }, [enabled, interval, hiveIds.length]);
 
   return {

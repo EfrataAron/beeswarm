@@ -48,9 +48,6 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
       next.email = "Enter a valid email address.";
     }
     if (!phone.trim()) next.phone = "Phone number is required.";
-    if (!apiKey.trim()) next.apiKey = "API key is required.";
-    const serverUrlError = validateServerUrl(serverUrl);
-    if (serverUrlError) next.serverUrl = serverUrlError;
     if (!password) {
       next.password = "Password is required.";
     } else if (password.length < 8) {
@@ -73,8 +70,8 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
         email.trim(),
         phone.trim(),
         password,
-        apiKey.trim(),
-        serverUrl.trim(),
+        apiKey.trim() || null,
+        serverUrl.trim() || null,
       );
       onAuthSuccess(beekeeper);
     } catch (err) {
@@ -167,7 +164,7 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
         <TextInput
           id="signup-api-key"
           name="apiKey"
-          placeholder="API Key"
+          placeholder="API Key (optional)"
           placeholderTextColor={THEME.placeholder}
           style={[styles.input, !!errors.apiKey && styles.inputError]}
           autoCapitalize="none"
@@ -181,11 +178,14 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
         {!!errors.apiKey && (
           <Text style={styles.fieldError}>{errors.apiKey}</Text>
         )}
+        <Text style={styles.fieldError}>
+          You can leave the API key blank if you do not have one yet.
+        </Text>
 
         <TextInput
           id="signup-server-url"
           name="serverUrl"
-          placeholder="Backend API base URL"
+          placeholder="Backend API base URL (optional)"
           placeholderTextColor={THEME.placeholder}
           style={[styles.input, !!errors.serverUrl && styles.inputError]}
           autoCapitalize="none"
@@ -200,8 +200,8 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
           <Text style={styles.fieldError}>{errors.serverUrl}</Text>
         )}
         <Text style={styles.fieldError}>
-          Use the API host, for example http://10.0.2.2:8000, not the web app
-          URL.
+          Leave this blank for a local account, or enter your API host such as
+          http://10.0.2.2:8000.
         </Text>
 
         <TextInput

@@ -1049,18 +1049,30 @@ export async function register(
   email: string,
   phone: string,
   password: string,
-  apiKey: string,
-  serverUrl: string,
+  apiKey?: string | null,
+  serverUrl?: string | null,
 ): Promise<AuthResponse> {
   const resolvedServerUrl = normalizeServerUrl(serverUrl);
+
+  if (!resolvedServerUrl) {
+    const beekeeper: BeekeeperProfile = {
+      id: `BK${Date.now()}`,
+      name,
+      email,
+      phone,
+      address: null,
+      profile_photo_url: null,
+      api_key: apiKey?.trim() ? apiKey.trim() : null,
+      server_url: null,
+    };
+    const token = `mock-${Date.now()}`;
+    await persistSession(token, beekeeper);
+    return { token, beekeeper };
+  }
 
   const serverUrlError = validateServerUrl(resolvedServerUrl);
   if (serverUrlError) {
     throw new Error(serverUrlError);
-  }
-
-  if (!resolvedServerUrl) {
-    throw new Error("Server URL is required.");
   }
 
   if (!(await resolveServerUrl(resolvedServerUrl))) {
@@ -1071,7 +1083,7 @@ export async function register(
       phone,
       address: null,
       profile_photo_url: null,
-      api_key: apiKey || null,
+      api_key: apiKey?.trim() ? apiKey.trim() : null,
       server_url: resolvedServerUrl,
     };
     const token = `mock-${Date.now()}`;
@@ -1082,7 +1094,13 @@ export async function register(
 
   const raw = await requestJson<Record<string, unknown>>("/auth/register", undefined, {
     method: "POST",
-    body: JSON.stringify({ name, email, phone, password, api_key: apiKey }),
+    body: JSON.stringify({
+      name,
+      email,
+      phone,
+      password,
+      ...(apiKey?.trim() ? { api_key: apiKey.trim() } : {}),
+    }),
   }, resolvedServerUrl);
 
   const token = String(raw.token ?? raw.access_token ?? "");

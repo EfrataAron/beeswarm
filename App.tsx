@@ -73,6 +73,29 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 const HivesStack = createNativeStackNavigator<HivesStackParamList>();
 const AlertsStack = createNativeStackNavigator<AlertsStackParamList>();
 
+const linking = {
+  prefixes: ["http://localhost:8081", "http://localhost:8081/"],
+  config: {
+    screens: {
+      Welcome: "",
+      Login: "login",
+      Signup: "signup",
+      MainTabs: {
+        path: "",
+        screens: {
+          Dashboard: "",
+          Hives: "hives",
+          Alerts: "alerts",
+          Map: "map",
+          Classification: "classification",
+          Profile: "profile",
+        },
+      },
+      Settings: "settings",
+    },
+  },
+};
+
 // ─── Sub-navigators ────────────────────────────────────────────────────────────
 
 function HivesStackScreen({
@@ -385,7 +408,7 @@ export default function App() {
 
   return (
     <>
-      <NavigationContainer theme={navigationTheme}>
+      <NavigationContainer theme={navigationTheme} linking={linking}>
         <ExpoStatusBar style={colors.statusBar} />
         <RootStack.Navigator
           screenOptions={{
