@@ -125,7 +125,6 @@ export function ProfileScreen({
         {editing ? (
           <TextInput
             id="profile-name"
-            name="name"
             style={styles.profileNameInput}
             value={name}
             onChangeText={setName}
@@ -154,7 +153,6 @@ export function ProfileScreen({
             {editing ? (
               <TextInput
                 id="profile-email"
-                name="email"
                 style={styles.profileFieldInput}
                 value={email}
                 onChangeText={setEmail}
@@ -182,7 +180,6 @@ export function ProfileScreen({
             {editing ? (
               <TextInput
                 id="profile-phone"
-                name="phone"
                 style={styles.profileFieldInput}
                 value={phone}
                 onChangeText={setPhone}
@@ -209,7 +206,6 @@ export function ProfileScreen({
             {editing ? (
               <TextInput
                 id="profile-address"
-                name="address"
                 style={styles.profileFieldInput}
                 value={address}
                 onChangeText={setAddress}
@@ -236,7 +232,6 @@ export function ProfileScreen({
               <View style={{ flexDirection: "row", alignItems: "center" }}>
                 <TextInput
                   id="profile-api-key"
-                  name="apiKey"
                   style={[styles.profileFieldInput, { flex: 1 }]}
                   value={apiKey}
                   onChangeText={setApiKey}
@@ -291,7 +286,6 @@ export function ProfileScreen({
             {editing ? (
               <TextInput
                 id="profile-server-url"
-                name="serverUrl"
                 style={styles.profileFieldInput}
                 value={serverUrl}
                 onChangeText={setServerUrlState}

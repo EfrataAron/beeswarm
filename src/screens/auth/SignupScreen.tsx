@@ -114,7 +114,6 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
 
         <TextInput
           id="signup-name"
-          name="name"
           placeholder="Full Name"
           placeholderTextColor={THEME.placeholder}
           style={[styles.input, !!errors.name && styles.inputError]}
@@ -128,7 +127,6 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
 
         <TextInput
           id="signup-email"
-          name="email"
           placeholder="Email"
           placeholderTextColor={THEME.placeholder}
           style={[styles.input, !!errors.email && styles.inputError]}
@@ -146,7 +144,6 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
 
         <TextInput
           id="signup-phone"
-          name="phone"
           placeholder="Phone Number"
           placeholderTextColor={THEME.placeholder}
           style={[styles.input, !!errors.phone && styles.inputError]}
@@ -163,7 +160,6 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
 
         <TextInput
           id="signup-api-key"
-          name="apiKey"
           placeholder="API Key (optional)"
           placeholderTextColor={THEME.placeholder}
           style={[styles.input, !!errors.apiKey && styles.inputError]}
@@ -184,7 +180,6 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
 
         <TextInput
           id="signup-server-url"
-          name="serverUrl"
           placeholder="Backend API base URL (optional)"
           placeholderTextColor={THEME.placeholder}
           style={[styles.input, !!errors.serverUrl && styles.inputError]}
@@ -206,7 +201,6 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
 
         <TextInput
           id="signup-password"
-          name="password"
           placeholder="Password (min 8 characters)"
           placeholderTextColor={THEME.placeholder}
           secureTextEntry
@@ -223,7 +217,6 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
 
         <TextInput
           id="signup-confirm-password"
-          name="confirmPassword"
           placeholder="Confirm Password"
           placeholderTextColor={THEME.placeholder}
           secureTextEntry

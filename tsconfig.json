@@ -5,8 +5,7 @@
     "strict": true,
     "noEmit": true,
     "skipLibCheck": true,
-    "moduleResolution": "node",
-    "ignoreDeprecations": "6.0"
+    "moduleResolution": "bundler"
   },
   "include": ["**/*.ts", "**/*.tsx"]
 }

@@ -83,7 +83,6 @@ export function LoginScreen({ navigation, onAuthSuccess }: Props) {
 
         <TextInput
           id="login-email"
-          name="email"
           placeholder="Email"
           placeholderTextColor={THEME.placeholder}
           style={[styles.input, !!emailError && styles.inputError]}
@@ -99,7 +98,6 @@ export function LoginScreen({ navigation, onAuthSuccess }: Props) {
 
         <TextInput
           id="login-password"
-          name="password"
           placeholder="Password"
           placeholderTextColor={THEME.placeholder}
           secureTextEntry
