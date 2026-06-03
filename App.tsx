@@ -85,14 +85,22 @@ function getInitialWebPath(): string {
 
 function getInitialTabRoute(path: string): keyof MainTabParamList {
   switch (path) {
+    case "/app":
+    case "/app/dashboard":
+      return "Dashboard";
+    case "/app/hives":
     case "/hives":
       return "Hives";
+    case "/app/alerts":
     case "/alerts":
       return "Alerts";
+    case "/app/map":
     case "/map":
       return "Map";
+    case "/app/classification":
     case "/classification":
       return "Classification";
+    case "/app/profile":
     case "/profile":
       return "Profile";
     default:
@@ -106,6 +114,8 @@ function getInitialAuthRoute(path: string): keyof RootStackParamList {
       return "Login";
     case "/signup":
       return "Signup";
+    case "/welcome":
+      return "Welcome";
     default:
       return "Welcome";
   }
@@ -115,11 +125,11 @@ const linking = {
   prefixes: ["http://localhost:8081", "http://localhost:8081/"],
   config: {
     screens: {
-      Welcome: "",
+      Welcome: "welcome",
       Login: "login",
       Signup: "signup",
       MainTabs: {
-        path: "",
+        path: "app",
         screens: {
           Dashboard: "",
           Hives: "hives",
@@ -417,12 +427,20 @@ export default function App() {
   );
 
   useEffect(() => {
+    let cancelled = false;
+
+    // Never block the UI longer than 5s waiting on AsyncStorage.
+    const forceDone = setTimeout(() => {
+      if (!cancelled) setBootstrapping(false);
+    }, 5000);
+
     void (async () => {
       try {
         const [user, darkMode] = await Promise.all([
           initAuthFromStorage(),
           AsyncStorage.getItem(PREF_DARK_MODE),
         ]);
+        if (cancelled) return;
         if (user) {
           setCurrentUser(user);
           setIsAuthenticated(true);
@@ -435,9 +453,14 @@ export default function App() {
       } catch {
         // no stored session — stay on auth flow
       } finally {
-        setBootstrapping(false);
+        if (!cancelled) setBootstrapping(false);
       }
     })();
+
+    return () => {
+      cancelled = true;
+      clearTimeout(forceDone);
+    };
   }, []);
 
   const handleAuthSuccess = (user: BeekeeperProfile) => {

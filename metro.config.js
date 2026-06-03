@@ -1,6 +1,50 @@
 const { getDefaultConfig } = require("expo/metro-config");
+const https = require("https");
 
 const config = getDefaultConfig(__dirname);
+
+const RAILWAY_API = "bsads-api-production.up.railway.app";
+
+// Expo web (localhost:8081) cannot call Railway directly — browser CORS blocks it.
+// Proxy /api-proxy/* → Railway so API calls are same-origin during dev.
+config.server = {
+  ...config.server,
+  enhanceMiddleware: (middleware) => {
+    return (req, res, next) => {
+      const url = req.url ?? "";
+      if (!url.startsWith("/api-proxy")) {
+        return middleware(req, res, next);
+      }
+
+      const targetPath = url.replace(/^\/api-proxy/, "") || "/";
+      const proxyReq = https.request(
+        {
+          hostname: RAILWAY_API,
+          path: targetPath,
+          method: req.method,
+          headers: {
+            "Content-Type": req.headers["content-type"] || "application/json",
+            Accept: req.headers.accept || "application/json",
+            ...(req.headers.authorization
+              ? { Authorization: req.headers.authorization }
+              : {}),
+          },
+        },
+        (proxyRes) => {
+          res.writeHead(proxyRes.statusCode ?? 502, proxyRes.headers);
+          proxyRes.pipe(res);
+        },
+      );
+
+      proxyReq.on("error", (err) => {
+        res.writeHead(502, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ detail: `Proxy error: ${err.message}` }));
+      });
+
+      req.pipe(proxyReq);
+    };
+  },
+};
 
 // Tell Metro exactly where to find maplibre-gl's JS entry point.
 // Without this, Metro's resolver fails on the package because it

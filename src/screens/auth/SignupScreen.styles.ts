@@ -137,4 +137,42 @@ export const signupStyles = StyleSheet.create({
     color: THEME.primary,
     fontWeight: "700",
   },
+  sectionDivider: {
+    height: 1,
+    backgroundColor: THEME.line,
+    marginTop: 14,
+    marginBottom: 10,
+  },
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: THEME.primary,
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+    marginBottom: 8,
+  },
+  hintText: {
+    fontSize: 11,
+    color: THEME.textMuted,
+    marginBottom: 10,
+    paddingHorizontal: 2,
+  },
+  passwordRow: {
+    position: "relative",
+    width: "100%",
+  },
+  passwordInput: {
+    paddingRight: 56,
+  },
+  eyeBtn: {
+    position: "absolute",
+    right: 12,
+    top: 11,
+    padding: 2,
+  },
+  eyeBtnText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: THEME.primary,
+  },
 });

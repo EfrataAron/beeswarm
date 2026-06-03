@@ -21,27 +21,34 @@ type Props = NativeStackScreenProps<RootStackParamList, "Signup"> & {
 };
 
 export function SignupScreen({ navigation, onAuthSuccess }: Props) {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
+  const [name,            setName]            = useState("");
+  const [email,           setEmail]           = useState("");
+  const [phone,           setPhone]           = useState("");
+  const [apiKey,          setApiKey]          = useState("");
+  const [serverUrl,       setServerUrl]       = useState("");
+  const [password,        setPassword]        = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [apiError, setApiError] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const [showPassword,    setShowPassword]    = useState(false);
+  const [errors,          setErrors]          = useState<Record<string, string>>({});
+  const [apiError,        setApiError]        = useState("");
+  const [submitting,      setSubmitting]      = useState(false);
 
-  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const EMAIL_RE  = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const URL_RE    = /^https?:\/\/.+/;
 
   const handleSignup = async () => {
     const next: Record<string, string> = {};
 
-    if (!name.trim()) next.name = "Full name is required.";
+    if (!name.trim())  next.name = "Full name is required.";
     if (!email.trim()) {
       next.email = "Email is required.";
     } else if (!EMAIL_RE.test(email.trim())) {
       next.email = "Enter a valid email address.";
     }
     if (!phone.trim()) next.phone = "Phone number is required.";
+    if (serverUrl.trim() && !URL_RE.test(serverUrl.trim())) {
+      next.serverUrl = "Server URL must start with http:// or https://";
+    }
     if (!password) {
       next.password = "Password is required.";
     } else if (password.length < 8) {
@@ -59,13 +66,15 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
     setSubmitting(true);
     setApiError("");
     try {
-      // serverUrl is omitted — the Railway backend is hardcoded as the default
       const { beekeeper } = await register(
         name.trim(),
         email.trim(),
         phone.trim(),
         password,
+        apiKey.trim() || null,
+        serverUrl.trim() || null,
       );
+
       onAuthSuccess(beekeeper);
     } catch (err) {
       setApiError(
@@ -95,6 +104,7 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
         <Text style={styles.brandText}>BSADS</Text>
         <Text style={styles.heading}>Create Your Account</Text>
 
+        {/* Full Name */}
         <TextInput
           placeholder="Full Name"
           placeholderTextColor={THEME.placeholder}
@@ -104,6 +114,7 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
         />
         {!!errors.name && <Text style={styles.fieldError}>{errors.name}</Text>}
 
+        {/* Email */}
         <TextInput
           placeholder="Email"
           placeholderTextColor={THEME.placeholder}
@@ -115,6 +126,7 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
         />
         {!!errors.email && <Text style={styles.fieldError}>{errors.email}</Text>}
 
+        {/* Phone */}
         <TextInput
           placeholder="Phone Number"
           placeholderTextColor={THEME.placeholder}
@@ -125,20 +137,65 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
         />
         {!!errors.phone && <Text style={styles.fieldError}>{errors.phone}</Text>}
 
+        {/* Divider */}
+        <View style={styles.sectionDivider} />
+        <Text style={styles.sectionLabel}>API Configuration</Text>
+
+        {/* API Key */}
         <TextInput
-          placeholder="Password (min 8 characters)"
+          placeholder="API Key (optional)"
           placeholderTextColor={THEME.placeholder}
-          secureTextEntry
-          style={[styles.input, !!errors.password && styles.inputError]}
-          value={password}
-          onChangeText={(t) => { setPassword(t); clearError("password"); }}
+          style={[styles.input, !!errors.apiKey && styles.inputError]}
+          autoCapitalize="none"
+          autoCorrect={false}
+          value={apiKey}
+          onChangeText={(t) => { setApiKey(t); clearError("apiKey"); }}
         />
+        {!!errors.apiKey && <Text style={styles.fieldError}>{errors.apiKey}</Text>}
+        <Text style={styles.hintText}>
+          Your sensor API key for connecting hive devices.
+        </Text>
+
+        {/* Hive recording server URL (farmer's ngrok / external server) */}
+        <TextInput
+          placeholder="Hive Server URL (optional, e.g. ngrok)"
+          placeholderTextColor={THEME.placeholder}
+          style={[styles.input, !!errors.serverUrl && styles.inputError]}
+          autoCapitalize="none"
+          autoCorrect={false}
+          value={serverUrl}
+          onChangeText={(t) => { setServerUrl(t); clearError("serverUrl"); }}
+        />
+        {!!errors.serverUrl && <Text style={styles.fieldError}>{errors.serverUrl}</Text>}
+        <Text style={styles.hintText}>
+          URL of your hive audio recording server. You can add this later in Profile.
+        </Text>
+
+        {/* Divider */}
+        <View style={styles.sectionDivider} />
+        <Text style={styles.sectionLabel}>Security</Text>
+
+        {/* Password */}
+        <View style={styles.passwordRow}>
+          <TextInput
+            placeholder="Password (min 8 characters)"
+            placeholderTextColor={THEME.placeholder}
+            secureTextEntry={!showPassword}
+            style={[styles.input, styles.passwordInput, !!errors.password && styles.inputError]}
+            value={password}
+            onChangeText={(t) => { setPassword(t); clearError("password"); }}
+          />
+          <Pressable style={styles.eyeBtn} onPress={() => setShowPassword((v) => !v)}>
+            <Text style={styles.eyeBtnText}>{showPassword ? "Hide" : "Show"}</Text>
+          </Pressable>
+        </View>
         {!!errors.password && <Text style={styles.fieldError}>{errors.password}</Text>}
 
+        {/* Confirm Password */}
         <TextInput
           placeholder="Confirm Password"
           placeholderTextColor={THEME.placeholder}
-          secureTextEntry
+          secureTextEntry={!showPassword}
           style={[styles.input, !!errors.confirmPassword && styles.inputError]}
           value={confirmPassword}
           onChangeText={(t) => { setConfirmPassword(t); clearError("confirmPassword"); }}

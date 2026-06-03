@@ -5,9 +5,22 @@
  *
  * All functions make real HTTP requests. There is no mock data fallback.
  * Screens handle loading/error states themselves.
+ *
+ * Debug logging: every request and response is printed to the Metro console.
+ * Set API_DEBUG = false to silence it in production.
  */
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Platform } from "react-native";
+
+// Set to false to disable request/response logging
+const API_DEBUG = true;
+
+function log(tag: string, ...args: unknown[]) {
+  if (API_DEBUG) {
+    console.log(`[BSADS API] ${tag}`, ...args);
+  }
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -119,11 +132,19 @@ export type AmbientWeather = {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const RAILWAY_URL = "https://bsads-api-production.up.railway.app";
+export const RAILWAY_URL = "https://bsads-api-production.up.railway.app";
+
+/** Dev-only: Metro proxies this path to Railway (avoids browser CORS on Expo web). */
+const WEB_DEV_PROXY_PREFIX = "/api-proxy";
+
+const REQUEST_TIMEOUT_MS = 60_000;
 
 const AUTH_TOKEN_KEY = "@bsads/auth_token";
 const AUTH_USER_KEY  = "@bsads/auth_user";
-const SERVER_URL_KEY = "@bsads/server_url";
+/** BSADS FastAPI base URL used for all mobile API calls. */
+const API_BASE_URL_KEY = "@bsads/api_base_url";
+/** Legacy key — previously misused for farmer hive server URLs. */
+const LEGACY_SERVER_URL_KEY = "@bsads/server_url";
 
 // ─── In-memory state ──────────────────────────────────────────────────────────
 
@@ -139,9 +160,170 @@ export function setUnauthorizedHandler(handler: () => void): void {
 
 // ─── URL helpers ──────────────────────────────────────────────────────────────
 
+function buildRequestUrl(
+  path: string,
+  query?: Record<string, string>,
+  explicitBase?: string,
+): string {
+  const qs = query ? "?" + new URLSearchParams(query).toString() : "";
+  if (explicitBase) return `${explicitBase}${path}${qs}`;
+  // Expo web in dev: same-origin proxy (see metro.config.js)
+  if (Platform.OS === "web" && typeof __DEV__ !== "undefined" && __DEV__) {
+    return `${WEB_DEV_PROXY_PREFIX}${path}${qs}`;
+  }
+  const base = _serverUrl || RAILWAY_URL;
+  return `${base}${path}${qs}`;
+}
+
 function normalizeUrl(url: string | null | undefined): string | null {
   const s = String(url ?? "").trim().replace(/\/$/, "");
   return s || null;
+}
+
+/** True when a URL is a plausible BSADS FastAPI host (not a farmer ngrok / Expo page). */
+function isBsadsApiBaseUrl(url: string): boolean {
+  const u = url.toLowerCase();
+  try {
+    new URL(url);
+  } catch {
+    return false;
+  }
+  // Farmer recording servers and dev frontends return HTML, not JSON API responses.
+  if (u.includes("ngrok")) return false;
+  if (u.includes(":8081")) return false;
+
+  if (u.includes("railway.app")) return true;
+  if (u.includes("localhost") || u.includes("127.0.0.1") || u.includes("10.0.2.2")) return true;
+  if (u.includes(":8000")) return true;
+  return false;
+}
+
+function looksLikeHtmlBody(text: string): boolean {
+  const t = text.trimStart().toLowerCase();
+  return t.startsWith("<!doctype") || t.startsWith("<html");
+}
+
+function htmlApiError(base: string): Error {
+  return new Error(
+    `The server at ${base} returned a web page instead of API data. ` +
+      `The app may be pointing at the wrong URL. Expected the BSADS API ` +
+      `(e.g. ${RAILWAY_URL}). Log out, clear app storage, or reinstall if this persists.`,
+  );
+}
+
+function formatNetworkFailure(base: string, err: unknown): Error {
+  const isLocal =
+    base.includes("localhost") ||
+    base.includes("127.0.0.1") ||
+    base.includes("10.0.2.2");
+
+  if (isLocal) {
+    return new Error(
+      `Cannot reach ${base} from this device. A local dev server only works on the same machine or emulator — the app uses ${RAILWAY_URL}.`,
+    );
+  }
+
+  const msg = err instanceof Error ? err.message : String(err);
+  const lower = msg.toLowerCase();
+  const name = err instanceof Error ? err.name : "";
+
+  if (name === "AbortError" || lower.includes("aborted") || lower.includes("timeout")) {
+    return new Error(
+      `The BSADS API timed out. Wait 30 seconds and try again (Railway may be waking up).`,
+    );
+  }
+  if (lower.includes("certificate") || lower.includes("ssl") || lower.includes("cert")) {
+    return new Error(
+      "Secure connection failed. Set your phone date & time to automatic, then try again.",
+    );
+  }
+
+  // Browser can reach Railway but Expo Go sometimes fails until app is reloaded.
+  return new Error(
+    `Request to ${base} failed: ${msg}\n\n` +
+      "If /health works in your phone browser, close Expo Go completely, reopen it, scan the QR code again, then retry signup.",
+  );
+}
+
+/** Uses React Native fetch (same stack as the browser) — not axios. */
+async function fetchWithTimeout(
+  url: string,
+  init: RequestInit,
+  timeoutMs = REQUEST_TIMEOUT_MS,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Quick connectivity check — GET /health on Railway. */
+export async function pingApi(baseUrl = RAILWAY_URL): Promise<boolean> {
+  try {
+    const url =
+      Platform.OS === "web" && typeof __DEV__ !== "undefined" && __DEV__
+        ? `${WEB_DEV_PROXY_PREFIX}/health`
+        : `${baseUrl}/health`;
+    const res = await fetchWithTimeout(
+      url,
+      {
+        method: "GET",
+        headers: { Accept: "application/json" },
+      },
+      15_000,
+    );
+    return res.ok;
+  } catch (e) {
+    log("ping failed:", e);
+    return false;
+  }
+}
+
+type ApiInit = {
+  method?: string;
+  body?: string;
+  query?: Record<string, string>;
+  baseUrl?: string;
+  headers?: Record<string, string>;
+};
+
+async function loadApiBaseUrlFromStorage(): Promise<void> {
+  try {
+    const [stored, legacy] = await Promise.all([
+      AsyncStorage.getItem(API_BASE_URL_KEY),
+      AsyncStorage.getItem(LEGACY_SERVER_URL_KEY),
+    ]);
+
+    const candidate = stored ?? legacy;
+    if (candidate && isBsadsApiBaseUrl(candidate)) {
+      _serverUrl = normalizeUrl(candidate) ?? RAILWAY_URL;
+      if (!stored) {
+        await AsyncStorage.setItem(API_BASE_URL_KEY, _serverUrl);
+      }
+    } else {
+      _serverUrl = RAILWAY_URL;
+    }
+
+    // Drop unreachable local dev URLs saved during emulator testing.
+    const isLocalDev =
+      _serverUrl.includes("localhost") ||
+      _serverUrl.includes("127.0.0.1") ||
+      _serverUrl.includes("10.0.2.2");
+    if (isLocalDev) {
+      _serverUrl = RAILWAY_URL;
+      await AsyncStorage.setItem(API_BASE_URL_KEY, RAILWAY_URL);
+    }
+
+    // Remove legacy key when it held a farmer server URL or other invalid value.
+    if (legacy && legacy !== _serverUrl) {
+      await AsyncStorage.removeItem(LEGACY_SERVER_URL_KEY);
+    }
+  } catch {
+    _serverUrl = RAILWAY_URL;
+  }
 }
 
 export function getServerUrl(): string {
@@ -149,7 +331,14 @@ export function getServerUrl(): string {
 }
 
 export function setServerUrl(url: string | null): void {
-  _serverUrl = normalizeUrl(url) ?? RAILWAY_URL;
+  const normalized = normalizeUrl(url);
+  if (normalized && !isBsadsApiBaseUrl(normalized)) {
+    log("Ignoring invalid API base URL:", normalized);
+    _serverUrl = RAILWAY_URL;
+    return;
+  }
+  _serverUrl = normalized ?? RAILWAY_URL;
+  void AsyncStorage.setItem(API_BASE_URL_KEY, _serverUrl).catch(() => {});
 }
 
 export function getAuthToken(): string | null {
@@ -162,73 +351,95 @@ export function setAuthToken(token: string | null): void {
 
 // ─── Core HTTP function ───────────────────────────────────────────────────────
 
-async function api<T>(
-  path: string,
-  init?: RequestInit & { query?: Record<string, string> },
-): Promise<T> {
-  const base = _serverUrl || RAILWAY_URL;
-  const qs = init?.query
-    ? "?" + new URLSearchParams(init.query).toString()
-    : "";
-  const url = `${base}${path}${qs}`;
+async function api<T>(path: string, init?: ApiInit): Promise<T> {
+  const method = (init?.method ?? "GET").toUpperCase();
+  const url = buildRequestUrl(path, init?.query, init?.baseUrl);
+  const base = init?.baseUrl ?? _serverUrl ?? RAILWAY_URL;
 
-  let response: Response;
   try {
-    response = await fetch(url, {
-      method: init?.method ?? "GET",
+    log(`→ ${method} ${url}`, _authToken ? "(authenticated)" : "(no token)");
+
+    const response = await fetchWithTimeout(url, {
+      method,
       headers: {
-        "Content-Type": "application/json",
         Accept: "application/json",
+        "Content-Type": "application/json",
         ...(_authToken ? { Authorization: `Bearer ${_authToken}` } : {}),
         ...(init?.headers ?? {}),
       },
       body: init?.body,
     });
-  } catch (networkErr) {
-    // fetch() itself threw — no network, DNS failure, or CORS
-    const msg = networkErr instanceof Error ? networkErr.message : String(networkErr);
-    if (msg.toLowerCase().includes("network request failed") ||
-        msg.toLowerCase().includes("failed to fetch") ||
-        msg.toLowerCase().includes("network error")) {
-      throw new Error(
-        "Cannot reach the server. Check your internet connection and try again."
-      );
+
+    const status = response.status;
+    log(`← ${status} ${url}`);
+
+    if (status === 204) return undefined as T;
+
+    const text = await response.text();
+    if (!text.trim()) return undefined as T;
+
+    if (status < 200 || status >= 300) {
+      if (looksLikeHtmlBody(text)) {
+        log(`✗ HTML ERROR ${status} ${path} from ${base}`);
+        throw htmlApiError(base);
+      }
+
+      if (status === 401) {
+        log("✗ 401 Unauthorized — clearing session");
+        _authToken = null;
+        await Promise.all([
+          AsyncStorage.removeItem(AUTH_TOKEN_KEY),
+          AsyncStorage.removeItem(AUTH_USER_KEY),
+        ]).catch(() => {});
+        _onUnauthorized?.();
+      }
+
+      let message = `Request failed (${status})`;
+      try {
+        const err = JSON.parse(text);
+        if (typeof err?.detail === "string") message = err.detail;
+        else if (Array.isArray(err?.detail))
+          message = err.detail.map((d: { msg?: string }) => d?.msg ?? d).join(", ");
+      } catch {}
+      log(`✗ ERROR ${status} ${path}:`, message);
+      throw new Error(message);
     }
-    throw new Error(`Network error: ${msg}`);
-  }
 
-  // Empty response
-  if (response.status === 204) return undefined as T;
-
-  const text = await response.text();
-  if (!text.trim()) return undefined as T;
-
-  // Error response — try to extract FastAPI detail message
-  if (!response.ok) {
-    // 401 = token expired or invalid → clear session and redirect to login
-    if (response.status === 401) {
-      _authToken = null;
-      await Promise.all([
-        AsyncStorage.removeItem(AUTH_TOKEN_KEY),
-        AsyncStorage.removeItem(AUTH_USER_KEY),
-      ]).catch(() => {});
-      _onUnauthorized?.();
-    }
-
-    let message = `Request failed (${response.status})`;
     try {
-      const err = JSON.parse(text);
-      if (typeof err?.detail === "string") message = err.detail;
-      else if (Array.isArray(err?.detail))
-        message = err.detail.map((d: any) => d?.msg ?? d).join(", ");
-    } catch {}
-    throw new Error(message);
+      const parsed = JSON.parse(text) as T;
+      log(`✓ OK ${path}`, typeof parsed === "object" ? JSON.stringify(parsed).slice(0, 200) : parsed);
+      return parsed;
+    } catch {
+      if (looksLikeHtmlBody(text)) {
+        log(`✗ HTML response (expected JSON) ${path} from ${base}`);
+        throw htmlApiError(base);
+      }
+      throw new Error(`Invalid JSON from ${path}: ${text.slice(0, 100)}`);
+    }
+  } catch (err) {
+    if (err instanceof Error && !err.message.startsWith("Request failed") &&
+        !err.message.startsWith("Invalid JSON") &&
+        !err.message.startsWith("The server at")) {
+      const netErr = formatNetworkFailure(base, err);
+      log(`✗ NETWORK ERROR ${url}:`, netErr.message);
+      throw netErr;
+    }
+    throw err;
   }
+}
 
+/** Retry once after a short pause (Railway cold start). */
+async function apiWithRetry<T>(path: string, init?: ApiInit): Promise<T> {
   try {
-    return JSON.parse(text) as T;
-  } catch {
-    throw new Error(`Invalid JSON from ${path}: ${text.slice(0, 100)}`);
+    return await api<T>(path, init);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "";
+    if (msg.includes("timed out")) {
+      log("↻ Retrying after 3s…");
+      await new Promise((r) => setTimeout(r, 3000));
+      return api<T>(path, init);
+    }
+    throw err;
   }
 }
 
@@ -298,6 +509,8 @@ function normalizeHiveAlertItem(item: any, index: number, fallbackHiveId = ""): 
 
 async function persistSession(token: string, profile: BeekeeperProfile): Promise<void> {
   _authToken = token;
+  // Always use production API after auth — avoids stale localhost URLs on device storage.
+  setServerUrl(RAILWAY_URL);
   await Promise.all([
     AsyncStorage.setItem(AUTH_TOKEN_KEY, token),
     AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(profile)),
@@ -308,6 +521,8 @@ async function persistSession(token: string, profile: BeekeeperProfile): Promise
 
 export async function initAuthFromStorage(): Promise<BeekeeperProfile | null> {
   try {
+    await loadApiBaseUrlFromStorage();
+
     const [token, raw] = await Promise.all([
       AsyncStorage.getItem(AUTH_TOKEN_KEY),
       AsyncStorage.getItem(AUTH_USER_KEY),
@@ -320,12 +535,17 @@ export async function initAuthFromStorage(): Promise<BeekeeperProfile | null> {
   }
 }
 
+/** Load persisted BSADS API base URL (ignores legacy farmer server URLs). */
+export async function initServerUrlFromStorage(): Promise<void> {
+  await loadApiBaseUrlFromStorage();
+}
+
 /**
  * POST /auth/login
  * Router: api/routers/auth.py
  */
 export async function login(email: string, password: string): Promise<AuthResponse> {
-  const raw = await api<any>("/auth/login", {
+  const raw = await apiWithRetry<any>("/auth/login", {
     method: "POST",
     body: JSON.stringify({ email, password }),
   });
@@ -352,8 +572,10 @@ export async function register(
   phone: string,
   password: string,
   apiKey?: string | null,
+  /** Farmer's external hive-recording server (stored in users.server_url). */
+  farmerServerUrl?: string | null,
 ): Promise<AuthResponse> {
-  const raw = await api<any>("/auth/register", {
+  const raw = await apiWithRetry<any>("/auth/register", {
     method: "POST",
     body: JSON.stringify({
       full_name: name,   // backend expects full_name not name
@@ -361,6 +583,9 @@ export async function register(
       phone,
       password,
       ...(apiKey?.trim() ? { api_key: apiKey.trim() } : {}),
+      ...(farmerServerUrl?.trim()
+        ? { server_url: normalizeUrl(farmerServerUrl.trim()) }
+        : {}),
     }),
   });
 
@@ -411,7 +636,6 @@ export async function fetchProfile(): Promise<BeekeeperProfile> {
 /**
  * PUT /auth/me
  * Router: api/routers/auth.py
- * Backend ProfileUpdate only accepts: full_name, phone, address
  */
 export async function updateProfile(data: {
   name: string;
@@ -427,6 +651,10 @@ export async function updateProfile(data: {
       full_name: data.name,   // backend field is full_name
       phone:     data.phone,
       address:   data.address,
+      ...(data.api_key?.trim() ? { api_key: data.api_key.trim() } : {}),
+      ...(data.server_url?.trim()
+        ? { server_url: normalizeUrl(data.server_url.trim()) }
+        : {}),
     }),
   });
   const profile = normalizeProfile(raw);
