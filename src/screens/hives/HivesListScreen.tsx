@@ -114,6 +114,15 @@ export function HivesListScreen({ navigation }: Props) {
         </View>
       )}
 
+      {/* Create Hive Button */}
+      <Pressable
+        style={styles.createHiveButton}
+        onPress={() => navigation.navigate("CreateHive")}
+      >
+        <Ionicons name="add-circle-outline" size={20} color="#FFFFFF" />
+        <Text style={styles.createHiveButtonText}>Create New Hive</Text>
+      </Pressable>
+
       {/* Search + view toggle */}
       <View style={styles.hiveToolbarRow}>
         <View style={styles.searchBarWrap}>

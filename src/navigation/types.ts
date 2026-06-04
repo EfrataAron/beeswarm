@@ -20,6 +20,7 @@ export type MainTabParamList = {
 export type HivesStackParamList = {
   HiveList: undefined;
   HiveDetails: { hiveId: string };
+  CreateHive: undefined;
 };
 
 export type AlertsStackParamList = {

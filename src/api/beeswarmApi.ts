@@ -132,7 +132,7 @@ export type AmbientWeather = {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-export const RAILWAY_URL = "https://bsads-api-production.up.railway.app";
+export const BASE_URL = "https://bsads-api-production.up.railway.app";
 
 /** Dev-only: Metro proxies this path to Railway (avoids browser CORS on Expo web). */
 const WEB_DEV_PROXY_PREFIX = "/api-proxy";
@@ -149,7 +149,7 @@ const LEGACY_SERVER_URL_KEY = "@bsads/server_url";
 // ─── In-memory state ──────────────────────────────────────────────────────────
 
 let _authToken: string | null = null;
-let _serverUrl: string = RAILWAY_URL;
+let _serverUrl: string = BASE_URL;
 
 // Called when the backend returns 401 — allows App.tsx to redirect to login
 let _onUnauthorized: (() => void) | null = null;
@@ -171,7 +171,7 @@ function buildRequestUrl(
   if (Platform.OS === "web" && typeof __DEV__ !== "undefined" && __DEV__) {
     return `${WEB_DEV_PROXY_PREFIX}${path}${qs}`;
   }
-  const base = _serverUrl || RAILWAY_URL;
+  const base = _serverUrl || BASE_URL;
   return `${base}${path}${qs}`;
 }
 
@@ -207,7 +207,7 @@ function htmlApiError(base: string): Error {
   return new Error(
     `The server at ${base} returned a web page instead of API data. ` +
       `The app may be pointing at the wrong URL. Expected the BSADS API ` +
-      `(e.g. ${RAILWAY_URL}). Log out, clear app storage, or reinstall if this persists.`,
+      `(e.g. ${BASE_URL}). Log out, clear app storage, or reinstall if this persists.`,
   );
 }
 
@@ -219,7 +219,7 @@ function formatNetworkFailure(base: string, err: unknown): Error {
 
   if (isLocal) {
     return new Error(
-      `Cannot reach ${base} from this device. A local dev server only works on the same machine or emulator — the app uses ${RAILWAY_URL}.`,
+      `Cannot reach ${base} from this device. A local dev server only works on the same machine or emulator — the app uses ${BASE_URL}.`,
     );
   }
 
@@ -261,7 +261,7 @@ async function fetchWithTimeout(
 }
 
 /** Quick connectivity check — GET /health on Railway. */
-export async function pingApi(baseUrl = RAILWAY_URL): Promise<boolean> {
+export async function pingApi(baseUrl = BASE_URL): Promise<boolean> {
   try {
     const url =
       Platform.OS === "web" && typeof __DEV__ !== "undefined" && __DEV__
@@ -299,12 +299,12 @@ async function loadApiBaseUrlFromStorage(): Promise<void> {
 
     const candidate = stored ?? legacy;
     if (candidate && isBsadsApiBaseUrl(candidate)) {
-      _serverUrl = normalizeUrl(candidate) ?? RAILWAY_URL;
+      _serverUrl = normalizeUrl(candidate) ?? BASE_URL;
       if (!stored) {
         await AsyncStorage.setItem(API_BASE_URL_KEY, _serverUrl);
       }
     } else {
-      _serverUrl = RAILWAY_URL;
+      _serverUrl = BASE_URL;
     }
 
     // Drop unreachable local dev URLs saved during emulator testing.
@@ -313,8 +313,8 @@ async function loadApiBaseUrlFromStorage(): Promise<void> {
       _serverUrl.includes("127.0.0.1") ||
       _serverUrl.includes("10.0.2.2");
     if (isLocalDev) {
-      _serverUrl = RAILWAY_URL;
-      await AsyncStorage.setItem(API_BASE_URL_KEY, RAILWAY_URL);
+      _serverUrl = BASE_URL;
+      await AsyncStorage.setItem(API_BASE_URL_KEY, BASE_URL);
     }
 
     // Remove legacy key when it held a farmer server URL or other invalid value.
@@ -322,7 +322,7 @@ async function loadApiBaseUrlFromStorage(): Promise<void> {
       await AsyncStorage.removeItem(LEGACY_SERVER_URL_KEY);
     }
   } catch {
-    _serverUrl = RAILWAY_URL;
+    _serverUrl = BASE_URL;
   }
 }
 
@@ -334,10 +334,10 @@ export function setServerUrl(url: string | null): void {
   const normalized = normalizeUrl(url);
   if (normalized && !isBsadsApiBaseUrl(normalized)) {
     log("Ignoring invalid API base URL:", normalized);
-    _serverUrl = RAILWAY_URL;
+    _serverUrl = BASE_URL;
     return;
   }
-  _serverUrl = normalized ?? RAILWAY_URL;
+  _serverUrl = normalized ?? BASE_URL;
   void AsyncStorage.setItem(API_BASE_URL_KEY, _serverUrl).catch(() => {});
 }
 
@@ -354,7 +354,7 @@ export function setAuthToken(token: string | null): void {
 async function api<T>(path: string, init?: ApiInit): Promise<T> {
   const method = (init?.method ?? "GET").toUpperCase();
   const url = buildRequestUrl(path, init?.query, init?.baseUrl);
-  const base = init?.baseUrl ?? _serverUrl ?? RAILWAY_URL;
+  const base = init?.baseUrl ?? _serverUrl ?? BASE_URL;
 
   try {
     log(`→ ${method} ${url}`, _authToken ? "(authenticated)" : "(no token)");
@@ -510,7 +510,7 @@ function normalizeHiveAlertItem(item: any, index: number, fallbackHiveId = ""): 
 async function persistSession(token: string, profile: BeekeeperProfile): Promise<void> {
   _authToken = token;
   // Always use production API after auth — avoids stale localhost URLs on device storage.
-  setServerUrl(RAILWAY_URL);
+  setServerUrl(BASE_URL);
   await Promise.all([
     AsyncStorage.setItem(AUTH_TOKEN_KEY, token),
     AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(profile)),
@@ -869,6 +869,34 @@ export async function fetchAmbientWeather(
     humidityPercent: hum,
     observedAt:      String(cur?.time ?? new Date().toISOString()),
     source:          "open-meteo",
+  };
+}
+
+/**
+ * POST /hives
+ * Router: api/routers/hives.py
+ * Create a new hive
+ */
+export async function createHive(data: {
+  hive_location: string;
+  hive_type: string;
+  hive_name: string;
+  installation_date: string;
+  latitude: number;
+  longitude: number;
+  owner_id: string;
+}): Promise<Hive> {
+  const raw = await api<any>("/hives", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  
+  return {
+    id: String(raw.hive_id ?? raw.id ?? raw.hive_name ?? ""),
+    status: normalizeStatus(String(raw.current_state ?? raw.status ?? "normal")),
+    latitude: toFiniteOrUndefined(raw.latitude ?? raw.lat),
+    longitude: toFiniteOrUndefined(raw.longitude ?? raw.lng),
+    stateSince: raw.state_since ?? raw.stateSince ?? undefined,
   };
 }
 

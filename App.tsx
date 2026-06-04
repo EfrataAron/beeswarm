@@ -43,6 +43,7 @@ import { ProfileScreen } from "./src/screens/profile/ProfileScreen";
 import { DashboardScreen } from "./src/screens/dashboard/DashboardScreen";
 import { HivesListScreen } from "./src/screens/hives/HivesListScreen";
 import { HiveDetailsScreen } from "./src/screens/hives/HiveDetailsScreen";
+import { CreateHiveScreen } from "./src/screens/hives/CreateHiveScreen";
 import { AlertsListScreen } from "./src/screens/alerts/AlertsListScreen";
 import { AlertDetailsScreen } from "./src/screens/alerts/AlertDetailsScreen";
 import { MapScreen } from "./src/screens/map/MapScreen";
@@ -149,9 +150,11 @@ const linking = {
 function HivesStackScreen({
   onOpenSettings,
   onLogout,
+  currentUser,
 }: {
   onOpenSettings: () => void;
   onLogout: () => void;
+  currentUser: BeekeeperProfile | null;
 }) {
   return (
     <HivesStack.Navigator
@@ -177,6 +180,12 @@ function HivesStackScreen({
         component={HiveDetailsScreen}
         options={({ route }) => ({ title: route.params.hiveId })}
       />
+      <HivesStack.Screen
+        name="CreateHive"
+        options={{ title: "Create Hive" }}
+      >
+        {(props) => <CreateHiveScreen {...props} currentUser={currentUser} />}
+      </HivesStack.Screen>
     </HivesStack.Navigator>
   );
 }
@@ -304,6 +313,7 @@ function MainTabsScreen({
           <HivesStackScreen
             onOpenSettings={openSettingsPage}
             onLogout={onLogout}
+            currentUser={currentUser}
           />
         )}
       </Tab.Screen>

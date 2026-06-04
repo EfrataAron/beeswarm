@@ -235,4 +235,25 @@ export const hivesListStyles = StyleSheet.create({
   pressedRow: {
     opacity: 0.85,
   },
+  createHiveButton: {
+    backgroundColor: THEME.primary,
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  createHiveButtonText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "700",
+  },
 });
