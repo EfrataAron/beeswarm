@@ -196,7 +196,7 @@ export function HivesListScreen({ navigation }: Props) {
               <View style={[styles.hiveTileIconWrap, { backgroundColor: STATUS_BG[hive.status] }]}>
                 <Ionicons name="cube-outline" size={26} color={STATUS_COLOR[hive.status]} />
               </View>
-              <Text style={styles.hiveTileName} numberOfLines={1}>{hive.id}</Text>
+              <Text style={styles.hiveTileName} numberOfLines={1}>{hive.name}</Text>
               <View style={[styles.hiveStatusBadge, { backgroundColor: STATUS_BG[hive.status] }]}>
                 <Text style={[styles.hiveStatusBadgeText, { color: STATUS_COLOR[hive.status] }]}>
                   {displayStatus(hive.status)}
@@ -229,7 +229,7 @@ export function HivesListScreen({ navigation }: Props) {
               <View style={[styles.hiveRowDot, { backgroundColor: STATUS_COLOR[hive.status] }]} />
               <View style={styles.hiveRowInfo}>
                 <View style={styles.hiveRowNameRow}>
-                  <Text style={styles.hiveName}>{hive.id}</Text>
+                  <Text style={styles.hiveName}>{hive.name}</Text>
                   <View style={[styles.hiveRowStateBadge, { backgroundColor: `${STATUS_COLOR[hive.status]}18` }]}>
                     <Text style={[styles.hiveRowStateBadgeText, { color: STATUS_COLOR[hive.status] }]}>{label}</Text>
                   </View>
