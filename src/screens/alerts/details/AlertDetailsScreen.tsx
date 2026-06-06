@@ -14,9 +14,9 @@ import {
   AlertSeverity,
   fetchAdvisory,
   fetchAlertDetail,
-} from "../../api/beeswarmApi";
-import { THEME } from "../../theme";
-import { AlertsStackParamList } from "../../navigation/types";
+} from "../../../api/beeswarmApi";
+import { THEME } from "../../../theme";
+import { AlertsStackParamList } from "../../../navigation/types";
 import { alertDetailsStyles as styles } from "./AlertDetailsScreen.styles";
 
 type Props = NativeStackScreenProps<AlertsStackParamList, "AlertDetails">;

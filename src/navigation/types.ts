@@ -18,7 +18,7 @@ export type MainTabParamList = {
 };
 
 export type HivesStackParamList = {
-  HiveList: undefined;
+  HiveList: { refresh?: number } | undefined;
   HiveDetails: { hiveId: string };
   CreateHive: undefined;
 };

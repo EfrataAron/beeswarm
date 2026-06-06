@@ -10,15 +10,15 @@ import {
 } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
-import { Hive, HiveStatus, fetchHives } from "../../api/beeswarmApi";
+import { Hive, HiveStatus, fetchHives } from "../../../api/beeswarmApi";
 import {
   THEME,
   STATUS_COLOR,
   displayStatus,
   statusCondition,
   formatStateDuration,
-} from "../../theme";
-import { HivesStackParamList } from "../../navigation/types";
+} from "../../../theme";
+import { HivesStackParamList } from "../../../navigation/types";
 import { hivesListStyles as styles } from "./HivesListScreen.styles";
 
 type Props = NativeStackScreenProps<HivesStackParamList, "HiveList">;
@@ -31,7 +31,7 @@ const STATUS_BG: Record<HiveStatus, string> = {
 };
 const ALL_STATUSES: HiveStatus[] = ["Healthy", "Pre-swarm", "Swarm", "Abscondment"];
 
-export function HivesListScreen({ navigation }: Props) {
+export function HivesListScreen({ navigation, route }: Props) {
   const [hives, setHives] = useState<Hive[]>([]);
   const [searchText, setSearchText] = useState("");
   const [loading, setLoading] = useState(true);
@@ -58,6 +58,13 @@ export function HivesListScreen({ navigation }: Props) {
     await loadHives(searchText);
     setRefreshing(false);
   }, [loadHives, searchText]);
+
+  // Reload hives when returning from CreateHive screen
+  useEffect(() => {
+    if (route.params?.refresh) {
+      void loadHives(searchText);
+    }
+  }, [route.params?.refresh, loadHives, searchText]);
 
   useEffect(() => {
     const timeout = setTimeout(() => { void loadHives(searchText); }, 250);
@@ -197,6 +204,7 @@ export function HivesListScreen({ navigation }: Props) {
                 <Ionicons name="cube-outline" size={26} color={STATUS_COLOR[hive.status]} />
               </View>
               <Text style={styles.hiveTileName} numberOfLines={1}>{hive.name}</Text>
+              <Text style={styles.hiveRowCondition} numberOfLines={1}>{hive.location}</Text>
               <View style={[styles.hiveStatusBadge, { backgroundColor: STATUS_BG[hive.status] }]}>
                 <Text style={[styles.hiveStatusBadgeText, { color: STATUS_COLOR[hive.status] }]}>
                   {displayStatus(hive.status)}
@@ -234,7 +242,9 @@ export function HivesListScreen({ navigation }: Props) {
                     <Text style={[styles.hiveRowStateBadgeText, { color: STATUS_COLOR[hive.status] }]}>{label}</Text>
                   </View>
                 </View>
-                <Text style={styles.hiveRowCondition} numberOfLines={1}>{condition}</Text>
+                <Text style={styles.hiveRowCondition} numberOfLines={1}>
+                  {hive.location} • {hive.type}
+                </Text>
               </View>
               <View style={styles.hiveRowRight}>
                 {duration !== "" && <Text style={styles.hiveRowDuration}>{duration}</Text>}

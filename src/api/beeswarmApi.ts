@@ -46,6 +46,9 @@ export type AuthResponse = {
 export type Hive = {
   id: string;
   name: string;
+  location: string;
+  type: string;
+  installationDate: string;
   status: HiveStatus;
   latitude?: number;
   longitude?: number;
@@ -729,15 +732,21 @@ export async function fetchHives(search = ""): Promise<Hive[]> {
   return rows
     .map((item: any, i: number) => ({
       // Backend uses hive_id not id
-      id:        String(item.hive_id ?? item.id ?? `Hive-${i + 1}`),
+      id:               String(item.hive_id ?? item.id ?? `Hive-${i + 1}`),
       // Backend uses hive_name
-      name:      String(item.hive_name ?? item.name ?? item.hive_id ?? `Hive ${i + 1}`),
+      name:             String(item.hive_name ?? item.name ?? item.hive_id ?? `Hive ${i + 1}`),
+      // Backend uses hive_location
+      location:         String(item.hive_location ?? item.location ?? "Unknown"),
+      // Backend uses hive_type
+      type:             String(item.hive_type ?? item.type ?? "Unknown"),
+      // Backend uses installation_date
+      installationDate: String(item.installation_date ?? item.installationDate ?? ""),
       // Backend uses current_state not status/state
-      status:    normalizeStatus(String(item.current_state ?? item.status ?? item.state ?? "normal")),
-      latitude:  toFiniteOrUndefined(item.latitude  ?? item.lat),
-      longitude: toFiniteOrUndefined(item.longitude ?? item.lng),
+      status:           normalizeStatus(String(item.current_state ?? item.status ?? item.state ?? "normal")),
+      latitude:         toFiniteOrUndefined(item.latitude  ?? item.lat),
+      longitude:        toFiniteOrUndefined(item.longitude ?? item.lng),
       // Not in HiveResponse schema but keep for forward compat
-      stateSince: item.state_since ?? item.stateSince ?? item.state_entered_at ?? undefined,
+      stateSince:       item.state_since ?? item.stateSince ?? item.state_entered_at ?? undefined,
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
 }
@@ -895,12 +904,15 @@ export async function createHive(data: {
   });
   
   return {
-    id: String(raw.hive_id ?? raw.id ?? raw.hive_name ?? ""),
-    name: String(raw.hive_name ?? raw.name ?? raw.hive_id ?? "New Hive"),
-    status: normalizeStatus(String(raw.current_state ?? raw.status ?? "normal")),
-    latitude: toFiniteOrUndefined(raw.latitude ?? raw.lat),
-    longitude: toFiniteOrUndefined(raw.longitude ?? raw.lng),
-    stateSince: raw.state_since ?? raw.stateSince ?? undefined,
+    id:               String(raw.hive_id ?? raw.id ?? raw.hive_name ?? ""),
+    name:             String(raw.hive_name ?? raw.name ?? raw.hive_id ?? "New Hive"),
+    location:         String(raw.hive_location ?? raw.location ?? ""),
+    type:             String(raw.hive_type ?? raw.type ?? ""),
+    installationDate: String(raw.installation_date ?? raw.installationDate ?? ""),
+    status:           normalizeStatus(String(raw.current_state ?? raw.status ?? "normal")),
+    latitude:         toFiniteOrUndefined(raw.latitude ?? raw.lat),
+    longitude:        toFiniteOrUndefined(raw.longitude ?? raw.lng),
+    stateSince:       raw.state_since ?? raw.stateSince ?? undefined,
   };
 }
 

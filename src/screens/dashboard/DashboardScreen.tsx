@@ -318,7 +318,7 @@ export function DashboardScreen({ navigation }: Props) {
         )}
 
         {alertsError && <Text style={styles.dashboardAlertsInlineError}>{alertsError}</Text>}
-
+        
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dashboardAlertScroller}>
           {filteredDashboardAlerts.map((alert) => {
             const selected = selectedDashboardAlert?.id === alert.id;
