@@ -14,17 +14,17 @@ import {
   HiveDetailData,
   fetchHiveAlerts,
   fetchHiveDetail,
-} from "../../api/beeswarmApi";
+} from "../../../api/beeswarmApi";
 import {
   THEME,
   STATUS_COLOR,
   displayStatus,
   statusCondition,
   formatStateDuration,
-} from "../../theme";
-import { HivesStackParamList } from "../../navigation/types";
+} from "../../../theme";
+import { HivesStackParamList } from "../../../navigation/types";
 import { hiveDetailsStyles as styles } from "./HiveDetailsScreen.styles";
-import { HiveMetricsLineChart } from "../../components/HiveMetricsLineChart";
+import { HiveMetricsLineChart } from "../../../components/HiveMetricsLineChart";
 
 type Props = NativeStackScreenProps<HivesStackParamList, "HiveDetails">;
 

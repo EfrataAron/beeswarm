@@ -9,9 +9,9 @@ import {
 } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
-import { AlertItem, AlertSeverity, fetchAlerts } from "../../api/beeswarmApi";
-import { THEME } from "../../theme";
-import { AlertsStackParamList } from "../../navigation/types";
+import { AlertItem, AlertSeverity, fetchAlerts } from "../../../api/beeswarmApi";
+import { THEME } from "../../../theme";
+import { AlertsStackParamList } from "../../../navigation/types";
 import { alertsListStyles as styles } from "./AlertsListScreen.styles";
 
 type Props = NativeStackScreenProps<AlertsStackParamList, "AlertsList">;

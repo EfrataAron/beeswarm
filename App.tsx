@@ -41,11 +41,11 @@ import { SignupScreen } from "./src/screens/auth/SignupScreen";
 import { SettingsScreen } from "./src/screens/settings/SettingsScreen";
 import { ProfileScreen } from "./src/screens/profile/ProfileScreen";
 import { DashboardScreen } from "./src/screens/dashboard/DashboardScreen";
-import { HivesListScreen } from "./src/screens/hives/HivesListScreen";
-import { HiveDetailsScreen } from "./src/screens/hives/HiveDetailsScreen";
-import { CreateHiveScreen } from "./src/screens/hives/CreateHiveScreen";
-import { AlertsListScreen } from "./src/screens/alerts/AlertsListScreen";
-import { AlertDetailsScreen } from "./src/screens/alerts/AlertDetailsScreen";
+import { HivesListScreen } from "./src/screens/hives/list/HivesListScreen";
+import { HiveDetailsScreen } from "./src/screens/hives/details/HiveDetailsScreen";
+import { CreateHiveScreen } from "./src/screens/hives/create/CreateHiveScreen";
+import { AlertsListScreen } from "./src/screens/alerts/list/AlertsListScreen";
+import { AlertDetailsScreen } from "./src/screens/alerts/details/AlertDetailsScreen";
 import { MapScreen } from "./src/screens/map/MapScreen";
 import { ClassificationScreen } from "./src/screens/classification/ClassificationScreen";
 
@@ -178,7 +178,7 @@ function HivesStackScreen({
       <HivesStack.Screen
         name="HiveDetails"
         component={HiveDetailsScreen}
-        options={({ route }) => ({ title: route.params.hiveId })}
+        options={{ title: "Hive Details" }}
       />
       <HivesStack.Screen
         name="CreateHive"
@@ -399,11 +399,15 @@ function MainTabsScreen({
 
 // ─── Root App ─────────────────────────────────────────────────────────────────
 
+const NAVIGATION_STATE_KEY = "@bsads/navigation_state";
+
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState<BeekeeperProfile | null>(null);
   const [bootstrapping, setBootstrapping] = useState(true);
   const [darkModeEnabled, setDarkModeEnabled] = useState(false);
+  const [navigationState, setNavigationState] = useState<any>();
+  const [isNavigationReady, setIsNavigationReady] = useState(false);
   const initialWebPath = useMemo(() => getInitialWebPath(), []);
 
   const colors = darkModeEnabled ? APP_COLORS.dark : APP_COLORS.light;
@@ -446,9 +450,10 @@ export default function App() {
 
     void (async () => {
       try {
-        const [user, darkMode] = await Promise.all([
+        const [user, darkMode, savedNavigationState] = await Promise.all([
           initAuthFromStorage(),
           AsyncStorage.getItem(PREF_DARK_MODE),
+          AsyncStorage.getItem(NAVIGATION_STATE_KEY),
         ]);
         if (cancelled) return;
         if (user) {
@@ -459,6 +464,10 @@ export default function App() {
           const enabled = darkMode === "true";
           setDarkModeEnabled(enabled);
           applyThemeMode(enabled);
+        }
+        // Restore navigation state
+        if (savedNavigationState) {
+          setNavigationState(JSON.parse(savedNavigationState));
         }
       } catch {
         // no stored session — stay on auth flow
@@ -519,7 +528,16 @@ export default function App() {
 
   return (
     <>
-      <NavigationContainer theme={navigationTheme} linking={linking}>
+      <NavigationContainer 
+        theme={navigationTheme} 
+        linking={linking}
+        initialState={navigationState}
+        onStateChange={(state) => {
+          // Save navigation state to AsyncStorage
+          AsyncStorage.setItem(NAVIGATION_STATE_KEY, JSON.stringify(state)).catch(() => {});
+        }}
+        onReady={() => setIsNavigationReady(true)}
+      >
         <ExpoStatusBar style={colors.statusBar} />
         <RootStack.Navigator
           initialRouteName={
