@@ -8,7 +8,7 @@ import React, { useEffect, useState } from "react";
 import { View, Text, ScrollView, StyleSheet, Pressable } from "react-native";
 import { usePredictionFetcher } from "../hooks/usePredictionFetcher";
 import { ClassificationDebugPanel } from "../components/ClassificationDebugPanel";
-import type { Hive, DashboardData } from "../api/beeswarmApi";
+import type { Hive, DashboardData } from "../api";
 import { getPrediction } from "../api/mockPredictionApi";
 import { showClassificationAlert } from "../utils/alertNotification";
 
@@ -207,15 +207,15 @@ export function Example_FullDashboard({
               <Text
                 style={{ fontSize: 24, fontWeight: "bold", color: "#F2A93B" }}
               >
-                {dashboard.statusCounts["Pre-swarm"] || 0}
+                {dashboard.statusCounts.swarming || 0}
               </Text>
-              <Text style={{ fontSize: 12, color: "#666" }}>Pre-swarm</Text>
+              <Text style={{ fontSize: 12, color: "#666" }}>Swarming</Text>
             </View>
             <View style={{ alignItems: "center" }}>
               <Text
                 style={{ fontSize: 24, fontWeight: "bold", color: "#D45353" }}
               >
-                {dashboard.statusCounts.Swarm || 0}
+                {dashboard.statusCounts.Abscondment || 0}
               </Text>
               <Text style={{ fontSize: 12, color: "#666" }}>Swarms</Text>
             </View>

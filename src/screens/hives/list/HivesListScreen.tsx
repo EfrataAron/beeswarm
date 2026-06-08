@@ -10,13 +10,13 @@ import {
 } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
-import { Hive, HiveStatus, fetchHives } from "../../../api/beeswarmApi";
+import { Hive, HiveStatus, fetchHives } from "../../../api";
 import {
   THEME,
   STATUS_COLOR,
   displayStatus,
-  statusCondition,
   formatStateDuration,
+  formatRelativeTime,
 } from "../../../theme";
 import { HivesStackParamList } from "../../../navigation/types";
 import { hivesListStyles as styles } from "./HivesListScreen.styles";
@@ -24,12 +24,25 @@ import { hivesListStyles as styles } from "./HivesListScreen.styles";
 type Props = NativeStackScreenProps<HivesStackParamList, "HiveList">;
 
 const STATUS_BG: Record<HiveStatus, string> = {
-  Healthy: "#F0FDF4",
-  "Pre-swarm": "#FEF2F2",
-  Swarm: "#FEF2F2",
+  active: "#F0FDF4",
+  inactive_hive: "#F9FAFB",
+  swarming: "#FEF2F2",
   Abscondment: "#F9FAFB",
+  external_noise: "#FEF2F2",
+  quacking_queens: "#F5F3FF",
+  pests: "#FEF2F2",
+  queenless: "#FDF2F8",
 };
-const ALL_STATUSES: HiveStatus[] = ["Healthy", "Pre-swarm", "Swarm", "Abscondment"];
+const ALL_STATUSES: HiveStatus[] = [
+  "active",
+  "inactive_hive",
+  "swarming",
+  "Abscondment",
+  "external_noise",
+  "quacking_queens",
+  "pests",
+  "queenless",
+];
 
 export function HivesListScreen({ navigation, route }: Props) {
   const [hives, setHives] = useState<Hive[]>([]);
@@ -222,8 +235,9 @@ export function HivesListScreen({ navigation, route }: Props) {
       {!error && viewMode === "list" &&
         filtered.map((hive, idx) => {
           const duration = formatStateDuration(hive.stateSince);
-          const condition = statusCondition(hive.status);
           const label = displayStatus(hive.status);
+          console.log(hive.status)
+
           return (
             <Pressable
               key={hive.id}
@@ -238,19 +252,31 @@ export function HivesListScreen({ navigation, route }: Props) {
               <View style={styles.hiveRowInfo}>
                 <View style={styles.hiveRowNameRow}>
                   <Text style={styles.hiveName}>{hive.name}</Text>
-                  <View style={[styles.hiveRowStateBadge, { backgroundColor: `${STATUS_COLOR[hive.status]}18` }]}>
-                    <Text style={[styles.hiveRowStateBadgeText, { color: STATUS_COLOR[hive.status] }]}>{label}</Text>
+                  <View style={[
+                    styles.hiveRowStateBadge,
+                    { backgroundColor: `${STATUS_COLOR[hive.status]}12` }
+                  ]}>
+                    <Text style={[styles.hiveRowStateBadgeText, { color: STATUS_COLOR[hive.status] }]}>
+                      {label}
+                    </Text>
                   </View>
+
                 </View>
                 <Text style={styles.hiveRowCondition} numberOfLines={1}>
                   {hive.location} • {hive.type}
+                </Text>
+                <Text style={styles.hiveRowLastInference}>
+                  Last analysis: {formatRelativeTime(hive.lastInferenceAt)}
                 </Text>
               </View>
               <View style={styles.hiveRowRight}>
                 {duration !== "" && <Text style={styles.hiveRowDuration}>{duration}</Text>}
                 <View style={styles.hiveRowMoreBtn}>
-                  <Text style={styles.hiveRowMoreText}>more</Text>
-                  <Ionicons name="ellipsis-horizontal" size={14} color="#2563EB" />
+                  <Ionicons
+                    name="chevron-forward"
+                    size={20}
+                    color="#2563EB"
+                  />
                 </View>
               </View>
             </Pressable>

@@ -8,7 +8,7 @@ import {
   View,
 } from "react-native";
 import { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
-import { Hive, fetchHives } from "../../api/beeswarmApi";
+import { Hive, fetchHives } from "../../api";
 import { THEME, STATUS_COLOR } from "../../theme";
 import { MainTabParamList } from "../../navigation/types";
 import { mapStyles as styles } from "./MapScreen.styles";
@@ -157,9 +157,9 @@ export function MapScreen({ navigation }: Props) {
         )}
 
         <View style={styles.legendWrap}>
-          <LegendItem color={STATUS_COLOR.Healthy} text="Harmonious" />
-          <LegendItem color={STATUS_COLOR["Pre-swarm"]} text="2 Queens!" />
-          <LegendItem color={STATUS_COLOR.Swarm} text="Swarming" />
+          <LegendItem color={STATUS_COLOR.active} text="Active" />
+          <LegendItem color={STATUS_COLOR.swarming} text="Swarming" />
+          <LegendItem color={STATUS_COLOR.queenless} text="Queenless" />
           <LegendItem color={STATUS_COLOR.Abscondment} text="Absconded" />
         </View>
       </View>

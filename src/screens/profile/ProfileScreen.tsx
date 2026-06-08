@@ -13,7 +13,7 @@ import {
   BeekeeperProfile,
   fetchProfile,
   updateProfile,
-} from "../../api/beeswarmApi";
+} from "../../api";
 import { THEME } from "../../theme";
 import { profileStyles as styles } from "./ProfileScreen.styles";
 

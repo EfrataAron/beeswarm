@@ -14,7 +14,7 @@ import {
   AlertSeverity,
   fetchAdvisory,
   fetchAlertDetail,
-} from "../../../api/beeswarmApi";
+} from "../../../api";
 import { THEME } from "../../../theme";
 import { AlertsStackParamList } from "../../../navigation/types";
 import { alertDetailsStyles as styles } from "./AlertDetailsScreen.styles";

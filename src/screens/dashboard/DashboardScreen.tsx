@@ -17,7 +17,7 @@ import {
   fetchAlerts,
   fetchAmbientWeather,
   fetchDashboard,
-} from "../../api/beeswarmApi";
+} from "../../api";
 import { THEME } from "../../theme";
 import { MainTabParamList } from "../../navigation/types";
 import { dashboardStyles as styles } from "./DashboardScreen.styles";
@@ -176,11 +176,14 @@ export function DashboardScreen({ navigation }: Props) {
 
   const total = dashboard.totalHives || 1;
   const donutSegments = [
-    { pct: dashboard.statusCounts.Healthy / total, color: "#22C55E", label: "Harmonious", count: dashboard.statusCounts.Healthy },
-    { pct: dashboard.statusCounts["Pre-swarm"] / total, color: "#D97706", label: "2 Queens!", count: dashboard.statusCounts["Pre-swarm"] },
-    { pct: dashboard.statusCounts.Swarm / total, color: "#EF4444", label: "Swarming", count: dashboard.statusCounts.Swarm },
-    { pct: dashboard.statusCounts.Abscondment / total, color: "#94A3B8", label: "Empty", count: dashboard.statusCounts.Abscondment },
-    { pct: dashboard.statusCounts.Abscondment / total, color: "#d8f040", label: "Pest Infestation", count: dashboard.statusCounts.Abscondment },
+    { pct: dashboard.statusCounts.active / total, color: "#22C55E", label: "Active", count: dashboard.statusCounts.active },
+    { pct: dashboard.statusCounts.swarming / total, color: "#EF4444", label: "Swarming", count: dashboard.statusCounts.swarming },
+    { pct: dashboard.statusCounts.quacking_queens / total, color: "#8B5CF6", label: "Quacking Queens", count: dashboard.statusCounts.quacking_queens },
+    { pct: dashboard.statusCounts.pests / total, color: "#DC2626", label: "Pests", count: dashboard.statusCounts.pests },
+    { pct: dashboard.statusCounts.queenless / total, color: "#EC4899", label: "Queenless", count: dashboard.statusCounts.queenless },
+    { pct: dashboard.statusCounts.external_noise / total, color: "#D97706", label: "External Noise", count: dashboard.statusCounts.external_noise },
+    { pct: dashboard.statusCounts.inactive_hive / total, color: "#94A3B8", label: "Inactive", count: dashboard.statusCounts.inactive_hive },
+    { pct: dashboard.statusCounts.Abscondment / total, color: "#6B7280", label: "Absconded", count: dashboard.statusCounts.Abscondment },
   ];
 
   const dashboardSeverityColor: Record<AlertSeverity, string> = {
@@ -396,8 +399,8 @@ export function DashboardScreen({ navigation }: Props) {
         </View>
         <View style={[styles.overviewTile, { backgroundColor: "#D97706" }]}>
           <Ionicons name="warning-outline" size={20} color="#fff" />
-          <Text style={styles.overviewTileValue}>{dashboard.statusCounts["Pre-swarm"]}</Text>
-          <Text style={styles.overviewTileLabel}>2 Queens!</Text>
+          <Text style={styles.overviewTileValue}>{dashboard.statusCounts.swarming}</Text>
+          <Text style={styles.overviewTileLabel}>Swarming</Text>
         </View>
       </Pressable>
 
@@ -424,10 +427,10 @@ export function DashboardScreen({ navigation }: Props) {
         </View>
       </Pressable>
 
-      {/* ── Pre-swarm Trend ── */}
+      {/* ── Swarm Activity Trend ── */}
       <View style={styles.card}>
         <View style={styles.rowBetween}>
-          <Text style={styles.cardTitle}>Pre-swarm Trend</Text>
+          <Text style={styles.cardTitle}>Swarm Activity Trend</Text>
           <View style={styles.trendRangeRow}>
             {(["24h", "7d", "30d"] as const).map((r) => (
               <Pressable
@@ -505,9 +508,9 @@ export function DashboardScreen({ navigation }: Props) {
       {/* ── Environmental Correlation ── */}
       {dashboard.highTempPreSwarmHives.length > 0 && (
         <>
-          <Text style={styles.sectionTitle}>⚠ High Temp + Pre-swarm</Text>
+          <Text style={styles.sectionTitle}>⚠ High Temp + Swarming Risk</Text>
           <View style={styles.card}>
-            <Text style={styles.cardSubtitle}>Hives showing elevated temperature alongside pre-swarm state</Text>
+            <Text style={styles.cardSubtitle}>Hives showing elevated temperature alongside swarming indicators</Text>
             {dashboard.highTempPreSwarmHives.map((h) => (
               <View key={h.hiveId} style={styles.corrRow}>
                 <View style={styles.corrHiveChip}>

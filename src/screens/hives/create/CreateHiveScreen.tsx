@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -10,7 +11,8 @@ import {
 } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
-import { createHive, BeekeeperProfile } from "../../../api/beeswarmApi";
+import * as Location from "expo-location";
+import { createHive, BeekeeperProfile } from "../../../api";
 import { THEME } from "../../../theme";
 import { HivesStackParamList } from "../../../navigation/types";
 // import { createHiveStyles as styles } from "./CreateHiveScreen.styles";
@@ -44,6 +46,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: THEME.text,
   },
+  
   inputError: { borderColor: "#EF4444" },
   errorText: { color: "#EF4444", fontSize: 12, marginTop: 4 },
   submitButton: {
@@ -81,6 +84,31 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   dateButtonText: { color: THEME.primary, fontSize: 14, fontWeight: "600" },
+  locationButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: THEME.accent,
+    borderRadius: 8,
+    paddingVertical: 12,
+    marginBottom: 12,
+  },
+  locationButtonText: {
+    color: THEME.primary,
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  locationButtonDisabled: {
+    opacity: 0.6,
+  },
+  coordinatesRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  coordinateInput: {
+    flex: 1,
+  },
 });
 
 type Props = NativeStackScreenProps<HivesStackParamList, "CreateHive"> & {
@@ -96,6 +124,7 @@ export function CreateHiveScreen({ navigation, route, currentUser }: Props) {
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingLocation, setLoadingLocation] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Helper to format date as YYYY-MM-DD
@@ -116,6 +145,100 @@ export function CreateHiveScreen({ navigation, route, currentUser }: Props) {
     tomorrow.setDate(tomorrow.getDate() + 1);
     setInstallationDate(formatDate(tomorrow));
     if (errors.installationDate) setErrors({ ...errors, installationDate: "" });
+  };
+
+  const getCurrentLocation = async () => {
+    setLoadingLocation(true);
+    try {
+      // For web platform, use browser's Geolocation API
+      if (Platform.OS === "web") {
+        if (!navigator.geolocation) {
+          Alert.alert(
+            "Not Supported",
+            "Geolocation is not supported by your browser. Please enter coordinates manually."
+          );
+          setLoadingLocation(false);
+          return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            setLatitude(position.coords.latitude.toFixed(6));
+            setLongitude(position.coords.longitude.toFixed(6));
+            setErrors({
+              ...errors,
+              latitude: "",
+              longitude: "",
+            });
+            Alert.alert(
+              "Location Retrieved",
+              `Latitude: ${position.coords.latitude.toFixed(6)}\nLongitude: ${position.coords.longitude.toFixed(6)}`
+            );
+            setLoadingLocation(false);
+          },
+          (error) => {
+            let message = "Failed to get your location. ";
+            if (error.code === error.PERMISSION_DENIED) {
+              message += "Location permission was denied. Please enable location access in your browser settings.";
+            } else if (error.code === error.POSITION_UNAVAILABLE) {
+              message += "Location information is unavailable.";
+            } else if (error.code === error.TIMEOUT) {
+              message += "The request to get your location timed out.";
+            }
+            Alert.alert("Location Error", message);
+            setLoadingLocation(false);
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0,
+          }
+        );
+        return;
+      }
+
+      // For mobile platforms, use expo-location
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission Denied",
+          "Location permission is required to get your current coordinates. Please enable it in your device settings."
+        );
+        setLoadingLocation(false);
+        return;
+      }
+
+      // Get current position with high accuracy
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+
+      // Set the coordinates
+      setLatitude(location.coords.latitude.toFixed(6));
+      setLongitude(location.coords.longitude.toFixed(6));
+
+      // Clear any previous errors
+      setErrors({
+        ...errors,
+        latitude: "",
+        longitude: "",
+      });
+
+      Alert.alert(
+        "Location Retrieved",
+        `Latitude: ${location.coords.latitude.toFixed(6)}\nLongitude: ${location.coords.longitude.toFixed(6)}`
+      );
+    } catch (err) {
+      Alert.alert(
+        "Location Error",
+        err instanceof Error
+          ? err.message
+          : "Failed to get your location. Please enter coordinates manually or try again."
+      );
+    } finally {
+      setLoadingLocation(false);
+    }
   };
 
   const validateForm = (): boolean => {
@@ -309,42 +432,73 @@ export function CreateHiveScreen({ navigation, route, currentUser }: Props) {
             )}
           </View>
 
-          {/* Latitude */}
+          {/* Coordinates Section */}
           <View style={styles.formGroup}>
-            <Text style={styles.label}>Latitude</Text>
-            <TextInput
-              style={[styles.input, errors.latitude && styles.inputError]}
-              placeholder="e.g., 0.3476"
-              placeholderTextColor={THEME.placeholder}
-              keyboardType="numeric"
-              value={latitude}
-              onChangeText={(text) => {
-                setLatitude(text);
-                if (errors.latitude) setErrors({ ...errors, latitude: "" });
-              }}
-            />
-            {errors.latitude && (
-              <Text style={styles.errorText}>{errors.latitude}</Text>
-            )}
-          </View>
+            <Text style={styles.label}>Coordinates (GPS Location)</Text>
+            
+            {/* Get Current Location Button */}
+            <Pressable
+              style={[
+                styles.locationButton,
+                loadingLocation && styles.locationButtonDisabled,
+              ]}
+              onPress={getCurrentLocation}
+              disabled={loadingLocation}
+            >
+              {loadingLocation ? (
+                <ActivityIndicator color={THEME.primary} />
+              ) : (
+                <>
+                  <Ionicons
+                    name="location-outline"
+                    size={20}
+                    color={THEME.primary}
+                  />
+                  <Text style={styles.locationButtonText}>
+                    Use My Current Location
+                  </Text>
+                </>
+              )}
+            </Pressable>
 
-          {/* Longitude */}
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Longitude</Text>
-            <TextInput
-              style={[styles.input, errors.longitude && styles.inputError]}
-              placeholder="e.g., 32.5825"
-              placeholderTextColor={THEME.placeholder}
-              keyboardType="numeric"
-              value={longitude}
-              onChangeText={(text) => {
-                setLongitude(text);
-                if (errors.longitude) setErrors({ ...errors, longitude: "" });
-              }}
-            />
-            {errors.longitude && (
-              <Text style={styles.errorText}>{errors.longitude}</Text>
-            )}
+            {/* Latitude and Longitude Inputs */}
+            <View style={styles.coordinatesRow}>
+              <View style={styles.coordinateInput}>
+                <Text style={[styles.label, { marginBottom: 6 }]}>Latitude</Text>
+                <TextInput
+                  style={[styles.input, errors.latitude && styles.inputError]}
+                  placeholder="0.0000"
+                  placeholderTextColor={THEME.placeholder}
+                  keyboardType="numeric"
+                  value={latitude}
+                  onChangeText={(text) => {
+                    setLatitude(text);
+                    if (errors.latitude) setErrors({ ...errors, latitude: "" });
+                  }}
+                />
+                {errors.latitude && (
+                  <Text style={styles.errorText}>{errors.latitude}</Text>
+                )}
+              </View>
+
+              <View style={styles.coordinateInput}>
+                <Text style={[styles.label, { marginBottom: 6 }]}>Longitude</Text>
+                <TextInput
+                  style={[styles.input, errors.longitude && styles.inputError]}
+                  placeholder="0.0000"
+                  placeholderTextColor={THEME.placeholder}
+                  keyboardType="numeric"
+                  value={longitude}
+                  onChangeText={(text) => {
+                    setLongitude(text);
+                    if (errors.longitude) setErrors({ ...errors, longitude: "" });
+                  }}
+                />
+                {errors.longitude && (
+                  <Text style={styles.errorText}>{errors.longitude}</Text>
+                )}
+              </View>
+            </View>
           </View>
 
           {/* Submit Button */}

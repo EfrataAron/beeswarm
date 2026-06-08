@@ -9,7 +9,7 @@ import {
   View,
 } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { BeekeeperProfile, register } from "../../api/beeswarmApi";
+import { BeekeeperProfile, register } from "../../api";
 import { THEME } from "../../theme";
 import { RootStackParamList } from "../../navigation/types";
 import { signupStyles as styles } from "./SignupScreen.styles";
@@ -25,7 +25,7 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
   const [email,           setEmail]           = useState("");
   const [phone,           setPhone]           = useState("");
   const [apiKey,          setApiKey]          = useState("");
-  const [serverUrl,       setServerUrl]       = useState("");
+  const [hiveServerUrl,   setHiveServerUrl]   = useState("");
   const [password,        setPassword]        = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword,    setShowPassword]    = useState(false);
@@ -46,7 +46,7 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
       next.email = "Enter a valid email address.";
     }
     if (!phone.trim()) next.phone = "Phone number is required.";
-    if (serverUrl.trim() && !URL_RE.test(serverUrl.trim())) {
+    if (hiveServerUrl.trim() && !URL_RE.test(hiveServerUrl.trim())) {
       next.serverUrl = "Server URL must start with http:// or https://";
     }
     if (!password) {
@@ -72,7 +72,7 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
         phone.trim(),
         password,
         apiKey.trim() || null,
-        serverUrl.trim() || null,
+        hiveServerUrl.trim() || null,
       );
 
       onAuthSuccess(beekeeper);
@@ -163,8 +163,8 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
           style={[styles.input, !!errors.serverUrl && styles.inputError]}
           autoCapitalize="none"
           autoCorrect={false}
-          value={serverUrl}
-          onChangeText={(t) => { setServerUrl(t); clearError("serverUrl"); }}
+          value={hiveServerUrl}
+          onChangeText={(t) => { setHiveServerUrl(t); clearError("serverUrl"); }}
         />
         {!!errors.serverUrl && <Text style={styles.fieldError}>{errors.serverUrl}</Text>}
         <Text style={styles.hintText}>

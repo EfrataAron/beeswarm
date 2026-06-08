@@ -13,7 +13,6 @@ export type MainTabParamList = {
   Hives: NavigatorScreenParams<HivesStackParamList>;
   Alerts: NavigatorScreenParams<AlertsStackParamList>;
   Map: undefined;
-  Classification: undefined;
   Profile: undefined;
 };
 

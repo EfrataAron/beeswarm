@@ -212,6 +212,13 @@ export const hivesListStyles = StyleSheet.create({
     fontWeight: "500",
     marginTop: 3,
   },
+  hiveRowLastInference: {
+    fontSize: 11,
+    color: THEME.textMuted,
+    fontWeight: "500",
+    fontStyle: "italic",
+    marginTop: 2,
+  },
   hiveRowRight: {
     alignItems: "flex-end",
     gap: 2,

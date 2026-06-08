@@ -1,5 +1,5 @@
 import Toast from "react-native-toast-message";
-import { AlertSeverity } from "../api/beeswarmApi";
+import { AlertSeverity } from "../api";
 import { ClassificationAlert } from "./sampleClassificationData";
 
 export interface ToastOptions {

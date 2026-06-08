@@ -22,7 +22,7 @@ import {
   initAuthFromStorage,
   logout,
   setUnauthorizedHandler,
-} from "./src/api/beeswarmApi";
+} from "./src/api";
 import { HeaderOverflowMenu } from "./src/components/HeaderOverflowMenu";
 import { applyThemeMode, THEME } from "./src/theme";
 
@@ -47,7 +47,6 @@ import { CreateHiveScreen } from "./src/screens/hives/create/CreateHiveScreen";
 import { AlertsListScreen } from "./src/screens/alerts/list/AlertsListScreen";
 import { AlertDetailsScreen } from "./src/screens/alerts/details/AlertDetailsScreen";
 import { MapScreen } from "./src/screens/map/MapScreen";
-import { ClassificationScreen } from "./src/screens/classification/ClassificationScreen";
 
 const PREF_DARK_MODE = "@bsads/dark_mode";
 
@@ -98,9 +97,6 @@ function getInitialTabRoute(path: string): keyof MainTabParamList {
     case "/app/map":
     case "/map":
       return "Map";
-    case "/app/classification":
-    case "/classification":
-      return "Classification";
     case "/app/profile":
     case "/profile":
       return "Profile";
@@ -136,7 +132,6 @@ const linking = {
           Hives: "hives",
           Alerts: "alerts",
           Map: "map",
-          Classification: "classification",
           Profile: "profile",
         },
       },
@@ -305,8 +300,15 @@ function MainTabsScreen({
         name="Hives"
         options={{
           headerShown: false,
-          tabBarButton: () => null,
-          tabBarItemStyle: { display: "none" },
+          title: "Hive Management",
+          tabBarLabel: "Hives",
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? "grid" : "grid-outline"}
+              size={size}
+              color={color}
+            />
+          ),
         }}
       >
         {() => (
@@ -355,21 +357,7 @@ function MainTabsScreen({
           ),
         }}
       />
-      <Tab.Screen
-        name="Classification"
-        component={ClassificationScreen}
-        options={{
-          title: "Classification API",
-          tabBarLabel: "ML Model",
-          tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons
-              name={focused ? "flask" : "flask-outline"}
-              size={size}
-              color={color}
-            />
-          ),
-        }}
-      />
+      
       <Tab.Screen
         name="Profile"
         options={{
@@ -407,7 +395,6 @@ export default function App() {
   const [bootstrapping, setBootstrapping] = useState(true);
   const [darkModeEnabled, setDarkModeEnabled] = useState(false);
   const [navigationState, setNavigationState] = useState<any>();
-  const [isNavigationReady, setIsNavigationReady] = useState(false);
   const initialWebPath = useMemo(() => getInitialWebPath(), []);
 
   const colors = darkModeEnabled ? APP_COLORS.dark : APP_COLORS.light;
@@ -536,7 +523,6 @@ export default function App() {
           // Save navigation state to AsyncStorage
           AsyncStorage.setItem(NAVIGATION_STATE_KEY, JSON.stringify(state)).catch(() => {});
         }}
-        onReady={() => setIsNavigationReady(true)}
       >
         <ExpoStatusBar style={colors.statusBar} />
         <RootStack.Navigator

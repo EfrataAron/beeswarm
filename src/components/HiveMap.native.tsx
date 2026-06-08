@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { WebView, WebViewMessageEvent } from "react-native-webview";
-import { HiveStatus } from "../api/beeswarmApi";
+import { HiveStatus } from "../api";
 
 type MapHive = {
   id: string;
@@ -26,13 +26,13 @@ type Props = {
 const SAMPLE_HIVES: MapHive[] = [
   {
     id: "Sample Hive 1",
-    status: "Healthy",
+    status: "active",
     latitude: 0.3476,
     longitude: 32.5825,
   },
   {
     id: "Sample Hive 2",
-    status: "Swarm",
+    status: "swarming",
     latitude: 0.3511,
     longitude: 32.5883,
   },

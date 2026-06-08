@@ -1,4 +1,4 @@
-import { HiveStatus, AlertSeverity } from "./api/beeswarmApi";
+import { HiveStatus, AlertSeverity } from "./api";
 
 const LIGHT_THEME = {
   primary: "#001E37",
@@ -32,25 +32,40 @@ export function applyThemeMode(isDarkMode: boolean): void {
 }
 
 export const STATUS_COLOR: Record<HiveStatus, string> = {
-  Healthy: "#16A34A",
-  "Pre-swarm": "#D97706",
-  Swarm: "#DC2626",
+  active: "#16A34A",
+  inactive_hive: "#D97706",
+  swarming: "#DC2626",
   Abscondment: "#6B7280",
+  external_noise: "#DC2446",
+  quacking_queens: "#8B5CF6",
+  pests: "#EF4444",
+  queenless: "#EC4899"
 };
 
 export function displayStatus(status: HiveStatus): string {
-  if (status === "Healthy") return "Harmonious";
-  if (status === "Pre-swarm") return "2 Queens!";
-  if (status === "Swarm") return "Swarming";
+  if (status === "active") return "Harmonious";
+  if (status === "inactive_hive") return "Empty";
+  if (status === "swarming") return "Swarming";
+  if (status === "Abscondment") return "Deserted";
+  if (status === "external_noise") return "External Noise";
+  if (status === "quacking_queens") return "2 Queens!";
+  if (status === "pests") return "Pest Infestation";
+  if (status === "queenless") return "Queenless";
   return "Empty";
 }
 
 export function statusCondition(status: HiveStatus): string {
-  if (status === "Healthy") return "Colony stable";
-  if (status === "Pre-swarm") return "Queen cells detected · Supercedure risk";
-  if (status === "Swarm") return "Colony splitting · Immediate action needed";
-  return "Missing queen · Colony may have departed";
+  if (status === "active") return "Colony stable";
+  if (status === "inactive_hive") return "Missing queen · Colony may have departed";
+  if (status === "swarming") return "Colony splitting · Immediate action needed";
+  if (status === "Abscondment") return "Colony has permanently abandoned the hive";
+  if (status === "external_noise") return "High environmental audio levels detected";
+  if (status === "quacking_queens") return "Queen cells detected · Supercedure risk";
+  if (status === "pests") return "Intruders detected inside the hive box";
+  if (status === "queenless") return "No active laying queen found in brood nest";
+  return "Status unverified";
 }
+
 
 export function formatStateDuration(since?: string): string {
   if (!since) return "";
@@ -61,6 +76,36 @@ export function formatStateDuration(since?: string): string {
   const hours = Math.floor(minutes / 60);
   if (hours < 24) return `${hours}h`;
   return `${Math.floor(hours / 24)}d`;
+}
+
+export function formatRelativeTime(timestamp?: string | null): string {
+  if (!timestamp) return "No analysis yet";
+  
+  const date = new Date(timestamp);
+  if (isNaN(date.getTime())) return "Invalid date";
+  
+  const ms = Date.now() - date.getTime();
+  if (!Number.isFinite(ms)) return "Invalid date";
+  
+  if (ms < 0) return "In the future";
+  
+  const seconds = Math.floor(ms / 1000);
+  if (seconds < 60) return `${seconds}s ago`;
+  
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days}d ago`;
+  
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months}mo ago`;
+  
+  const years = Math.floor(days / 365);
+  return `${years}y ago`;
 }
 
 export function severityColor(severity: AlertSeverity): string {

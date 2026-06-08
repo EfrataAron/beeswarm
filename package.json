@@ -22,6 +22,7 @@
     "expo": "~52.0.0",
     "expo-asset": "~11.0.5",
     "expo-font": "~13.0.4",
+    "expo-location": "~18.0.6",
     "expo-status-bar": "~2.0.1",
     "maplibre-gl": "^5.22.0",
     "react": "18.3.1",

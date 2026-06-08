@@ -1,4 +1,4 @@
-import { AlertSeverity } from "../api/beeswarmApi";
+import { AlertSeverity } from "../api";
 
 export interface ClassificationAlert {
   id: string;

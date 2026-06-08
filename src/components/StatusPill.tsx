@@ -1,6 +1,6 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { HiveStatus } from "../api/beeswarmApi";
+import { HiveStatus } from "../api";
 import { STATUS_COLOR, displayStatus } from "../theme";
 
 export function StatusPill({ status }: { status: HiveStatus }) {

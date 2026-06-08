@@ -8,7 +8,7 @@ import {
   View,
 } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { BeekeeperProfile, login } from "../../api/beeswarmApi";
+import { BeekeeperProfile, login } from "../../api";
 import { THEME } from "../../theme";
 import { RootStackParamList } from "../../navigation/types";
 import { loginStyles as styles } from "./LoginScreen.styles";

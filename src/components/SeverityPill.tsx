@@ -1,6 +1,6 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { AlertSeverity } from "../api/beeswarmApi";
+import { AlertSeverity } from "../api";
 import { severityColor } from "../theme";
 
 export function SeverityPill({ severity }: { severity: AlertSeverity }) {

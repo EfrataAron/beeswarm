@@ -76,12 +76,22 @@ export const hiveDetailsStyles = StyleSheet.create({
   detailStateDurationRow: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     gap: 10,
     marginTop: 10,
+  },
+  detailStateLabelContainer: {
+    flex: 1,
   },
   detailStateLabel: {
     fontSize: 15,
     fontWeight: "800",
+  },
+  detailLastAnalysisTime: {
+    fontSize: 11,
+    color: "rgba(255,255,255,0.6)",
+    fontWeight: "500",
+    marginTop: 2,
   },
   detailDurationBadge: {
     flexDirection: "row",
@@ -279,5 +289,48 @@ export const hiveDetailsStyles = StyleSheet.create({
   legendText: {
     color: "#475467",
     fontWeight: "600",
+  },
+  weatherHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 4,
+  },
+  weatherSubtitle: {
+    color: "#667085",
+    fontWeight: "600",
+    fontSize: 12,
+    marginBottom: 14,
+  },
+  weatherDataRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 10,
+  },
+  weatherCard: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 14,
+    alignItems: "center",
+    gap: 6,
+    borderWidth: 1,
+    borderColor: THEME.line,
+  },
+  weatherValue: {
+    color: THEME.primary,
+    fontSize: 22,
+    fontWeight: "800",
+  },
+  weatherLabel: {
+    color: THEME.textMuted,
+    fontSize: 11,
+    fontWeight: "600",
+  },
+  weatherTimestamp: {
+    fontSize: 11,
+    color: THEME.textMuted,
+    fontWeight: "500",
+    textAlign: "center",
   },
 });

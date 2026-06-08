@@ -14,13 +14,14 @@ import {
   HiveDetailData,
   fetchHiveAlerts,
   fetchHiveDetail,
-} from "../../../api/beeswarmApi";
+} from "../../../api";
 import {
   THEME,
   STATUS_COLOR,
   displayStatus,
   statusCondition,
   formatStateDuration,
+  formatRelativeTime,
 } from "../../../theme";
 import { HivesStackParamList } from "../../../navigation/types";
 import { hiveDetailsStyles as styles } from "./HiveDetailsScreen.styles";
@@ -109,6 +110,7 @@ export function HiveDetailsScreen({ route }: Props) {
     Warning: "#FFFBEB",
     Info: "#EFF6FF",
   };
+  console.log("DETAISLSSSS: ",detail)
 
   return (
     <ScrollView
@@ -121,7 +123,7 @@ export function HiveDetailsScreen({ route }: Props) {
           <View style={styles.detailHeroTextWrap}>
             <Text style={styles.detailHiveName}>{detail.name}</Text>
             <View style={styles.detailHeroMetaRow}>
-              <Ionicons name="location-outline" size={12} color={THEME.textMuted} />
+              <Ionicons name="location-outline" size={12} color="rgba(255,255,255,0.7)" />
               <Text style={styles.detailHeroMeta}>{detail.location}</Text>
             </View>
           </View>
@@ -129,12 +131,19 @@ export function HiveDetailsScreen({ route }: Props) {
         </View>
 
         <View style={styles.detailStateDurationRow}>
-          <Text style={[styles.detailStateLabel, { color: STATUS_COLOR[detail.status] }]}>
-            {displayStatus(detail.status)}
-          </Text>
+          <View style={styles.detailStateLabelContainer}>
+            <Text style={[styles.detailStateLabel, { color: STATUS_COLOR[detail.status] }]}>
+              {/* {displayStatus(detail.status)} */}
+            </Text>
+            {detail.lastAnalysisTime && (
+              <Text style={styles.detailLastAnalysisTime}>
+                Last analysis: {formatRelativeTime(detail.lastAnalysisTime)}
+              </Text>
+            )}
+          </View>
           {detail.stateSince && (
             <View style={styles.detailDurationBadge}>
-              <Ionicons name="time-outline" size={11} color={THEME.textMuted} />
+              <Ionicons name="time-outline" size={11} color="rgba(255,255,255,0.8)" />
               <Text style={styles.detailDurationText}>{formatStateDuration(detail.stateSince)}</Text>
             </View>
           )}
@@ -145,9 +154,9 @@ export function HiveDetailsScreen({ route }: Props) {
         <View style={styles.detailAlertBanner}>
           <View style={styles.detailAlertIconWrap}>
             <Ionicons
-              name={detail.status === "Healthy" ? "checkmark-circle-outline" : "warning-outline"}
+              name={detail.status === "active" ? "checkmark-circle-outline" : "warning-outline"}
               size={18}
-              color={detail.status === "Healthy" ? "#16A34A" : THEME.accent}
+              color={detail.status === "active" ? "#16A34A" : THEME.accent}
             />
           </View>
           <View style={{ flex: 1 }}>
@@ -156,6 +165,36 @@ export function HiveDetailsScreen({ route }: Props) {
           </View>
         </View>
       </View>
+
+      {/* ── Weather Card ── */}
+      {detail.weather && (
+        <View style={styles.card}>
+          <View style={styles.weatherHeader}>
+            <Ionicons name="cloud-outline" size={18} color={THEME.primary} />
+            <Text style={styles.cardTitle}>Local Weather</Text>
+          </View>
+          <Text style={styles.weatherSubtitle}>
+            {detail.weather.weatherDescription ?? "Current conditions"}
+          </Text>
+
+          <View style={styles.weatherDataRow}>
+            <View style={[styles.weatherCard, { backgroundColor: "#FFF5EA" }]}>
+              <Ionicons name="thermometer-outline" size={24} color={THEME.accent} />
+              <Text style={styles.weatherValue}>{detail.weather.temperature.toFixed(1)}°C</Text>
+              <Text style={styles.weatherLabel}>Temperature</Text>
+            </View>
+            <View style={[styles.weatherCard, { backgroundColor: "#E8F4F8" }]}>
+              <Ionicons name="water-outline" size={24} color="#0891B2" />
+              <Text style={styles.weatherValue}>{detail.weather.humidity.toFixed(0)}%</Text>
+              <Text style={styles.weatherLabel}>Humidity</Text>
+            </View>
+          </View>
+          
+          <Text style={styles.weatherTimestamp}>
+            Updated {formatRelativeTime(detail.weather.timestamp)}
+          </Text>
+        </View>
+      )}
 
       {/* ── Notifications ── */}
       <View style={styles.card}>
@@ -205,12 +244,12 @@ export function HiveDetailsScreen({ route }: Props) {
           <View style={[styles.metricHighlightCard, { borderLeftColor: THEME.accent, borderLeftWidth: 3 }]}>
             <Ionicons name="thermometer-outline" size={16} color={THEME.accent} />
             <Text style={styles.metricHighlightValue}>{latestTemperature.toFixed(1)}°C</Text>
-            <Text style={styles.metricHighlightLabel}>Temperature</Text>
+            <Text style={styles.metricHighlightLabel}>Hive Temperature</Text>
           </View>
           <View style={[styles.metricHighlightCard, { borderLeftColor: THEME.primary, borderLeftWidth: 3 }]}>
             <Ionicons name="water-outline" size={16} color={THEME.primary} />
             <Text style={styles.metricHighlightValue}>{latestHumidity.toFixed(0)}%</Text>
-            <Text style={styles.metricHighlightLabel}>Humidity</Text>
+            <Text style={styles.metricHighlightLabel}>Hive Humidity</Text>
           </View>
         </View>
 
