@@ -16,6 +16,7 @@ export type {
   HiveDetailData,
   AlertItem,
   AlertDetailData,
+  AudioRecording,
   Advisory,
   AdvisoryAction,
   DashboardData,

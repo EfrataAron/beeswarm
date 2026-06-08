@@ -80,11 +80,16 @@ export function HivesListScreen({ navigation, route }: Props) {
   }, [route.params?.refresh, loadHives, searchText]);
 
   useEffect(() => {
-    const timeout = setTimeout(() => { void loadHives(searchText); }, 250);
+    const timeout = setTimeout(() => {
+      void loadHives(searchText);
+    }, 250);
     return () => clearTimeout(timeout);
   }, [searchText, loadHives]);
 
-  const filtered = filterStatus === "All" ? hives : hives.filter((h) => h.status === filterStatus);
+  const filtered =
+    filterStatus === "All"
+      ? hives
+      : hives.filter((h) => h.status === filterStatus);
 
   return (
     <ScrollView
@@ -103,10 +108,18 @@ export function HivesListScreen({ navigation, route }: Props) {
       {!loading && !error && hives.length > 0 && (
         <View style={styles.hiveSummaryStrip}>
           <Pressable
-            style={[styles.hiveSummaryPill, filterStatus === "All" && styles.hiveSummaryPillActive]}
+            style={[
+              styles.hiveSummaryPill,
+              filterStatus === "All" && styles.hiveSummaryPillActive,
+            ]}
             onPress={() => setFilterStatus("All")}
           >
-            <Text style={[styles.hiveSummaryPillText, filterStatus === "All" && styles.hiveSummaryPillTextActive]}>
+            <Text
+              style={[
+                styles.hiveSummaryPillText,
+                filterStatus === "All" && styles.hiveSummaryPillTextActive,
+              ]}
+            >
               All {hives.length}
             </Text>
           </Pressable>
@@ -124,8 +137,18 @@ export function HivesListScreen({ navigation, route }: Props) {
                 ]}
                 onPress={() => setFilterStatus(active ? "All" : s)}
               >
-                <View style={[styles.hiveSummaryDot, { backgroundColor: STATUS_COLOR[s] }]} />
-                <Text style={[styles.hiveSummaryPillText, { color: STATUS_COLOR[s] }]}>
+                <View
+                  style={[
+                    styles.hiveSummaryDot,
+                    { backgroundColor: STATUS_COLOR[s] },
+                  ]}
+                />
+                <Text
+                  style={[
+                    styles.hiveSummaryPillText,
+                    { color: STATUS_COLOR[s] },
+                  ]}
+                >
                   {displayStatus(s)} {count}
                 </Text>
               </Pressable>
@@ -162,23 +185,38 @@ export function HivesListScreen({ navigation, route }: Props) {
         </View>
         <View style={styles.viewToggle}>
           <Pressable
-            style={[styles.viewToggleBtn, viewMode === "list" && styles.viewToggleBtnActive]}
+            style={[
+              styles.viewToggleBtn,
+              viewMode === "list" && styles.viewToggleBtnActive,
+            ]}
             onPress={() => setViewMode("list")}
           >
-            <Ionicons name="list-outline" size={18} color={viewMode === "list" ? THEME.primary : THEME.textMuted} />
+            <Ionicons
+              name="list-outline"
+              size={18}
+              color={viewMode === "list" ? THEME.primary : THEME.textMuted}
+            />
           </Pressable>
           <Pressable
-            style={[styles.viewToggleBtn, viewMode === "tile" && styles.viewToggleBtnActive]}
+            style={[
+              styles.viewToggleBtn,
+              viewMode === "tile" && styles.viewToggleBtnActive,
+            ]}
             onPress={() => setViewMode("tile")}
           >
-            <Ionicons name="grid-outline" size={18} color={viewMode === "tile" ? THEME.primary : THEME.textMuted} />
+            <Ionicons
+              name="grid-outline"
+              size={18}
+              color={viewMode === "tile" ? THEME.primary : THEME.textMuted}
+            />
           </Pressable>
         </View>
       </View>
 
       {!loading && !error && (
         <Text style={[styles.hiveListCount, { marginTop: 10 }]}>
-          {filtered.length} {filterStatus === "All" ? "hives" : filterStatus + " hives"}
+          {filtered.length}{" "}
+          {filterStatus === "All" ? "hives" : filterStatus + " hives"}
         </Text>
       )}
 
@@ -192,7 +230,10 @@ export function HivesListScreen({ navigation, route }: Props) {
       {!!error && (
         <View style={styles.errorBox}>
           <Text style={styles.errorBody}>{error}</Text>
-          <Pressable style={styles.primaryButtonSmall} onPress={() => void loadHives(searchText)}>
+          <Pressable
+            style={styles.primaryButtonSmall}
+            onPress={() => void loadHives(searchText)}
+          >
             <Text style={styles.primaryButtonText}>Retry</Text>
           </Pressable>
         </View>
@@ -210,21 +251,51 @@ export function HivesListScreen({ navigation, route }: Props) {
           {filtered.map((hive) => (
             <Pressable
               key={hive.id}
-              style={({ pressed }) => [styles.hiveTileCard, pressed && styles.pressedRow]}
-              onPress={() => navigation.navigate("HiveDetails", { hiveId: hive.id })}
+              style={({ pressed }) => [
+                styles.hiveTileCard,
+                pressed && styles.pressedRow,
+              ]}
+              onPress={() =>
+                navigation.navigate("HiveDetails", { hiveId: hive.id })
+              }
             >
-              <View style={[styles.hiveTileIconWrap, { backgroundColor: STATUS_BG[hive.status] }]}>
-                <Ionicons name="cube-outline" size={26} color={STATUS_COLOR[hive.status]} />
+              <View
+                style={[
+                  styles.hiveTileIconWrap,
+                  { backgroundColor: STATUS_BG[hive.status] },
+                ]}
+              >
+                <Ionicons
+                  name="cube-outline"
+                  size={26}
+                  color={STATUS_COLOR[hive.status]}
+                />
               </View>
-              <Text style={styles.hiveTileName} numberOfLines={1}>{hive.name}</Text>
-              <Text style={styles.hiveRowCondition} numberOfLines={1}>{hive.location}</Text>
-              <View style={[styles.hiveStatusBadge, { backgroundColor: STATUS_BG[hive.status] }]}>
-                <Text style={[styles.hiveStatusBadgeText, { color: STATUS_COLOR[hive.status] }]}>
+              <Text style={styles.hiveTileName} numberOfLines={1}>
+                {hive.name}
+              </Text>
+              <Text style={styles.hiveRowCondition} numberOfLines={1}>
+                {hive.location}
+              </Text>
+              <View
+                style={[
+                  styles.hiveStatusBadge,
+                  { backgroundColor: STATUS_BG[hive.status] },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.hiveStatusBadgeText,
+                    { color: STATUS_COLOR[hive.status] },
+                  ]}
+                >
                   {displayStatus(hive.status)}
                 </Text>
               </View>
               {hive.stateSince && (
-                <Text style={styles.hiveRowDuration}>{formatStateDuration(hive.stateSince)}</Text>
+                <Text style={styles.hiveRowDuration}>
+                  {formatStateDuration(hive.stateSince)}
+                </Text>
               )}
             </Pressable>
           ))}
@@ -232,11 +303,16 @@ export function HivesListScreen({ navigation, route }: Props) {
       )}
 
       {/* List view */}
-      {!error && viewMode === "list" &&
+      {!error &&
+        viewMode === "list" &&
         filtered.map((hive, idx) => {
           const duration = formatStateDuration(hive.stateSince);
           const label = displayStatus(hive.status);
-          console.log(hive.status)
+          console.log(hive.status);
+          console.log(
+            "lastInferenceAt before click: ",
+            hive.lastInferenceAt ?? undefined,
+          );
 
           return (
             <Pressable
@@ -246,21 +322,37 @@ export function HivesListScreen({ navigation, route }: Props) {
                 idx !== filtered.length - 1 && styles.hiveRowFlatBorder,
                 pressed && styles.pressedRow,
               ]}
-              onPress={() => navigation.navigate("HiveDetails", { hiveId: hive.id })}
+              onPress={() =>
+                navigation.navigate("HiveDetails", {
+                  hiveId: hive.id,
+                  lastAnalysisTime: hive.lastInferenceAt ?? undefined,
+                })
+              }
             >
-              <View style={[styles.hiveRowDot, { backgroundColor: STATUS_COLOR[hive.status] }]} />
+              <View
+                style={[
+                  styles.hiveRowDot,
+                  { backgroundColor: STATUS_COLOR[hive.status] },
+                ]}
+              />
               <View style={styles.hiveRowInfo}>
                 <View style={styles.hiveRowNameRow}>
                   <Text style={styles.hiveName}>{hive.name}</Text>
-                  <View style={[
-                    styles.hiveRowStateBadge,
-                    { backgroundColor: `${STATUS_COLOR[hive.status]}12` }
-                  ]}>
-                    <Text style={[styles.hiveRowStateBadgeText, { color: STATUS_COLOR[hive.status] }]}>
+                  <View
+                    style={[
+                      styles.hiveRowStateBadge,
+                      { backgroundColor: `${STATUS_COLOR[hive.status]}12` },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.hiveRowStateBadgeText,
+                        { color: STATUS_COLOR[hive.status] },
+                      ]}
+                    >
                       {label}
                     </Text>
                   </View>
-
                 </View>
                 <Text style={styles.hiveRowCondition} numberOfLines={1}>
                   {hive.location} • {hive.type}
@@ -270,13 +362,11 @@ export function HivesListScreen({ navigation, route }: Props) {
                 </Text>
               </View>
               <View style={styles.hiveRowRight}>
-                {duration !== "" && <Text style={styles.hiveRowDuration}>{duration}</Text>}
+                {duration !== "" && (
+                  <Text style={styles.hiveRowDuration}>{duration}</Text>
+                )}
                 <View style={styles.hiveRowMoreBtn}>
-                  <Ionicons
-                    name="chevron-forward"
-                    size={20}
-                    color="#2563EB"
-                  />
+                  <Ionicons name="chevron-forward" size={20} color="#2563EB" />
                 </View>
               </View>
             </Pressable>

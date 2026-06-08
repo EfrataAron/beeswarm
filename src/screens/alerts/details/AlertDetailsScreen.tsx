@@ -5,15 +5,18 @@ import {
   ScrollView,
   Text,
   View,
+  Alert,
 } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
+import { Audio } from 'expo-av';
 import {
   Advisory,
   AlertDetailData,
   AlertSeverity,
   fetchAdvisory,
   fetchAlertDetail,
+  acknowledgeAlert,
 } from "../../../api";
 import { THEME } from "../../../theme";
 import { AlertsStackParamList } from "../../../navigation/types";
@@ -49,6 +52,11 @@ export function AlertDetailsScreen({ route }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [detail, setDetail] = useState<AlertDetailData | null>(null);
   const [advisory, setAdvisory] = useState<Advisory | null>(null);
+  
+  // Audio playback state
+  const [sound, setSound] = useState<Audio.Sound | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [audioLoading, setAudioLoading] = useState(false);
 
   const PRIORITY_COLOR = { High: "#DC2626", Medium: "#D97706", Low: "#16A34A" };
 
@@ -56,12 +64,29 @@ export function AlertDetailsScreen({ route }: Props) {
     setLoading(true);
     setError(null);
     try {
-      const [data, adv] = await Promise.all([
-        fetchAlertDetail(alertId),
-        fetchAdvisory(alertId),
-      ]);
+      const data = await fetchAlertDetail(alertId);
       setDetail(data);
-      setAdvisory(adv);
+      
+      // Automatically acknowledge the alert when viewing details
+      if (!data.acknowledged) {
+        try {
+          await acknowledgeAlert(alertId);
+          // Update local state to reflect acknowledgment
+          setDetail({ ...data, acknowledged: true });
+        } catch (err) {
+          console.warn("Failed to acknowledge alert automatically:", err);
+          // Don't block the UI if acknowledgment fails
+        }
+      }
+      
+      // Load advisory if available from the detail response
+      if (data.advisory) {
+        setAdvisory(data.advisory);
+      } else {
+        // Try fetching advisory separately
+        const adv = await fetchAdvisory(alertId);
+        setAdvisory(adv);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load alert details");
     } finally {
@@ -70,6 +95,70 @@ export function AlertDetailsScreen({ route }: Props) {
   }, [alertId]);
 
   useEffect(() => { void loadDetail(); }, [loadDetail]);
+
+  // Cleanup audio on unmount
+  useEffect(() => {
+    return () => {
+      if (sound) {
+        sound.unloadAsync();
+      }
+    };
+  }, [sound]);
+
+  const playAudio = async () => {
+    if (!detail?.audioRecording) return;
+
+    try {
+      setAudioLoading(true);
+
+      // If already playing, pause it
+      if (sound && isPlaying) {
+        await sound.pauseAsync();
+        setIsPlaying(false);
+        setAudioLoading(false);
+        return;
+      }
+
+      // If sound exists but paused, resume
+      if (sound && !isPlaying) {
+        await sound.playAsync();
+        setIsPlaying(true);
+        setAudioLoading(false);
+        return;
+      }
+
+      // Load and play new audio
+      const { sound: newSound } = await Audio.Sound.createAsync(
+        { uri: detail.audioRecording.file_path },
+        { shouldPlay: true },
+        (status) => {
+          if (status.isLoaded && status.didJustFinish) {
+            setIsPlaying(false);
+          }
+        }
+      );
+
+      setSound(newSound);
+      setIsPlaying(true);
+      setAudioLoading(false);
+    } catch (err) {
+      setAudioLoading(false);
+      Alert.alert(
+        "Audio Error",
+        "Could not play the audio recording. The file may not be available.",
+        [{ text: "OK" }]
+      );
+    }
+  };
+
+  const stopAudio = async () => {
+    if (sound) {
+      await sound.stopAsync();
+      await sound.unloadAsync();
+      setSound(null);
+      setIsPlaying(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -123,15 +212,64 @@ export function AlertDetailsScreen({ route }: Props) {
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Alert Information</Text>
         <InfoRow label="Severity" value={detail.severity} valueColor={severityColor(detail.severity)} />
-        <InfoRow label="Hive" value={detail.hiveId} />
+        <InfoRow label="Hive" value={detail.hiveName || detail.hiveId} />
         <InfoRow label="Time" value={detail.time} />
-        <InfoRow label="Status" value={detail.acknowledged ? "Closed" : "Open"} valueColor={detail.acknowledged ? "#16A34A" : "#D97706"} />
+        <InfoRow label="Status" value={detail.acknowledged ? "Acknowledged" : "Pending"} valueColor={detail.acknowledged ? "#16A34A" : "#D97706"} />
       </View>
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Details</Text>
         <Text style={styles.detailLongText}>{detail.details}</Text>
       </View>
+
+      {/* ── Audio Recording ── */}
+      {detail.audioRecording && (
+        <View style={styles.card}>
+          <View style={styles.audioHeader}>
+            <Ionicons name="volume-high-outline" size={20} color={THEME.accent} />
+            <Text style={styles.cardTitle}>Audio Recording</Text>
+          </View>
+          <Text style={styles.audioSubtext}>
+            Listen to the hive recording from {new Date(detail.audioRecording.recorded_at).toLocaleString()}
+          </Text>
+          <Text style={styles.audioSubtext}>
+            Duration: {detail.audioRecording.duration_seconds}s
+          </Text>
+          
+          <View style={styles.audioControls}>
+            <Pressable
+              style={[styles.audioButton, isPlaying && styles.audioButtonPlaying]}
+              onPress={playAudio}
+              disabled={audioLoading}
+            >
+              {audioLoading ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <>
+                  <Ionicons 
+                    name={isPlaying ? "pause" : "play"} 
+                    size={20} 
+                    color="#FFFFFF" 
+                  />
+                  <Text style={styles.audioButtonText}>
+                    {isPlaying ? "Pause" : "Play"}
+                  </Text>
+                </>
+              )}
+            </Pressable>
+
+            {sound && (
+              <Pressable
+                style={styles.audioButtonSecondary}
+                onPress={stopAudio}
+              >
+                <Ionicons name="stop" size={20} color={THEME.accent} />
+                <Text style={styles.audioButtonSecondaryText}>Stop</Text>
+              </Pressable>
+            )}
+          </View>
+        </View>
+      )}
 
       {/* ── Advisory ── */}
       {advisory && !detail.acknowledged && (
