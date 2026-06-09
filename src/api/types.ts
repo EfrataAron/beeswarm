@@ -80,14 +80,25 @@ export type AlertItem = {
   summary: string;
 };
 
+export type AudioRecording = {
+  id: string;
+  file_path: string;
+  duration_seconds: number;
+  recorded_at: string;
+};
+
 export type AlertDetailData = {
   id: string;
   hiveId: string;
+  hiveName?: string;
   severity: AlertSeverity;
   title: string;
   time: string;
+  createdAt?: string;
   details: string;
   acknowledged: boolean;
+  audioRecording?: AudioRecording | null;
+  advisory?: Advisory | null;
 };
 
 export type AdvisoryAction = {

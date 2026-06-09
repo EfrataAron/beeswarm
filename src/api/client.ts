@@ -3,7 +3,7 @@
  */
 
 import { Platform } from "react-native";
-import { loadApiBaseUrl, saveApiBaseUrl } from "./utils/storage";
+import { loadApiBaseUrl, saveApiBaseUrl, clearAuthSession } from "./utils/storage";
 
 // Set to false to disable request/response logging
 const API_DEBUG = true;
@@ -205,6 +205,7 @@ export async function apiRequest<T>(path: string, init?: ApiInit): Promise<T> {
       if (status === 401) {
         log("✗ 401 Unauthorized — clearing session");
         _authToken = null;
+        void clearAuthSession().catch(() => {});
         _onUnauthorized?.();
       }
 
