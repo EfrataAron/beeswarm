@@ -109,6 +109,7 @@ export function HiveDetailsScreen({ route, navigation }: Props) {
     );
   }
 
+  
   const metricSeries =
     detail.metricSeries.length > 0
       ? detail.metricSeries
@@ -134,9 +135,6 @@ export function HiveDetailsScreen({ route, navigation }: Props) {
     Warning: "#FFFBEB",
     Info: "#EFF6FF",
   };
-  console.log("DETAISLSSSS: ", detail);
-  console.log("lastAnalysisTime from route params is: ", lastAnalysisTime);
-
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: THEME.page }}
@@ -199,7 +197,7 @@ export function HiveDetailsScreen({ route, navigation }: Props) {
               {statusCondition(detail.status)}
             </Text>
             <Text style={styles.detailAlertSubtitle}>
-              {detail.alertMessage}gggggggg
+              {detail.alertMessage}
             </Text>
           </View>
         </View>
@@ -254,99 +252,70 @@ export function HiveDetailsScreen({ route, navigation }: Props) {
               </Text>
             </View>
           )}
+</View>
+
+         {hiveAlerts.length === 0 && (
+           <View style={styles.hiveAlertEmpty}>
+             <Ionicons
+               name="checkmark-circle-outline"
+               size={28}
+               color="#16A34A"
+             />
+             <Text style={styles.hiveAlertEmptyText}>
+               All clear · No active alerts
+             </Text>
+           </View>
+         )}
+
+         {hiveAlerts.map((alert) => {
+           const color = severityColors[alert.severity];
+           const bg = severityBg[alert.severity];
+           const iconName = 
+             alert.severity === "Critical" ? "alert-circle" :
+             alert.severity === "Warning" ? "warning" : "information-circle";
+           
+           return (
+             <Pressable 
+               key={alert.id} 
+               style={styles.hiveAlertRowCompact}
+               onPress={() => {
+                 navigation.navigate("Alerts", {
+                   screen: "AlertDetails",
+                   params: { alertId: alert.id },
+                 });
+               }}
+             >
+               <View style={[styles.alertIconCircle, { backgroundColor: bg }]}>
+                 <Ionicons name={iconName} size={18} color={color} />
+               </View>
+
+               <View style={styles.alertContentCompact}>
+                 <Text style={styles.alertTitleCompact} numberOfLines={1}>
+                   {alert.title}
+                 </Text>
+                 <Text style={styles.alertTimeCompact}>
+                   {formatRelativeTime(alert.date)}
+                 </Text>
+               </View>
+
+               <Ionicons name="chevron-forward" size={18} color={THEME.textMuted} />
+             </Pressable>
+           );
+         })}
+       </View>
+
+       {/* ── Metrics Highlights ── */}
+       {/* ── Metrics Graph ── */}
+      <View style={styles.card}>
+          <Text style={styles.cardTitle}>
+             Temperature & Humidity Trends
+          </Text>
+
+          <HiveMetricsLineChart
+            metricSeries={metricSeries}
+            hiveId={detail.id}
+          />
         </View>
-
-        {hiveAlerts.length === 0 && (
-          <View style={styles.hiveAlertEmpty}>
-            <Ionicons
-              name="checkmark-circle-outline"
-              size={28}
-              color="#16A34A"
-            />
-            <Text style={styles.hiveAlertEmptyText}>
-              All clear · No active alerts
-            </Text>
-          </View>
-        )}
-
-        {hiveAlerts.map((alert) => {
-          const color = severityColors[alert.severity];
-          const bg = severityBg[alert.severity];
-          const iconName = 
-            alert.severity === "Critical" ? "alert-circle" :
-            alert.severity === "Warning" ? "warning" : "information-circle";
-          
-          return (
-            <Pressable 
-              key={alert.id} 
-              style={styles.hiveAlertRowCompact}
-              onPress={() => {
-                // Navigate to Alerts tab and then to AlertDetails
-                navigation.navigate("Alerts", {
-                  screen: "AlertDetails",
-                  params: { alertId: alert.id },
-                });
-              }}
-            >
-              {/* Severity Icon */}
-              <View style={[styles.alertIconCircle, { backgroundColor: bg }]}>
-                <Ionicons name={iconName} size={18} color={color} />
-              </View>
-
-              {/* Alert Content */}
-              <View style={styles.alertContentCompact}>
-                <Text style={styles.alertTitleCompact} numberOfLines={1}>
-                  {alert.title}
-                </Text>
-                <Text style={styles.alertTimeCompact}>
-                  {formatRelativeTime(alert.date)}
-                </Text>
-              </View>
-
-              {/* Chevron */}
-              <Ionicons name="chevron-forward" size={18} color={THEME.textMuted} />
-            </Pressable>
-          );
-        })}
-      </View>
-
-      {/* ── Metrics Highlights ── */}
-      {/* <View style={styles.card}>
-        <Text style={styles.cardTitle}>Latest Readings</Text>
-        <Text style={styles.metricsSubtitle}>
-          Temperature & humidity over time with normal threshold
-        </Text>
-
-        <View style={styles.metricsHighlightsRow}>
-          <View style={[styles.metricHighlightCard, { borderLeftColor: THEME.accent, borderLeftWidth: 3 }]}>
-            <Ionicons name="thermometer-outline" size={16} color={THEME.accent} />
-            <Text style={styles.metricHighlightValue}>{latestTemperature.toFixed(1)}°C</Text>
-            <Text style={styles.metricHighlightLabel}>Hive Temperature</Text>
-          </View>
-          <View style={[styles.metricHighlightCard, { borderLeftColor: THEME.primary, borderLeftWidth: 3 }]}>
-            <Ionicons name="water-outline" size={16} color={THEME.primary} />
-            <Text style={styles.metricHighlightValue}>{latestHumidity.toFixed(0)}%</Text>
-            <Text style={styles.metricHighlightLabel}>Hive Humidity</Text>
-          </View>
-        </View>
-
-        <View style={styles.metricsLegendRow}>
-          <View style={styles.metricsLegendItem}>
-            <View style={[styles.legendDot, { backgroundColor: THEME.accent }]} />
-            <Text style={styles.legendText}>Temperature</Text>
-          </View>
-          <View style={styles.metricsLegendItem}>
-            <View style={[styles.legendDot, { backgroundColor: THEME.primary }]} />
-            <Text style={styles.legendText}>Humidity</Text>
-          </View>
-          <View style={styles.metricsLegendItem}>
-            <View style={[styles.legendDot, { backgroundColor: THEME.accent, opacity: 0.4, height: 2 }]} />
-            <Text style={styles.legendText}>Normal Threshold</Text>
-          </View>
-        </View>
-
-        <HiveMetricsLineChart metricSeries={metricSeries} hiveId={detail.id} />
-      </View> */}
-    </ScrollView>
+     </ScrollView>
   );
 }
