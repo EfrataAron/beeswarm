@@ -116,7 +116,19 @@ export async function updateProfile(data: {
         : {}),
     }),
   });
-  const profile = normalizeProfile(raw);
-  await saveProfile(profile);
-  return profile;
+
+  // The backend's UserResponse only returns: user_id, full_name, email, role, created_at.
+  // Fields like phone, address, api_key are stored in the DB but not echoed back.
+
+  const fromServer = normalizeProfile(raw);
+  const merged: BeekeeperProfile = {
+    ...fromServer,
+
+    phone:   fromServer.phone   || data.phone,
+    address: fromServer.address ?? data.address,
+    api_key: fromServer.api_key ?? data.api_key ?? null,
+  };
+
+  await saveProfile(merged);
+  return merged;
 }
