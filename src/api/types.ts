@@ -136,6 +136,14 @@ export type DashboardData = {
     temperatureC: number;
     humidityPercent: number;
   }>;
+  allHivesHistory?: Array<{
+    hiveId: string;
+    history: Array<{
+      timeLabel: string;
+      temperatureC: number;
+      humidityPercent: number;
+    }>;
+  }>;
   pendingAdvisoryActions: number;
   lowConfidenceInferences: number;
 };
