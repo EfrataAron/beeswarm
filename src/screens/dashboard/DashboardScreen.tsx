@@ -512,70 +512,110 @@ export function DashboardScreen({ navigation }: Props) {
         <MetricCard title="Avg Humidity" value={displayHumidity.toFixed(0)} unit="%" subtitle={weatherSubtitle} />
       </View>
 
-      {/* ── Audio Ingestion ── */}
-      <Text style={styles.sectionTitle}>Audio Ingestion</Text>
-      <View style={styles.gridTwo}>
-        <View style={styles.infoCard}>
-          <Ionicons name="mic-outline" size={22} color={THEME.primary} />
-          <Text style={styles.infoCardValue}>{dashboard.recordingsToday}</Text>
-          <Text style={styles.infoCardLabel}>Recordings Today</Text>
-          <Text style={styles.infoCardSub}>Across all hives</Text>
-        </View>
-        <View style={[styles.infoCard, dashboard.silentHives.length > 0 && styles.infoCardWarn]}>
-          <Ionicons name="volume-mute-outline" size={22} color={dashboard.silentHives.length > 0 ? "#EF4444" : "#22C55E"} />
-          <Text style={[styles.infoCardValue, { color: dashboard.silentHives.length > 0 ? "#EF4444" : "#22C55E" }]}>
-            {dashboard.silentHives.length}
-          </Text>
-          <Text style={styles.infoCardLabel}>Silent Hives</Text>
-          <Text style={styles.infoCardSub}>No audio in 8h+</Text>
-        </View>
-      </View>
+      <Text style={styles.sectionTitle}>System Monitoring</Text>
+      
 
-      {dashboard.silentHives.length > 0 && (
-        <View style={styles.silentHivesList}>
-          {dashboard.silentHives.map((h) => (
-            <View key={h.hiveId} style={styles.silentHiveRow}>
-              <Ionicons name="radio-button-off-outline" size={14} color="#EF4444" />
-              <Text style={styles.silentHiveText}>{h.hiveId}</Text>
-              <Text style={styles.silentHiveTime}>Last seen {h.lastSeenHoursAgo}h ago</Text>
-            </View>
-          ))}
-        </View>
-      )}
+<View style={styles.gridThree}>
+  {/* Recordings Today */}
+  <View style={styles.infoCard}>
+    <Ionicons
+      name="mic-outline"
+      size={22}
+      color={THEME.primary}
+    />
+    <Text style={styles.infoCardValue}>
+      {dashboard.recordingsToday}
+    </Text>
+    <Text style={styles.infoCardLabel}>
+      Recordings Today
+    </Text>
+    <Text style={styles.infoCardSub}>
+      Across all hives
+    </Text>
+  </View>
 
-      {/* ── Environmental Correlation ── */}
-      {dashboard.highTempPreSwarmHives.length > 0 && (
-        <>
-          <Text style={styles.sectionTitle}>⚠ High Temp + Swarming Risk</Text>
-          <View style={[styles.card, { backgroundColor: theme.surface }]}>
-            <Text style={styles.cardSubtitle}>Hives showing elevated temperature alongside swarming indicators</Text>
-            {dashboard.highTempPreSwarmHives.map((h) => (
-              <View key={h.hiveId} style={styles.corrRow}>
-                <View style={styles.corrHiveChip}>
-                  <Text style={styles.corrHiveChipText}>{h.hiveId}</Text>
-                </View>
-                <View style={styles.corrTempBar}>
-                  <View style={[styles.corrTempFill, { width: `${Math.min(((h.temperatureC - 30) / 15) * 100, 100)}%` as any }]} />
-                </View>
-                <Text style={styles.corrTempValue}>{h.temperatureC}°C</Text>
-              </View>
-            ))}
-          </View>
-        </>
-      )}
+  {/* Silent Hives */}
+  <View
+    style={[
+      styles.infoCard,
+      dashboard.silentHives.length > 0 &&
+        styles.infoCardWarn,
+    ]}
+  >
+    <Ionicons
+      name="volume-mute-outline"
+      size={22}
+      color={
+        dashboard.silentHives.length > 0
+          ? "#EF4444"
+          : "#22C55E"
+      }
+    />
 
-      {/* ── System Health ── */}
-      <Text style={styles.sectionTitle}>System Health</Text>
-      <View style={styles.gridTwo}>
-        <View style={[styles.infoCard, dashboard.lowConfidenceInferences > 0 && styles.infoCardWarn]}>
-          <Ionicons name="help-circle-outline" size={22} color={dashboard.lowConfidenceInferences > 0 ? "#EF4444" : "#22C55E"} />
-          <Text style={[styles.infoCardValue, { color: dashboard.lowConfidenceInferences > 0 ? "#EF4444" : "#22C55E" }]}>
-            {dashboard.lowConfidenceInferences}
-          </Text>
-          <Text style={styles.infoCardLabel}>Low-Confidence Inferences</Text>
-          <Text style={styles.infoCardSub}>Score &lt; 0.6</Text>
-        </View>
-      </View>
+    <Text
+      style={[
+        styles.infoCardValue,
+        {
+          color:
+            dashboard.silentHives.length > 0
+              ? "#EF4444"
+              : "#22C55E",
+        },
+      ]}
+    >
+      {dashboard.silentHives.length}
+    </Text>
+
+    <Text style={styles.infoCardLabel}>
+      Silent Hives
+    </Text>
+
+    <Text style={styles.infoCardSub}>
+      No audio in 8h+
+    </Text>
+  </View>
+
+  {/* Low Confidence */}
+  <View
+    style={[
+      styles.infoCard,
+      dashboard.lowConfidenceInferences > 0 &&
+        styles.infoCardWarn,
+    ]}
+  >
+    <Ionicons
+      name="help-circle-outline"
+      size={22}
+      color={
+        dashboard.lowConfidenceInferences > 0
+          ? "#EF4444"
+          : "#22C55E"
+      }
+    />
+
+    <Text
+      style={[
+        styles.infoCardValue,
+        {
+          color:
+            dashboard.lowConfidenceInferences > 0
+              ? "#EF4444"
+              : "#22C55E",
+        },
+      ]}
+    >
+      {dashboard.lowConfidenceInferences}
+    </Text>
+
+    <Text style={styles.infoCardLabel}>
+      Low Confidence
+    </Text>
+
+    <Text style={styles.infoCardSub}>
+      Score &lt; 0.6
+    </Text>
+  </View>
+</View>
     </ScrollView>
   );
 }
