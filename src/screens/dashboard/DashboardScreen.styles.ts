@@ -85,7 +85,12 @@ export function createDashboardStyles(t: ThemeSnapshot) {
     rowGap: 10,
     columnGap: 0,
     marginBottom: 14,
-  },
+    },
+    gridThree: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
+    },
   // ── Dashboard alert card ──
   dashboardAlertsCard: {
     backgroundColor: t.surface,
@@ -475,15 +480,22 @@ statCard: {
     marginTop: 6,
   },
   // ── Info cards ──
-  infoCard: {
-    width: "49%",
-    backgroundColor: t.surface,
-    borderWidth: 1,
-    borderColor: t.line,
-    borderRadius: 12,
-    padding: 12,
-    gap: 4,
-  },
+  // infoCard: {
+  //   width: "49%",
+  //   backgroundColor: t.surface,
+  //   borderWidth: 1,
+  //   borderColor: t.line,
+  //   borderRadius: 12,
+  //   padding: 12,
+  //   gap: 4,
+    // },
+      infoCard: {
+      flex: 1,
+      backgroundColor: THEME.surface,
+      borderRadius: 12,
+      padding: 16,
+      alignItems: "center",
+    },
   infoCardWarn: {
     borderColor: "#FCA5A5",
     backgroundColor: "#1A0F0F",
