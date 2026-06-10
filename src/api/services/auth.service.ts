@@ -96,6 +96,23 @@ export async function fetchProfile(): Promise<BeekeeperProfile> {
   return profile;
 }
 
+/**
+ * PUT /auth/password
+ * Change the current user's password.
+ */
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string,
+): Promise<void> {
+  await apiRequest<void>("/auth/password", {
+    method: "PUT",
+    body: JSON.stringify({
+      current_password: currentPassword,
+      new_password: newPassword,
+    }),
+  });
+}
+
 export async function updateProfile(data: {
   name: string;
   email?: string;

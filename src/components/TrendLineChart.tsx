@@ -81,7 +81,7 @@ export function TrendLineChart({ data }: Props) {
                   borderRadius: 5,
                   backgroundColor: THEME.accent,
                   borderWidth: 2,
-                  borderColor: "#FFFFFF",
+                  borderColor: THEME.surface,
                 }}
               />
               <Text

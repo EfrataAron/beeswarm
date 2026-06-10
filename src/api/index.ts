@@ -45,6 +45,7 @@ export {
   logout,
   fetchProfile,
   updateProfile,
+  changePassword,
 } from "./services/auth.service";
 
 // Export hive service
@@ -67,6 +68,7 @@ export {
 // Export dashboard service
 export {
   fetchDashboard,
+  fetchFleetMetricsFromHives,
 } from "./services/dashboard.service";
 
 // Export weather service

@@ -25,6 +25,7 @@ import {
 } from "./src/api";
 import { HeaderOverflowMenu } from "./src/components/HeaderOverflowMenu";
 import { applyThemeMode, THEME } from "./src/theme";
+import { notifyThemeChange } from "./src/hooks/useTheme";
 
 // Navigation types
 import {
@@ -146,16 +147,19 @@ function HivesStackScreen({
   onOpenSettings,
   onLogout,
   currentUser,
+  isDarkMode,
 }: {
   onOpenSettings: () => void;
   onLogout: () => void;
   currentUser: BeekeeperProfile | null;
+  isDarkMode: boolean;
 }) {
+  const colors = isDarkMode ? APP_COLORS.dark : APP_COLORS.light;
   return (
     <HivesStack.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: "#FFFFFF" },
-        headerTintColor: THEME.primary,
+        headerStyle: { backgroundColor: colors.surface },
+        headerTintColor: colors.text,
         headerTitleStyle: { fontWeight: "800" },
         headerRight: () => (
           <HeaderOverflowMenu
@@ -188,15 +192,18 @@ function HivesStackScreen({
 function AlertsStackScreen({
   onOpenSettings,
   onLogout,
+  isDarkMode,
 }: {
   onOpenSettings: () => void;
   onLogout: () => void;
+  isDarkMode: boolean;
 }) {
+  const colors = isDarkMode ? APP_COLORS.dark : APP_COLORS.light;
   return (
     <AlertsStack.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: "#FFFFFF" },
-        headerTintColor: THEME.primary,
+        headerStyle: { backgroundColor: colors.surface },
+        headerTintColor: colors.text,
         headerTitleStyle: { fontWeight: "800" },
         headerRight: () => (
           <HeaderOverflowMenu
@@ -316,6 +323,7 @@ function MainTabsScreen({
             onOpenSettings={openSettingsPage}
             onLogout={onLogout}
             currentUser={currentUser}
+            isDarkMode={isDarkMode}
           />
         )}
       </Tab.Screen>
@@ -339,6 +347,7 @@ function MainTabsScreen({
           <AlertsStackScreen
             onOpenSettings={openSettingsPage}
             onLogout={onLogout}
+            isDarkMode={isDarkMode}
           />
         )}
       </Tab.Screen>
@@ -451,6 +460,7 @@ export default function App() {
           const enabled = darkMode === "true";
           setDarkModeEnabled(enabled);
           applyThemeMode(enabled);
+          notifyThemeChange();
         }
         // Restore navigation state
         if (savedNavigationState) {
@@ -490,6 +500,7 @@ export default function App() {
 
   const handleDarkModeChange = async (value: boolean) => {
     applyThemeMode(value);
+    notifyThemeChange();
     setDarkModeEnabled(value);
     try {
       await AsyncStorage.setItem(PREF_DARK_MODE, String(value));

@@ -18,6 +18,7 @@ import {
   formatStateDuration,
   formatRelativeTime,
 } from "../../../theme";
+import { useTheme } from "../../../hooks/useTheme";
 import { HivesStackParamList } from "../../../navigation/types";
 import { hivesListStyles as styles } from "./HivesListScreen.styles";
 
@@ -45,6 +46,7 @@ const ALL_STATUSES: HiveStatus[] = [
 ];
 
 export function HivesListScreen({ navigation, route }: Props) {
+  const theme = useTheme();
   const [hives, setHives] = useState<Hive[]>([]);
   const [searchText, setSearchText] = useState("");
   const [loading, setLoading] = useState(true);
@@ -93,7 +95,7 @@ export function HivesListScreen({ navigation, route }: Props) {
 
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: THEME.page }}
+      style={{ flex: 1, backgroundColor: theme.page }}
       contentContainerStyle={[styles.appPage, { flexGrow: 1 }]}
       refreshControl={
         <RefreshControl
