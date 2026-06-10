@@ -1,7 +1,10 @@
 import { StyleSheet } from "react-native";
 import { THEME } from "../../../theme";
 
-export const hiveDetailsStyles = StyleSheet.create({
+type ThemeSnapshot = typeof THEME;
+
+export function createHiveDetailsStyles(t: ThemeSnapshot) {
+  return StyleSheet.create({
   centerState: {
     flex: 1,
     alignItems: "center",
@@ -10,14 +13,14 @@ export const hiveDetailsStyles = StyleSheet.create({
     padding: 24,
   },
   stateText: {
-    color: THEME.textMuted,
+    color: t.textMuted,
     fontWeight: "600",
     fontSize: 14,
   },
   errorTitle: {
     fontSize: 16,
     fontWeight: "800",
-    color: THEME.primary,
+    color: t.primary,
   },
   errorBody: {
     color: "#B91C1C",
@@ -27,7 +30,7 @@ export const hiveDetailsStyles = StyleSheet.create({
   },
   primaryButtonSmall: {
     marginTop: 12,
-    backgroundColor: THEME.accent,
+    backgroundColor: t.accent,
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 16,
@@ -36,7 +39,7 @@ export const hiveDetailsStyles = StyleSheet.create({
     alignSelf: "center",
   },
   primaryButtonText: {
-    color: THEME.primary,
+    color: t.primary,
     fontWeight: "800",
     fontSize: 15,
   },
@@ -46,7 +49,7 @@ export const hiveDetailsStyles = StyleSheet.create({
     paddingBottom: 32,
   },
   detailHeroCard: {
-    backgroundColor: THEME.primary,
+    backgroundColor: t.primary,
     borderRadius: 16,
     padding: 18,
     marginBottom: 14,
@@ -60,7 +63,7 @@ export const hiveDetailsStyles = StyleSheet.create({
   detailHiveName: {
     fontSize: 20,
     fontWeight: "800",
-    color: "#FFFFFF",
+    color: t.surface,
     marginBottom: 3,
   },
   detailHeroMetaRow: {
@@ -89,7 +92,7 @@ export const hiveDetailsStyles = StyleSheet.create({
   },
   detailLastAnalysisTime: {
     fontSize: 11,
-    color: "rgba(255,255,255,0.6)",
+    color: t.textMuted,
     fontWeight: "500",
     marginTop: 2,
   },
@@ -129,7 +132,7 @@ export const hiveDetailsStyles = StyleSheet.create({
     justifyContent: "center",
   },
   detailAlertTitle: {
-    color: THEME.accent,
+    color: t.accent,
     fontSize: 13,
     fontWeight: "800",
     marginBottom: 3,
@@ -148,10 +151,10 @@ export const hiveDetailsStyles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "800",
   },
-  card: {
-    backgroundColor: "#FFFFFF",
+card: {
+    backgroundColor: t.surface,
     borderWidth: 1,
-    borderColor: THEME.line,
+    borderColor: t.line,
     borderRadius: 14,
     padding: 14,
     marginBottom: 14,
@@ -159,7 +162,7 @@ export const hiveDetailsStyles = StyleSheet.create({
   cardTitle: {
     fontSize: 15,
     fontWeight: "800",
-    color: THEME.primary,
+    color: t.primary,
     marginBottom: 2,
   },
   rowBetween: {
@@ -179,7 +182,7 @@ export const hiveDetailsStyles = StyleSheet.create({
   hiveAlertCountText: {
     fontSize: 11,
     fontWeight: "800",
-    color: "#FFFFFF",
+    color: t.surface,
   },
   hiveAlertEmpty: {
     alignItems: "center",
@@ -195,8 +198,8 @@ export const hiveDetailsStyles = StyleSheet.create({
     flexDirection: "row",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: THEME.line,
-    backgroundColor: "#FFFFFF",
+    borderColor: t.line,
+    backgroundColor: t.surface,
     marginTop: 10,
     overflow: "hidden",
   },
@@ -226,17 +229,17 @@ export const hiveDetailsStyles = StyleSheet.create({
   },
   hiveAlertDate: {
     fontSize: 11,
-    color: THEME.textMuted,
+    color: t.textMuted,
     fontWeight: "500",
   },
   hiveAlertTitle: {
     fontSize: 13,
     fontWeight: "700",
-    color: THEME.primary,
+    color: t.primary,
   },
   hiveAlertSummary: {
     fontSize: 12,
-    color: THEME.textMuted,
+    color: t.textMuted,
     lineHeight: 17,
   },
   // Compact Alert Styles
@@ -247,9 +250,9 @@ export const hiveDetailsStyles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 10,
-    backgroundColor: THEME.surfaceSoft,
+    backgroundColor: t.surfaceSoft,
     borderWidth: 1,
-    borderColor: THEME.line,
+    borderColor: t.line,
     marginTop: 8,
   },
   alertIconCircle: {
@@ -266,15 +269,15 @@ export const hiveDetailsStyles = StyleSheet.create({
   alertTitleCompact: {
     fontSize: 13,
     fontWeight: "700",
-    color: THEME.primary,
+    color: t.primary,
   },
   alertTimeCompact: {
     fontSize: 11,
-    color: THEME.textMuted,
+    color: t.textMuted,
     fontWeight: "500",
   },
   metricsSubtitle: {
-    color: "#667085",
+    color: t.textMuted,
     fontWeight: "600",
     fontSize: 12,
     marginTop: 2,
@@ -288,21 +291,21 @@ export const hiveDetailsStyles = StyleSheet.create({
   },
   metricHighlightCard: {
     flex: 1,
-    backgroundColor: THEME.surfaceSoft,
+    backgroundColor: t.surfaceSoft,
     borderWidth: 1,
-    borderColor: THEME.line,
+    borderColor: t.line,
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 12,
     gap: 4,
   },
   metricHighlightLabel: {
-    color: THEME.textMuted,
+    color: t.textMuted,
     fontSize: 11,
     fontWeight: "600",
   },
   metricHighlightValue: {
-    color: THEME.primary,
+    color: t.primary,
     fontSize: 20,
     fontWeight: "800",
   },
@@ -322,7 +325,7 @@ export const hiveDetailsStyles = StyleSheet.create({
     marginRight: 8,
   },
   legendText: {
-    color: "#475467",
+    color: t.textMuted,
     fontWeight: "600",
   },
   weatherHeader: {
@@ -332,7 +335,7 @@ export const hiveDetailsStyles = StyleSheet.create({
     marginBottom: 4,
   },
   weatherSubtitle: {
-    color: "#667085",
+    color: t.textMuted,
     fontWeight: "600",
     fontSize: 12,
     marginBottom: 14,
@@ -350,22 +353,25 @@ export const hiveDetailsStyles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
     borderWidth: 1,
-    borderColor: THEME.line,
+    borderColor: t.line,
   },
   weatherValue: {
-    color: THEME.primary,
+    color: t.primary,
     fontSize: 22,
     fontWeight: "800",
   },
   weatherLabel: {
-    color: THEME.textMuted,
+    color: t.textMuted,
     fontSize: 11,
     fontWeight: "600",
   },
   weatherTimestamp: {
     fontSize: 11,
-    color: THEME.textMuted,
+    color: t.textMuted,
     fontWeight: "500",
     textAlign: "center",
   },
-});
+  });
+}
+
+export const hiveDetailsStyles = createHiveDetailsStyles(THEME);

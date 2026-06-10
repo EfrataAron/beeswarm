@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Modal,
   Pressable,
   ScrollView,
   Text,
@@ -11,11 +12,13 @@ import Toast from "react-native-toast-message";
 import { Ionicons } from "@expo/vector-icons";
 import {
   BeekeeperProfile,
+  changePassword,
   fetchProfile,
   updateProfile,
 } from "../../api";
 import { THEME } from "../../theme";
-import { profileStyles as styles } from "./ProfileScreen.styles";
+import { useTheme } from "../../hooks/useTheme";
+import { createProfileStyles } from "./ProfileScreen.styles";
 
 type Props = {
   onLogout: () => void;
@@ -87,6 +90,43 @@ export function ProfileScreen({
     }
   };
 
+  const theme = useTheme();
+  const styles = useMemo(() => createProfileStyles(theme), [theme]);
+
+  // ── Change Password modal state ──────────────────────────────────────────────
+  const [pwModalVisible,  setPwModalVisible]  = useState(false);
+  const [currentPw,       setCurrentPw]       = useState("");
+  const [newPw,           setNewPw]           = useState("");
+  const [confirmPw,       setConfirmPw]       = useState("");
+  const [pwError,         setPwError]         = useState("");
+  const [pwSaving,        setPwSaving]        = useState(false);
+  const [showCurrentPw,   setShowCurrentPw]   = useState(false);
+  const [showNewPw,       setShowNewPw]       = useState(false);
+
+  const openPasswordModal = () => {
+    setCurrentPw(""); setNewPw(""); setConfirmPw(""); setPwError("");
+    setPwModalVisible(true);
+  };
+
+  const handleChangePassword = async () => {
+    if (!currentPw)         { setPwError("Current password is required."); return; }
+    if (!newPw)             { setPwError("New password is required."); return; }
+    if (newPw.length < 8)   { setPwError("New password must be at least 8 characters."); return; }
+    if (newPw !== confirmPw){ setPwError("Passwords do not match."); return; }
+    if (newPw === currentPw){ setPwError("New password must differ from your current password."); return; }
+    setPwError("");
+    setPwSaving(true);
+    try {
+      await changePassword(currentPw, newPw);
+      setPwModalVisible(false);
+      Toast.show({ type: "success", text1: "Password changed successfully" });
+    } catch (err) {
+      setPwError(err instanceof Error ? err.message : "Could not change password. Check your current password.");
+    } finally {
+      setPwSaving(false);
+    }
+  };
+
   const initials = name
     .trim()
     .split(" ")
@@ -105,7 +145,7 @@ export function ProfileScreen({
 
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: THEME.page }}
+      style={{ flex: 1, backgroundColor: theme.page }}
       contentContainerStyle={styles.profilePage}
       showsVerticalScrollIndicator={false}
     >
@@ -316,15 +356,9 @@ export function ProfileScreen({
 
         <Pressable
           style={styles.profileLinkRow}
-          onPress={() =>
-            Toast.show({ type: "info", text1: "Change password coming soon" })
-          }
+          onPress={openPasswordModal}
         >
-          <Ionicons
-            name="lock-closed-outline"
-            size={20}
-            color={THEME.primary}
-          />
+          <Ionicons name="lock-closed-outline" size={20} color={THEME.primary} />
           <Text style={styles.profileLinkText}>Change Password</Text>
           <Ionicons
             name="chevron-forward"
@@ -362,7 +396,95 @@ export function ProfileScreen({
         <Text style={styles.profileLogoutText}>Sign Out</Text>
       </Pressable>
 
-      <Text style={styles.profileVersion}>Beeswarm v1.0.0</Text>
-    </ScrollView>
-  );
+<Text style={styles.profileVersion}>Beeswarm v1.0.0</Text>
+
+       {/* Change Password Modal */}
+       <Modal
+         visible={pwModalVisible}
+         transparent
+         animationType="fade"
+         onRequestClose={() => setPwModalVisible(false)}
+       >
+         <View style={styles.pwModalOverlay}>
+           <View style={styles.pwModalCard}>
+             <View style={styles.pwModalHeader}>
+               <Text style={styles.pwModalTitle}>Change Password</Text>
+               <Pressable onPress={() => setPwModalVisible(false)} style={styles.pwModalCloseBtn}>
+                 <Ionicons name="close" size={20} color={theme.textMuted} />
+               </Pressable>
+             </View>
+
+             <View style={styles.pwModalField}>
+               <Text style={styles.pwModalLabel}>Current Password</Text>
+               <View style={styles.pwModalInputRow}>
+                 <TextInput
+                   style={styles.pwModalInput}
+                   value={currentPw}
+                   onChangeText={setCurrentPw}
+                   secureTextEntry={!showCurrentPw}
+                   placeholder="Enter current password"
+                   placeholderTextColor={theme.placeholder}
+                 />
+                 <Pressable onPress={() => setShowCurrentPw((v) => !v)}>
+                   <Ionicons name={showCurrentPw ? "eye-off" : "eye"} size={18} color={theme.textMuted} />
+                 </Pressable>
+               </View>
+             </View>
+
+             <View style={styles.pwModalField}>
+               <Text style={styles.pwModalLabel}>New Password</Text>
+               <View style={styles.pwModalInputRow}>
+                 <TextInput
+                   style={styles.pwModalInput}
+                   value={newPw}
+                   onChangeText={setNewPw}
+                   secureTextEntry={!showNewPw}
+                   placeholder="Enter new password (min 8 chars)"
+                   placeholderTextColor={theme.placeholder}
+                 />
+                 <Pressable onPress={() => setShowNewPw((v) => !v)}>
+                   <Ionicons name={showNewPw ? "eye-off" : "eye"} size={18} color={theme.textMuted} />
+                 </Pressable>
+               </View>
+             </View>
+
+             <View style={styles.pwModalField}>
+               <Text style={styles.pwModalLabel}>Confirm New Password</Text>
+               <TextInput
+                 style={[styles.pwModalInput, { paddingHorizontal: 12 }]}
+                 value={confirmPw}
+                 onChangeText={setConfirmPw}
+                 secureTextEntry
+                 placeholder="Confirm new password"
+                 placeholderTextColor={theme.placeholder}
+                 onSubmitEditing={() => void handleChangePassword()}
+               />
+             </View>
+
+             {pwError && (
+               <Text style={styles.pwModalError}>{pwError}</Text>
+             )}
+
+             <View style={styles.pwModalActions}>
+               <Pressable
+                 style={styles.pwModalCancelBtn}
+                 onPress={() => setPwModalVisible(false)}
+               >
+                 <Text style={styles.pwModalCancelText}>Cancel</Text>
+               </Pressable>
+               <Pressable
+                 style={[styles.pwModalSaveBtn, pwSaving && { opacity: 0.6 }]}
+                 onPress={() => void handleChangePassword()}
+                 disabled={pwSaving}
+               >
+                 <Text style={styles.pwModalSaveText}>
+                   {pwSaving ? "Saving…" : "Change Password"}
+                 </Text>
+               </Pressable>
+             </View>
+           </View>
+         </View>
+       </Modal>
+     </ScrollView>
+   );
 }

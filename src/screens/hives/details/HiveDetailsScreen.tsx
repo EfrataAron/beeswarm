@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -25,8 +25,9 @@ import {
   formatStateDuration,
   formatRelativeTime,
 } from "../../../theme";
+import { useTheme } from "../../../hooks/useTheme";
 import { HivesStackParamList, MainTabParamList } from "../../../navigation/types";
-import { hiveDetailsStyles as styles } from "./HiveDetailsScreen.styles";
+import { createHiveDetailsStyles } from "./HiveDetailsScreen.styles";
 import { HiveMetricsLineChart } from "../../../components/HiveMetricsLineChart";
 
 type NavigationProp = CompositeNavigationProp<
@@ -38,23 +39,10 @@ type Props = NativeStackScreenProps<HivesStackParamList, "HiveDetails"> & {
   navigation: NavigationProp;
 };
 
-function StatusPill({ status }: { status: HiveDetailData["status"] }) {
-  return (
-    <View
-      style={[
-        styles.statusPill,
-        { backgroundColor: `${STATUS_COLOR[status]}20` },
-      ]}
-    >
-      <Text style={[styles.statusPillText, { color: STATUS_COLOR[status] }]}>
-        {displayStatus(status)}
-      </Text>
-    </View>
-  );
-}
-
 export function HiveDetailsScreen({ route, navigation }: Props) {
   const { hiveId, lastAnalysisTime } = route.params;
+  const theme = useTheme();
+  const styles = useMemo(() => createHiveDetailsStyles(theme), [theme]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [detail, setDetail] = useState<HiveDetailData | null>(null);
@@ -131,30 +119,39 @@ export function HiveDetailsScreen({ route, navigation }: Props) {
     Info: "#2563EB",
   };
   const severityBg: Record<AlertSeverity, string> = {
-    Critical: "#FEF2F2",
-    Warning: "#FFFBEB",
-    Info: "#EFF6FF",
+    Critical: theme.surfaceSoft,
+    Warning: theme.surfaceSoft,
+    Info: theme.surfaceSoft,
   };
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: THEME.page }}
+      style={{ flex: 1, backgroundColor: theme.page }}
       contentContainerStyle={styles.detailPage}
     >
       {/* ── Hero Header ── */}
-      <View style={styles.detailHeroCard}>
+      <View style={[styles.detailHeroCard, { backgroundColor: theme.primary }]}>
         <View style={styles.detailHeroTopRow}>
           <View style={styles.detailHeroTextWrap}>
             <Text style={styles.detailHiveName}>{detail.name}</Text>
-            <View style={styles.detailHeroMetaRow}>
-              <Ionicons
-                name="location-outline"
-                size={12}
-                color="rgba(255,255,255,0.7)"
-              />
-              <Text style={styles.detailHeroMeta}>{detail.location}</Text>
-            </View>
+<View style={styles.detailHeroMetaRow}>
+               <Ionicons
+                 name="location-outline"
+                 size={12}
+                 color={theme.textMuted}
+               />
+               <Text style={[styles.detailHeroMeta, { color: theme.textMuted }]}>{detail.location}</Text>
+             </View>
           </View>
-          <StatusPill status={detail.status} />
+          <View
+            style={[
+              styles.statusPill,
+              { backgroundColor: `${STATUS_COLOR[detail.status]}20` },
+            ]}
+          >
+            <Text style={[styles.statusPillText, { color: STATUS_COLOR[detail.status] }]}>
+              {displayStatus(detail.status)}
+            </Text>
+          </View>
         </View>
 
         <View style={styles.detailStateDurationRow}>
@@ -205,7 +202,7 @@ export function HiveDetailsScreen({ route, navigation }: Props) {
 
       {/* ── Weather Card ── */}
       {detail.weather && (
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: theme.surface }]}>
           <View style={styles.weatherHeader}>
             <Ionicons name="cloud-outline" size={18} color={THEME.primary} />
             <Text style={styles.cardTitle}>Latest Weather Readings</Text>
@@ -242,7 +239,7 @@ export function HiveDetailsScreen({ route, navigation }: Props) {
       )}
 
       {/* ── Notifications ── */}
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: theme.surface }]}>
         <View style={styles.rowBetween}>
           <Text style={styles.cardTitle}>Notifications</Text>
           {hiveAlerts.length > 0 && (
@@ -306,7 +303,7 @@ export function HiveDetailsScreen({ route, navigation }: Props) {
 
        {/* ── Metrics Highlights ── */}
        {/* ── Metrics Graph ── */}
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: theme.surface }]}>
           <Text style={styles.cardTitle}>
              Temperature & Humidity Trends
           </Text>

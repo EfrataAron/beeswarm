@@ -11,6 +11,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { AlertItem, AlertSeverity, fetchAlerts } from "../../../api";
 import { THEME } from "../../../theme";
+import { useTheme } from "../../../hooks/useTheme";
 import { AlertsStackParamList } from "../../../navigation/types";
 import { alertsListStyles as styles } from "./AlertsListScreen.styles";
 
@@ -34,6 +35,7 @@ const SEVERITY_ICON: Record<AlertSeverity, keyof typeof Ionicons.glyphMap> = {
 const ALL_SEVERITIES: AlertSeverity[] = ["Critical", "Warning", "Info"];
 
 export function AlertsListScreen({ navigation }: Props) {
+  const theme = useTheme();
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -86,7 +88,7 @@ export function AlertsListScreen({ navigation }: Props) {
 
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: THEME.page }}
+      style={{ flex: 1, backgroundColor: theme.page }}
       contentContainerStyle={[styles.appPage, { flexGrow: 1 }]}
       refreshControl={
         <RefreshControl

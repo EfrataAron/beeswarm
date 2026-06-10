@@ -61,7 +61,7 @@ export const alertsListStyles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: THEME.surface,
   },
   hiveSummaryPillActive: {
     backgroundColor: THEME.primary,
@@ -73,7 +73,7 @@ export const alertsListStyles = StyleSheet.create({
     color: THEME.textMuted,
   },
   hiveSummaryPillTextActive: {
-    color: "#FFFFFF",
+    color: THEME.surface,
   },
   hiveSummaryDot: {
     width: 6,
@@ -100,7 +100,7 @@ export const alertsListStyles = StyleSheet.create({
   },
   alertCard: {
     flexDirection: "row",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: THEME.surface,
     borderWidth: 1,
     borderColor: THEME.line,
     borderRadius: 14,

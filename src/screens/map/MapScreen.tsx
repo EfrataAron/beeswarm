@@ -10,6 +10,7 @@ import {
 import { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { Hive, fetchHives } from "../../api";
 import { THEME, STATUS_COLOR } from "../../theme";
+import { useTheme } from "../../hooks/useTheme";
 import { MainTabParamList } from "../../navigation/types";
 import { mapStyles as styles } from "./MapScreen.styles";
 import HiveMap from "../../components/HiveMap";
@@ -55,6 +56,7 @@ function LegendItem({ color, text }: { color: string; text: string }) {
 type Props = BottomTabScreenProps<MainTabParamList, "Map">;
 
 export function MapScreen({ navigation }: Props) {
+  const theme = useTheme();
   const [hives, setHives] = useState<Hive[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
