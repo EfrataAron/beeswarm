@@ -89,7 +89,7 @@ export const alertDetailsStyles = StyleSheet.create({
   },
   alertClosedText: {
     fontSize: 12,
-    color: "#16A34A",
+    color: "#D97706",
     fontWeight: "600",
     flex: 1,
   },
@@ -187,6 +187,37 @@ export const alertDetailsStyles = StyleSheet.create({
     borderRadius: 4,
     marginTop: 5,
   },
+  advisoryNote: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    // backgroundColor: "#F9FAFB",
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: "#ffffff",
+  },
+  advisoryNoteText: {
+    fontSize: 12,
+    color: "#6B7280",
+    lineHeight: 16,
+    flex: 1,
+  },
+  advisoryActionNumber: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: THEME.accent,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 2,
+  },
+  advisoryActionNumberText: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#FFFFFF",
+  },
   audioHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -196,7 +227,7 @@ export const alertDetailsStyles = StyleSheet.create({
   audioSubtext: {
     fontSize: 12,
     color: THEME.textMuted,
-    marginBottom: 4,
+    marginBottom: 5,
   },
   audioControls: {
     flexDirection: "row",
@@ -238,5 +269,34 @@ export const alertDetailsStyles = StyleSheet.create({
     color: THEME.accent,
     fontWeight: "700",
     fontSize: 14,
+  },
+
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12, // React Native 0.71+
+    marginTop: 20,
+  },
+
+  halfButton: {
+    flex: 1,
+  },
+
+  submitButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#4F46E5',
+    paddingVertical: 14,
+    borderRadius: 12,
+  },
+
+  cancelButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    paddingVertical: 14,
+    borderRadius: 12,
   },
 });

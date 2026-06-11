@@ -3,6 +3,7 @@ import { HiveStatus } from "../api";
 
 type MapHive = {
   id: string;
+  name: string;
   status: HiveStatus;
   latitude: number;
   longitude: number;
@@ -23,8 +24,8 @@ type Props = {
 };
 
 const SAMPLE_HIVES: MapHive[] = [
-  { id: "Sample Hive 1", status: "active", latitude: 0.3476, longitude: 32.5825 },
-  { id: "Sample Hive 2", status: "swarming",   latitude: 0.3511, longitude: 32.5883 },
+  { id: "sample-1", name: "Sample Hive 1", status: "active", latitude: 0.3476, longitude: 32.5825 },
+  { id: "sample-2", name: "Sample Hive 2", status: "swarming",   latitude: 0.3511, longitude: 32.5883 },
 ];
 
 const OSM_STYLE = {
@@ -96,29 +97,31 @@ export default function HiveMap({ mapHives, region, statusColor, onMarkerPress }
 
       renderedHives.forEach((hive) => {
         const color = statusColor[hive.status] ?? "#FFB268";
+        const hiveName = hive.name || hive.id;
 
         const wrapper = document.createElement("button");
         Object.assign(wrapper.style, {
           display: "flex", flexDirection: "column", alignItems: "center",
           background: "none", border: "none", padding: "0", cursor: "pointer",
         });
-        wrapper.title = `${hive.id} — ${hive.status}`;
+        wrapper.title = `${hiveName} — ${hive.status}`;
 
         const badge = document.createElement("div");
         Object.assign(badge.style, {
-          background: color, color: "#ffffff", fontSize: "11px", fontWeight: "700",
+          background: color, color: "#ffffff", fontSize: "12px", fontWeight: "800",
           fontFamily: "system-ui, -apple-system, sans-serif",
-          padding: "4px 9px", borderRadius: "12px", border: "2px solid #ffffff",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.35)", whiteSpace: "nowrap",
-          maxWidth: "90px", overflow: "hidden", textOverflow: "ellipsis",
+          padding: "6px 12px", borderRadius: "14px", border: "3px solid #ffffff",
+          boxShadow: "0 3px 12px rgba(0,0,0,0.4)", whiteSpace: "nowrap",
+          maxWidth: "140px", overflow: "hidden", textOverflow: "ellipsis",
+          textShadow: "0 1px 2px rgba(0,0,0,0.3)",
         });
-        badge.textContent = hive.id;
+        badge.textContent = hiveName;
 
         const tail = document.createElement("div");
         Object.assign(tail.style, {
           width: "0", height: "0",
-          borderLeft: "5px solid transparent", borderRight: "5px solid transparent",
-          borderTop: `7px solid ${color}`,
+          borderLeft: "6px solid transparent", borderRight: "6px solid transparent",
+          borderTop: `8px solid ${color}`,
         });
 
         wrapper.appendChild(badge);

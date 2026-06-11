@@ -1,12 +1,22 @@
 const { getDefaultConfig } = require("expo/metro-config");
 const https = require("https");
+const http = require("http");
 
 const config = getDefaultConfig(__dirname);
 
-const RAILWAY_API = "bsads-api-production.up.railway.app";
+// Read from environment variable, fallback to Railway production
+const API_BASE_URL = process.env.EXPO_PUBLIC_BASE_URL || "https://bsads-api-production.up.railway.app";
 
-// Expo web (localhost:8081) cannot call Railway directly — browser CORS blocks it.
-// Proxy /api-proxy/* → Railway so API calls are same-origin during dev.
+// Parse the URL to extract hostname, protocol, and port
+const apiUrl = new URL(API_BASE_URL);
+const API_HOSTNAME = apiUrl.hostname;
+const API_PORT = apiUrl.port || (apiUrl.protocol === "https:" ? 443 : 80);
+const API_PROTOCOL = apiUrl.protocol === "https:" ? https : http;
+
+console.log(`[Metro Proxy] Proxying /api-proxy/* → ${API_BASE_URL}`);
+
+// Expo web (localhost:8081) cannot call remote APIs directly — browser CORS blocks it.
+// Proxy /api-proxy/* → API server so API calls are same-origin during dev.
 config.server = {
   ...config.server,
   enhanceMiddleware: (middleware) => {
@@ -17,9 +27,11 @@ config.server = {
       }
 
       const targetPath = url.replace(/^\/api-proxy/, "") || "/";
-      const proxyReq = https.request(
+      
+      const proxyReq = API_PROTOCOL.request(
         {
-          hostname: RAILWAY_API,
+          hostname: API_HOSTNAME,
+          port: API_PORT,
           path: targetPath,
           method: req.method,
           headers: {
@@ -37,6 +49,7 @@ config.server = {
       );
 
       proxyReq.on("error", (err) => {
+        console.error(`[Metro Proxy] Error proxying to ${API_BASE_URL}:`, err.message);
         res.writeHead(502, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ detail: `Proxy error: ${err.message}` }));
       });

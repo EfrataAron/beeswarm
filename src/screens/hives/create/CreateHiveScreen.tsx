@@ -46,13 +46,13 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: THEME.text,
   },
-  
+
   inputError: { borderColor: "#EF4444" },
   errorText: { color: "#EF4444", fontSize: 12, marginTop: 4 },
   submitButton: {
     backgroundColor: THEME.primary,
     borderRadius: 10,
-    paddingVertical: 14,
+    paddingVertical: 12,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -64,12 +64,14 @@ const styles = StyleSheet.create({
   cancelButton: {
     backgroundColor: "transparent",
     borderRadius: 10,
-    paddingVertical: 14,
+    paddingVertical: 12,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 12,
+    borderWidth: 1,      // Required
+    borderColor: "#8e7878ff",
   },
-  cancelButtonText: { color: THEME.textMuted, fontSize: 15, fontWeight: "600" },
+  cancelButtonText: { color: THEME.primary, fontSize: 15, fontWeight: "600" },
   dateButtonRow: { flexDirection: "row", gap: 10, marginBottom: 10 },
   dateButton: {
     flex: 1,
@@ -107,6 +109,16 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   coordinateInput: {
+    flex: 1,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12, // React Native 0.71+
+    marginTop: 20,
+  },
+
+  halfButton: {
     flex: 1,
   },
 });
@@ -150,9 +162,15 @@ export function CreateHiveScreen({ navigation, route, currentUser }: Props) {
   const getCurrentLocation = async () => {
     setLoadingLocation(true);
     try {
+      console.log('[Location] Starting location request...');
+      console.log('[Location] Platform:', Platform.OS);
+
       // For web platform, use browser's Geolocation API
       if (Platform.OS === "web") {
+        console.log('[Location] Using browser Geolocation API');
+
         if (!navigator.geolocation) {
+          console.error('[Location] Geolocation not supported');
           Alert.alert(
             "Not Supported",
             "Geolocation is not supported by your browser. Please enter coordinates manually."
@@ -163,6 +181,7 @@ export function CreateHiveScreen({ navigation, route, currentUser }: Props) {
 
         navigator.geolocation.getCurrentPosition(
           (position) => {
+            console.log('[Location] Success:', position.coords);
             setLatitude(position.coords.latitude.toFixed(6));
             setLongitude(position.coords.longitude.toFixed(6));
             setErrors({
@@ -177,6 +196,7 @@ export function CreateHiveScreen({ navigation, route, currentUser }: Props) {
             setLoadingLocation(false);
           },
           (error) => {
+            console.error('[Location] Browser error:', error);
             let message = "Failed to get your location. ";
             if (error.code === error.PERMISSION_DENIED) {
               message += "Location permission was denied. Please enable location access in your browser settings.";
@@ -190,7 +210,7 @@ export function CreateHiveScreen({ navigation, route, currentUser }: Props) {
           },
           {
             enableHighAccuracy: true,
-            timeout: 10000,
+            timeout: 15000,
             maximumAge: 0,
           }
         );
@@ -198,8 +218,24 @@ export function CreateHiveScreen({ navigation, route, currentUser }: Props) {
       }
 
       // For mobile platforms, use expo-location
+      console.log('[Location] Using expo-location');
+
+      // First check if location services are enabled
+      const enabled = await Location.hasServicesEnabledAsync();
+      console.log('[Location] Services enabled:', enabled);
+
+      if (!enabled) {
+        Alert.alert(
+          "Location Services Disabled",
+          "Please enable location services in your device settings to use this feature."
+        );
+        setLoadingLocation(false);
+        return;
+      }
+
       const { status } = await Location.requestForegroundPermissionsAsync();
-      
+      console.log('[Location] Permission status:', status);
+
       if (status !== "granted") {
         Alert.alert(
           "Permission Denied",
@@ -210,9 +246,11 @@ export function CreateHiveScreen({ navigation, route, currentUser }: Props) {
       }
 
       // Get current position with high accuracy
+      console.log('[Location] Getting current position...');
       const location = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.High,
       });
+      console.log('[Location] Location received:', location.coords);
 
       // Set the coordinates
       setLatitude(location.coords.latitude.toFixed(6));
@@ -230,6 +268,7 @@ export function CreateHiveScreen({ navigation, route, currentUser }: Props) {
         `Latitude: ${location.coords.latitude.toFixed(6)}\nLongitude: ${location.coords.longitude.toFixed(6)}`
       );
     } catch (err) {
+      console.error('[Location] Error:', err);
       Alert.alert(
         "Location Error",
         err instanceof Error
@@ -292,7 +331,7 @@ export function CreateHiveScreen({ navigation, route, currentUser }: Props) {
 
       // Navigate back to HiveList with a refresh parameter
       navigation.navigate("HiveList", { refresh: Date.now() });
-      
+
       // Show success message
       Alert.alert("Success", "Hive created successfully!");
     } catch (err) {
@@ -435,7 +474,7 @@ export function CreateHiveScreen({ navigation, route, currentUser }: Props) {
           {/* Coordinates Section */}
           <View style={styles.formGroup}>
             <Text style={styles.label}>Coordinates (GPS Location)</Text>
-            
+
             {/* Get Current Location Button */}
             <Pressable
               style={[
@@ -501,35 +540,36 @@ export function CreateHiveScreen({ navigation, route, currentUser }: Props) {
             </View>
           </View>
 
-          {/* Submit Button */}
-          <Pressable
-            style={[
-              styles.submitButton,
-              loading && styles.submitButtonDisabled,
-            ]}
-            onPress={handleSubmit}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <>
-                <Ionicons
-                  name="checkmark-circle-outline"
-                  size={20}
-                  color="#FFFFFF"
-                />
-                <Text style={styles.submitButtonText}>Create Hive</Text>
-              </>
-            )}
-          </Pressable>
-
-          <Pressable
-            style={styles.cancelButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Text style={styles.cancelButtonText}>Cancel</Text>
-          </Pressable>
+          <View style={styles.buttonRow}>
+            <Pressable
+              style={[styles.cancelButton, styles.halfButton]}
+              onPress={() => navigation.goBack()}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </Pressable>
+            <Pressable
+              style={[
+                styles.submitButton,
+                styles.halfButton,
+                loading && styles.submitButtonDisabled,
+              ]}
+              onPress={handleSubmit}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <>
+                  <Ionicons
+                    name="checkmark-circle-outline"
+                    size={20}
+                    color="#FFFFFF"
+                  />
+                  <Text style={styles.submitButtonText}>Create Hive</Text>
+                </>
+              )}
+            </Pressable>
+          </View>
         </View>
       )}
     </ScrollView>

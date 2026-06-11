@@ -14,7 +14,8 @@ function log(tag: string, ...args: unknown[]) {
   }
 }
 
-export const BASE_URL = "https://bsads-api-production.up.railway.app";
+export const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL || "http://127.0.0.1:8003";
+
 const WEB_DEV_PROXY_PREFIX = "/api-proxy";
 const REQUEST_TIMEOUT_MS = 60_000;
 
@@ -40,7 +41,7 @@ export function getServerUrl(): string {
 }
 
 export function setServerUrl(url: string | null): void {
-  const normalized = url?.trim().replace(/\/$/, "") || null;
+  const normalized = url?.trim()?.replace(/\/$/, "") || null;
   if (normalized && !isBsadsApiBaseUrl(normalized)) {
     log("Ignoring invalid API base URL:", normalized);
     _serverUrl = BASE_URL;

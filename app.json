@@ -14,12 +14,22 @@
     ],
     "plugins": [
       "expo-asset",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow BSADS to use your location to add GPS coordinates to your hives.",
+          "locationAlwaysPermission": "Allow BSADS to use your location to add GPS coordinates to your hives.",
+          "locationWhenInUsePermission": "Allow BSADS to use your location to add GPS coordinates to your hives."
+        }
+      ]
     ],
     "android": {
       "permissions": [
         "INTERNET",
-        "ACCESS_NETWORK_STATE"
+        "ACCESS_NETWORK_STATE",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
       ],
       "usesCleartextTraffic": false
     },
@@ -27,7 +37,9 @@
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": false
-        }
+        },
+        "NSLocationWhenInUseUsageDescription": "Allow BSADS to use your location to add GPS coordinates to your hives.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Allow BSADS to use your location to add GPS coordinates to your hives."
       }
     }
   }

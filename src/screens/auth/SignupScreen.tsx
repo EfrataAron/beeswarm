@@ -24,6 +24,7 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
   const [name,            setName]            = useState("");
   const [email,           setEmail]           = useState("");
   const [phone,           setPhone]           = useState("");
+  const [address,         setAddress]         = useState("");
   const [apiKey,          setApiKey]          = useState("");
   const [hiveServerUrl,   setHiveServerUrl]   = useState("");
   const [password,        setPassword]        = useState("");
@@ -46,7 +47,11 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
       next.email = "Enter a valid email address.";
     }
     if (!phone.trim()) next.phone = "Phone number is required.";
-    if (hiveServerUrl.trim() && !URL_RE.test(hiveServerUrl.trim())) {
+    if (!address.trim()) next.address = "Address is required.";
+    if (!apiKey.trim()) next.apiKey = "API Key is required.";
+    if (!hiveServerUrl.trim()) {
+      next.serverUrl = "Server URL is required.";
+    } else if (!URL_RE.test(hiveServerUrl.trim())) {
       next.serverUrl = "Server URL must start with http:// or https://";
     }
     if (!password) {
@@ -71,8 +76,9 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
         email.trim(),
         phone.trim(),
         password,
-        apiKey.trim() || null,
-        hiveServerUrl.trim() || null,
+        address.trim(),
+        apiKey.trim(),
+        hiveServerUrl.trim(),
       );
 
       onAuthSuccess(beekeeper);
@@ -137,13 +143,23 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
         />
         {!!errors.phone && <Text style={styles.fieldError}>{errors.phone}</Text>}
 
+        {/* Address */}
+        <TextInput
+          placeholder="Address"
+          placeholderTextColor={THEME.placeholder}
+          style={[styles.input, !!errors.address && styles.inputError]}
+          value={address}
+          onChangeText={(t) => { setAddress(t); clearError("address"); }}
+        />
+        {!!errors.address && <Text style={styles.fieldError}>{errors.address}</Text>}
+
         {/* Divider */}
         <View style={styles.sectionDivider} />
         <Text style={styles.sectionLabel}>API Configuration</Text>
 
         {/* API Key */}
         <TextInput
-          placeholder="API Key (optional)"
+          placeholder="API Key"
           placeholderTextColor={THEME.placeholder}
           style={[styles.input, !!errors.apiKey && styles.inputError]}
           autoCapitalize="none"
@@ -158,7 +174,7 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
 
         {/* Hive recording server URL (farmer's ngrok / external server) */}
         <TextInput
-          placeholder="Hive Server URL (optional, e.g. ngrok)"
+          placeholder="Hive Server URL (e.g. https://your-server.ngrok.io)"
           placeholderTextColor={THEME.placeholder}
           style={[styles.input, !!errors.serverUrl && styles.inputError]}
           autoCapitalize="none"
@@ -168,7 +184,7 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
         />
         {!!errors.serverUrl && <Text style={styles.fieldError}>{errors.serverUrl}</Text>}
         <Text style={styles.hintText}>
-          URL of your hive audio recording server. You can add this later in Profile.
+          URL of your hive audio recording server.
         </Text>
 
         {/* Divider */}

@@ -4,6 +4,7 @@ import { HiveStatus } from "../api";
 
 type MapHive = {
   id: string;
+  name: string;
   status: HiveStatus;
   latitude: number;
   longitude: number;
@@ -25,13 +26,15 @@ type Props = {
 
 const SAMPLE_HIVES: MapHive[] = [
   {
-    id: "Sample Hive 1",
+    id: "sample-1",
+    name: "Sample Hive 1",
     status: "active",
     latitude: 0.3476,
     longitude: 32.5825,
   },
   {
-    id: "Sample Hive 2",
+    id: "sample-2",
+    name: "Sample Hive 2",
     status: "swarming",
     latitude: 0.3511,
     longitude: 32.5883,
@@ -76,24 +79,25 @@ function buildMapHtml(
         cursor: pointer;
       }
       .pin-badge {
-        font-size: 11px;
-        font-weight: 700;
+        font-size: 12px;
+        font-weight: 800;
         font-family: system-ui, -apple-system, sans-serif;
         color: #ffffff;
-        padding: 4px 9px;
-        border-radius: 12px;
-        border: 2px solid #ffffff;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+        padding: 6px 12px;
+        border-radius: 14px;
+        border: 3px solid #ffffff;
+        box-shadow: 0 3px 12px rgba(0,0,0,0.4);
         white-space: nowrap;
-        max-width: 90px;
+        max-width: 140px;
         overflow: hidden;
         text-overflow: ellipsis;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.3);
       }
       .pin-tail {
         width: 0;
         height: 0;
-        border-left: 5px solid transparent;
-        border-right: 5px solid transparent;
+        border-left: 6px solid transparent;
+        border-right: 6px solid transparent;
       }
     </style>
   </head>
@@ -137,19 +141,20 @@ function buildMapHtml(
 
       payload.hives.forEach((hive) => {
         const color = payload.statusColor[hive.status] || "#FFB268";
+        const hiveName = hive.name || hive.id;
 
         const wrapper = document.createElement("button");
         wrapper.className = "pin-wrapper";
-        wrapper.title = hive.id + " (" + hive.status + ")";
+        wrapper.title = hiveName + " (" + hive.status + ")";
 
         const badge = document.createElement("div");
         badge.className = "pin-badge";
         badge.style.background = color;
-        badge.textContent = hive.id;
+        badge.textContent = hiveName;
 
         const tail = document.createElement("div");
         tail.className = "pin-tail";
-        tail.style.borderTop = "7px solid " + color;
+        tail.style.borderTop = "8px solid " + color;
 
         wrapper.appendChild(badge);
         wrapper.appendChild(tail);

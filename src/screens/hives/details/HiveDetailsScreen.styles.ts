@@ -247,7 +247,7 @@ export const hiveDetailsStyles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 10,
-    backgroundColor: THEME.surfaceSoft,
+    // backgroundColor: THEME.surfaceSoft,
     borderWidth: 1,
     borderColor: THEME.line,
     marginTop: 8,

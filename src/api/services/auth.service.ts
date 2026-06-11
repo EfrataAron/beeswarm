@@ -47,8 +47,9 @@ export async function register(
   email: string,
   phone: string,
   password: string,
-  apiKey?: string | null,
-  farmerServerUrl?: string | null,
+  address: string,
+  apiKey: string,
+  farmerServerUrl: string,
 ): Promise<AuthResponse> {
   const raw = await apiRequestWithRetry<any>("/auth/register", {
     method: "POST",
@@ -57,10 +58,9 @@ export async function register(
       email,
       phone,
       password,
-      ...(apiKey?.trim() ? { api_key: apiKey.trim() } : {}),
-      ...(farmerServerUrl?.trim()
-        ? { server_url: normalizeUrl(farmerServerUrl.trim()) }
-        : {}),
+      address,
+      api_key: apiKey,
+      server_url: farmerServerUrl,
     }),
   });
 
@@ -112,7 +112,7 @@ export async function updateProfile(data: {
       address: data.address,
       ...(data.api_key?.trim() ? { api_key: data.api_key.trim() } : {}),
       ...(data.server_url?.trim()
-        ? { server_url: normalizeUrl(data.server_url.trim()) }
+        ? { server_url: data.server_url.trim() }
         : {}),
     }),
   });

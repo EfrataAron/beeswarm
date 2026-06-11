@@ -18,7 +18,8 @@ import {
   fetchAlertDetail,
   acknowledgeAlert,
 } from "../../../api";
-import { THEME } from "../../../theme";
+import { getServerUrl, getAuthToken } from "../../../api/client";
+import { THEME, formatAbsoluteTime, formatRelativeTime } from "../../../theme";
 import { AlertsStackParamList } from "../../../navigation/types";
 import { alertDetailsStyles as styles } from "./AlertDetailsScreen.styles";
 
@@ -52,7 +53,7 @@ export function AlertDetailsScreen({ route }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [detail, setDetail] = useState<AlertDetailData | null>(null);
   const [advisory, setAdvisory] = useState<Advisory | null>(null);
-  
+
   // Audio playback state
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -66,7 +67,7 @@ export function AlertDetailsScreen({ route }: Props) {
     try {
       const data = await fetchAlertDetail(alertId);
       setDetail(data);
-      
+
       // Automatically acknowledge the alert when viewing details
       if (!data.acknowledged) {
         try {
@@ -78,7 +79,7 @@ export function AlertDetailsScreen({ route }: Props) {
           // Don't block the UI if acknowledgment fails
         }
       }
-      
+
       // Load advisory if available from the detail response
       if (data.advisory) {
         setAdvisory(data.advisory);
@@ -127,9 +128,46 @@ export function AlertDetailsScreen({ route }: Props) {
         return;
       }
 
-      // Load and play new audio
+      // Build the full audio URL from the API
+      const baseUrl = getServerUrl();
+      const token = getAuthToken();
+      
+      // Construct full URL - file_path is now a relative path like /audio/{id}/stream
+      const audioUrl = detail.audioRecording.file_path.startsWith('http')
+        ? detail.audioRecording.file_path  // Already a full URL
+        : `${baseUrl}${detail.audioRecording.file_path}`;  // Relative path, build full URL
+      
+      console.log('Attempting to play audio from:', audioUrl);
+
+      // Fetch the audio with authentication, then play as blob
+      const response = await fetch(audioUrl, {
+        method: 'GET',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch audio: ${response.status} ${response.statusText}`);
+      }
+
+      // Convert response to blob/base64
+      const blob = await response.blob();
+      
+      // Create a local URI from the blob
+      const reader = new FileReader();
+      const base64Promise = new Promise<string>((resolve, reject) => {
+        reader.onloadend = () => {
+          const base64data = reader.result as string;
+          resolve(base64data);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+
+      const base64Audio = await base64Promise;
+
+      // Load and play audio from base64 data
       const { sound: newSound } = await Audio.Sound.createAsync(
-        { uri: detail.audioRecording.file_path },
+        { uri: base64Audio },
         { shouldPlay: true },
         (status) => {
           if (status.isLoaded && status.didJustFinish) {
@@ -142,10 +180,11 @@ export function AlertDetailsScreen({ route }: Props) {
       setIsPlaying(true);
       setAudioLoading(false);
     } catch (err) {
+      console.error('Audio playback error:', err);
       setAudioLoading(false);
       Alert.alert(
         "Audio Error",
-        "Could not play the audio recording. The file may not be available.",
+        `Could not play the audio recording: ${err instanceof Error ? err.message : 'Unknown error'}`,
         [{ text: "OK" }]
       );
     }
@@ -195,15 +234,15 @@ export function AlertDetailsScreen({ route }: Props) {
           <View style={styles.detailHeroTextWrap}>
             <Text style={styles.detailHiveName}>{detail.title}</Text>
             <Text style={styles.detailHeroMeta}>
-              {detail.hiveId} · {detail.time}
+              {formatAbsoluteTime(detail.time)}
             </Text>
           </View>
           <SeverityPill severity={detail.severity} />
         </View>
         {detail.acknowledged && (
           <View style={styles.alertClosedBanner}>
-            <Ionicons name="checkmark-circle" size={14} color="#16A34A" />
-            <Text style={styles.alertClosedText}>This alert has been acknowledged and closed</Text>
+            <Ionicons name="checkmark-circle" size={14} color="#D97706" />
+            <Text style={styles.alertClosedText}>You reviewed and acknowledged and closed</Text>
           </View>
         )}
       </View>
@@ -213,7 +252,7 @@ export function AlertDetailsScreen({ route }: Props) {
         <Text style={styles.cardTitle}>Alert Information</Text>
         <InfoRow label="Severity" value={detail.severity} valueColor={severityColor(detail.severity)} />
         <InfoRow label="Hive" value={detail.hiveName || detail.hiveId} />
-        <InfoRow label="Time" value={detail.time} />
+        <InfoRow label="Time" value={formatAbsoluteTime(detail.time)} />
         <InfoRow label="Status" value={detail.acknowledged ? "Acknowledged" : "Pending"} valueColor={detail.acknowledged ? "#16A34A" : "#D97706"} />
       </View>
 
@@ -230,12 +269,16 @@ export function AlertDetailsScreen({ route }: Props) {
             <Text style={styles.cardTitle}>Audio Recording</Text>
           </View>
           <Text style={styles.audioSubtext}>
-            Listen to the hive recording from {new Date(detail.audioRecording.recorded_at).toLocaleString()}
+            {detail.audioRecording.recorded_at 
+              ? `Recorded ${formatAbsoluteTime(detail.audioRecording.recorded_at)}`
+              : `Listen to the hive recording (Duration: ${detail.audioRecording.duration_seconds}s)`}
           </Text>
-          <Text style={styles.audioSubtext}>
-            Duration: {detail.audioRecording.duration_seconds}s
-          </Text>
-          
+          {detail.audioRecording.duration_seconds > 0 && (
+            <Text style={styles.audioSubtext}>
+             
+            </Text>
+          )}
+
           <View style={styles.audioControls}>
             <Pressable
               style={[styles.audioButton, isPlaying && styles.audioButtonPlaying]}
@@ -246,13 +289,13 @@ export function AlertDetailsScreen({ route }: Props) {
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
                 <>
-                  <Ionicons 
-                    name={isPlaying ? "pause" : "play"} 
-                    size={20} 
-                    color="#FFFFFF" 
+                  <Ionicons
+                    name={isPlaying ? "pause" : "play"}
+                    size={20}
+                    color="#FFFFFF"
                   />
                   <Text style={styles.audioButtonText}>
-                    {isPlaying ? "Pause" : "Play"}
+                    {isPlaying ? "Pause" : "Play Recording"}
                   </Text>
                 </>
               )}
@@ -272,12 +315,12 @@ export function AlertDetailsScreen({ route }: Props) {
       )}
 
       {/* ── Advisory ── */}
-      {advisory && !detail.acknowledged && (
+      {advisory && advisory.actions && advisory.actions.length > 0 && (
         <View style={styles.card}>
           <View style={styles.advisoryHeader}>
             <View style={styles.advisoryTitleRow}>
               <Ionicons name="bulb-outline" size={18} color={THEME.accent} />
-              <Text style={styles.cardTitle}>Advisory</Text>
+              <Text style={styles.cardTitle}>Recommended Actions</Text>
             </View>
             <View style={[styles.advisoryTypeBadge, { backgroundColor: advisory.type === "Reactive" ? "#FEF2F2" : "#F0FDF4" }]}>
               <Text style={[styles.advisoryTypeText, { color: advisory.type === "Reactive" ? "#DC2626" : "#16A34A" }]}>
@@ -286,11 +329,24 @@ export function AlertDetailsScreen({ route }: Props) {
             </View>
           </View>
 
-          <Text style={styles.advisorySummary}>{advisory.summary}</Text>
-          <Text style={styles.advisoryActionsTitle}>Recommended Actions</Text>
+          {detail.acknowledged && (
+            <View style={styles.audioSubtext}>
+              {/* <Ionicons name="information-circle-outline" size={16} color="#6B7280" /> */}
+              <Text style={styles.advisoryNoteText}>
+                Review these actions even though this alert has been acknowledged.
+              </Text>
+            </View>
+          )}
 
-          {advisory.actions.map((action) => (
+          <Text style={styles.advisoryActionsTitle}>
+            {advisory.actions.length} Action{advisory.actions.length !== 1 ? 's' : ''} to Take
+          </Text>
+
+          {advisory.actions.map((action, index) => (
             <View key={action.id} style={styles.advisoryActionRow}>
+              <View style={styles.advisoryActionNumber}>
+                <Text style={styles.advisoryActionNumberText}>{index + 1}</Text>
+              </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.advisoryActionText}>{action.description}</Text>
               </View>

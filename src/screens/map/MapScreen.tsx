@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -78,91 +77,73 @@ export function MapScreen({ navigation }: Props) {
   const region = useMemo(() => getMapRegion(mapHives), [mapHives]);
 
   return (
-    <ScrollView contentContainerStyle={styles.appPage}>
-      <View style={styles.mapCard}>
-        <View style={styles.mapHeaderRow}>
+    <View style={styles.fullScreenContainer}>
+      {/* Floating Header */}
+      <View style={styles.floatingHeader}>
+        <View style={styles.headerContent}>
           <View>
-            <Text style={styles.cardTitle}>Live Hive Map</Text>
-            <Text style={styles.mapHeaderSub}>
-              {mapHives.length} mapped hives with status-based pins
+            <Text style={styles.headerTitle}>Live Hive Map</Text>
+            <Text style={styles.headerSubtitle}>
+              {mapHives.length} {mapHives.length === 1 ? 'hive' : 'hives'} mapped
             </Text>
           </View>
-          <Pressable style={styles.mapRefreshButton} onPress={() => void loadHives()}>
-            <Text style={styles.mapRefreshText}>Refresh</Text>
+          <Pressable style={styles.refreshButton} onPress={() => void loadHives()}>
+            <Text style={styles.refreshButtonText}>⟳</Text>
           </Pressable>
         </View>
+      </View>
 
-        {Platform.OS === "web" ? (
-          <View style={styles.mapFallback}>
-            <Text style={styles.mapFallbackTitle}>Interactive map preview is native-only.</Text>
-            <Text style={styles.mapFallbackText}>
-              Open the app on Android or iOS to see real pins on the map. Hive rows below remain clickable.
-            </Text>
-            <View style={styles.mapFallbackList}>
-              {mapHives.map((hive) => (
-                <Pressable
-                  key={hive.id}
-                  style={styles.mapFallbackRow}
-                  onPress={() =>
-                    navigation.navigate("Hives", {
-                      screen: "HiveDetails",
-                      params: { hiveId: hive.id },
-                    })
-                  }
-                >
-                  <View>
-                    <Text style={styles.mapFallbackRowTitle}>{hive.id}</Text>
-                    <Text style={styles.mapFallbackRowSub}>
-                      {formatCoordinate(hive.latitude)}, {formatCoordinate(hive.longitude)}
-                    </Text>
-                  </View>
-                  <Text style={[styles.hiveStatus, { color: STATUS_COLOR[hive.status] }]}>
-                    {hive.status}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
-        ) : (
-          <View style={styles.mapViewport}>
-            <HiveMap
-              mapHives={mapHives}
-              region={region}
-              statusColor={STATUS_COLOR}
-              onMarkerPress={(hiveId: string) =>
-                navigation.navigate("Hives", {
-                  screen: "HiveDetails",
-                  params: { hiveId },
-                })
-              }
-            />
-            {loading && (
-              <View style={styles.mapOverlay}>
-                <ActivityIndicator color={THEME.accent} />
-                <Text style={styles.stateTextSmall}>Loading hive map...</Text>
-              </View>
-            )}
+      {/* Map Container */}
+      <View style={styles.mapContainer}>
+        {loading && (
+          <View style={styles.loadingOverlay}>
+            <ActivityIndicator size="large" color={THEME.accent} />
+            <Text style={styles.loadingText}>Loading hive locations...</Text>
           </View>
         )}
-
-        {!!error && <Text style={styles.errorText}>{error}</Text>}
 
         {!loading && mapHives.length === 0 && (
-          <View style={styles.emptyMapState}>
-            <Text style={styles.stateTitle}>No mapped hives yet</Text>
-            <Text style={styles.stateTextSmall}>
-              Add latitude and longitude to the hive data returned by the API.
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateTitle}>No Hives With Location Data</Text>
+            <Text style={styles.emptyStateText}>
+              Add latitude and longitude coordinates to your hives to see them on the map.
             </Text>
           </View>
         )}
 
-        <View style={styles.legendWrap}>
-          <LegendItem color={STATUS_COLOR.active} text="Active" />
+        {!loading && mapHives.length > 0 && (
+          <HiveMap
+            mapHives={mapHives}
+            region={region}
+            statusColor={STATUS_COLOR}
+            onMarkerPress={(hiveId: string) =>
+              navigation.navigate("Hives", {
+                screen: "HiveDetails",
+                params: { hiveId },
+              })
+            }
+          />
+        )}
+
+        {!!error && (
+          <View style={styles.errorOverlay}>
+            <Text style={styles.errorText}>{error}</Text>
+            <Pressable style={styles.retryButton} onPress={() => void loadHives()}>
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </Pressable>
+          </View>
+        )}
+      </View>
+
+      {/* Floating Legend */}
+      {!loading && mapHives.length > 0 && (
+        <View style={styles.floatingLegend}>
+          <LegendItem color={STATUS_COLOR.active} text="Harmonious" />
           <LegendItem color={STATUS_COLOR.swarming} text="Swarming" />
           <LegendItem color={STATUS_COLOR.queenless} text="Queenless" />
           <LegendItem color={STATUS_COLOR.Abscondment} text="Absconded" />
         </View>
-      </View>
-    </ScrollView>
+      )}
+    </View>
   );
 }

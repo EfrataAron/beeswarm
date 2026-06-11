@@ -78,6 +78,7 @@ export type AlertItem = {
   title: string;
   date: string;
   summary: string;
+  alertStatus:string;
 };
 
 export type AudioRecording = {

@@ -23,8 +23,11 @@ import {
   logout,
   setUnauthorizedHandler,
 } from "./src/api";
+import { wsService } from "./src/api/websocket";
 import { HeaderOverflowMenu } from "./src/components/HeaderOverflowMenu";
 import { applyThemeMode, THEME } from "./src/theme";
+
+// import { clearAllStorage } from "./src/utils/clearStorage";
 
 // Navigation types
 import {
@@ -173,11 +176,17 @@ function HivesStackScreen({
       <HivesStack.Screen
         name="HiveDetails"
         component={HiveDetailsScreen}
-        options={{ title: "Hive Details" }}
+        options={{
+          title: "Hive Details",
+          headerBackVisible: true,
+        }}
       />
       <HivesStack.Screen
         name="CreateHive"
-        options={{ title: "Create Hive" }}
+        options={{
+          title: "Create Hive",
+          headerBackVisible: true,
+        }}
       >
         {(props) => <CreateHiveScreen {...props} currentUser={currentUser} />}
       </HivesStack.Screen>
@@ -214,7 +223,10 @@ function AlertsStackScreen({
       <AlertsStack.Screen
         name="AlertDetails"
         component={AlertDetailsScreen}
-        options={{ title: "Alert Details" }}
+        options={{
+          title: "Alert Details",
+          headerBackVisible: true,
+        }}
       />
     </AlertsStack.Navigator>
   );
@@ -238,11 +250,56 @@ function MainTabsScreen({
   const [unreadAlertCount, setUnreadAlertCount] = useState(0);
   const colors = isDarkMode ? APP_COLORS.dark : APP_COLORS.light;
 
+  // Function to fetch and update alert count
+  const updateAlertCount = async () => {
+    try {
+      const alerts = await fetchAlerts();
+      const pendingReviewAlerts = alerts.filter(
+        alert => alert.alertStatus !== "acknowledged"
+      ).length;
+      setUnreadAlertCount(pendingReviewAlerts);
+    } catch (error) {
+      console.error('[Alert Count] Failed to fetch alerts:', error);
+    }
+  };
+
+  // WebSocket for real-time updates + fallback polling
   useEffect(() => {
-    void fetchAlerts()
-      .then((alerts) => setUnreadAlertCount(alerts.length))
-      .catch(() => {});
+    // Initial fetch
+    void updateAlertCount();
+
+    // Subscribe to WebSocket updates
+    const unsubscribe = wsService.subscribe((unreadCount) => {
+      console.log('[Alert Count] WebSocket update:', unreadCount);
+      setUnreadAlertCount(unreadCount);
+    });
+
+    // Connect WebSocket
+    wsService.connect();
+
+    // Fallback: Poll every 60 seconds if WebSocket fails
+    const intervalId = setInterval(() => {
+      if (!wsService.isConnected()) {
+        console.log('[Alert Count] WebSocket not connected, using polling fallback');
+        void updateAlertCount();
+      }
+    }, 60000); // 60 seconds
+
+    // Cleanup
+    return () => {
+      unsubscribe();
+      clearInterval(intervalId);
+    };
   }, []);
+
+  // Update count when returning from Alert Details screen
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      void updateAlertCount();
+    });
+
+    return unsubscribe;
+  }, [navigation]);
 
   return (
     <Tab.Navigator
@@ -298,6 +355,18 @@ function MainTabsScreen({
       />
       <Tab.Screen
         name="Hives"
+        listeners={({ navigation }) => ({
+          tabPress: (e) => {
+            // Prevent default behavior
+            e.preventDefault();
+            
+            // Always navigate to the root (HiveList)
+            navigation.navigate('Hives', { 
+              screen: 'HiveList',
+              params: { refresh: Date.now() }
+            });
+          },
+        })}
         options={{
           headerShown: false,
           title: "Hive Management",
@@ -321,7 +390,19 @@ function MainTabsScreen({
       </Tab.Screen>
       <Tab.Screen
         name="Alerts"
-        listeners={{ tabPress: () => setUnreadAlertCount(0) }}
+        listeners={({ navigation }) => ({
+          tabPress: (e) => {
+            setUnreadAlertCount(0);
+            
+            // Prevent default behavior
+            e.preventDefault();
+            
+            // Always navigate to the root (AlertsList)
+            navigation.navigate('Alerts', {
+              screen: 'AlertsList'
+            });
+          },
+        })}
         options={{
           headerShown: false,
           tabBarLabel: "Alerts",
@@ -357,7 +438,7 @@ function MainTabsScreen({
           ),
         }}
       />
-      
+
       <Tab.Screen
         name="Profile"
         options={{
@@ -403,29 +484,35 @@ export default function App() {
     () =>
       darkModeEnabled
         ? {
-            ...DarkTheme,
-            colors: {
-              ...DarkTheme.colors,
-              primary: THEME.accent,
-              background: colors.page,
-              card: colors.surface,
-              text: colors.text,
-              border: colors.border,
-            },
-          }
-        : {
-            ...DefaultTheme,
-            colors: {
-              ...DefaultTheme.colors,
-              primary: THEME.accent,
-              background: colors.page,
-              card: colors.surface,
-              text: colors.text,
-              border: colors.border,
-            },
+          ...DarkTheme,
+          colors: {
+            ...DarkTheme.colors,
+            primary: THEME.accent,
+            background: colors.page,
+            card: colors.surface,
+            text: colors.text,
+            border: colors.border,
           },
+        }
+        : {
+          ...DefaultTheme,
+          colors: {
+            ...DefaultTheme.colors,
+            primary: THEME.accent,
+            background: colors.page,
+            card: colors.surface,
+            text: colors.text,
+            border: colors.border,
+          },
+        },
     [darkModeEnabled, colors],
   );
+
+  // useEffect(() => {
+  //   // TEMPORARY: Clear storage to reset API URL from .env
+  //   // Remove this useEffect after running once!
+  //   void clearAllStorage();
+  // }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -476,6 +563,7 @@ export default function App() {
 
   const handleLogout = async () => {
     await logout();
+    wsService.disconnect(); // Disconnect WebSocket on logout
     setCurrentUser(null);
     setIsAuthenticated(false);
   };
@@ -483,6 +571,7 @@ export default function App() {
   // Register the 401 handler so expired tokens auto-redirect to login
   useEffect(() => {
     setUnauthorizedHandler(() => {
+      wsService.disconnect(); // Disconnect WebSocket on unauthorized
       setCurrentUser(null);
       setIsAuthenticated(false);
     });
@@ -515,13 +604,13 @@ export default function App() {
 
   return (
     <>
-      <NavigationContainer 
-        theme={navigationTheme} 
+      <NavigationContainer
+        theme={navigationTheme}
         linking={linking}
         initialState={navigationState}
         onStateChange={(state) => {
           // Save navigation state to AsyncStorage
-          AsyncStorage.setItem(NAVIGATION_STATE_KEY, JSON.stringify(state)).catch(() => {});
+          AsyncStorage.setItem(NAVIGATION_STATE_KEY, JSON.stringify(state)).catch(() => { });
         }}
       >
         <ExpoStatusBar style={colors.statusBar} />
