@@ -96,6 +96,23 @@ export async function fetchProfile(): Promise<BeekeeperProfile> {
   return profile;
 }
 
+/**
+ * PUT /auth/password
+ * Change the current user's password.
+ */
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string,
+): Promise<void> {
+  await apiRequest<void>("/auth/password", {
+    method: "PUT",
+    body: JSON.stringify({
+      current_password: currentPassword,
+      new_password: newPassword,
+    }),
+  });
+}
+
 export async function updateProfile(data: {
   name: string;
   email?: string;
@@ -116,7 +133,19 @@ export async function updateProfile(data: {
         : {}),
     }),
   });
-  const profile = normalizeProfile(raw);
-  await saveProfile(profile);
-  return profile;
+
+  // The backend's UserResponse only returns: user_id, full_name, email, role, created_at.
+  // Fields like phone, address, api_key are stored in the DB but not echoed back.
+
+  const fromServer = normalizeProfile(raw);
+  const merged: BeekeeperProfile = {
+    ...fromServer,
+
+    phone:   fromServer.phone   || data.phone,
+    address: fromServer.address ?? data.address,
+    api_key: fromServer.api_key ?? data.api_key ?? null,
+  };
+
+  await saveProfile(merged);
+  return merged;
 }

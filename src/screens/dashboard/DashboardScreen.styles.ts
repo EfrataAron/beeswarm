@@ -1,7 +1,10 @@
 import { StyleSheet } from "react-native";
 import { THEME } from "../../theme";
 
-export const dashboardStyles = StyleSheet.create({
+type ThemeSnapshot = typeof THEME;
+
+export function createDashboardStyles(t: ThemeSnapshot) {
+  return StyleSheet.create({
   centerState: {
     flex: 1,
     alignItems: "center",
@@ -10,14 +13,14 @@ export const dashboardStyles = StyleSheet.create({
     padding: 24,
   },
   stateText: {
-    color: THEME.textMuted,
+    color: t.textMuted,
     fontWeight: "600",
     fontSize: 14,
   },
   errorTitle: {
     fontSize: 16,
     fontWeight: "800",
-    color: THEME.primary,
+    color: t.primary,
   },
   errorBody: {
     color: "#B91C1C",
@@ -27,7 +30,7 @@ export const dashboardStyles = StyleSheet.create({
   },
   primaryButtonSmall: {
     marginTop: 12,
-    backgroundColor: THEME.accent,
+    backgroundColor: t.accent,
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 16,
@@ -36,7 +39,7 @@ export const dashboardStyles = StyleSheet.create({
     alignSelf: "center",
   },
   primaryButtonText: {
-    color: THEME.primary,
+    color: t.primary,
     fontWeight: "800",
     fontSize: 15,
   },
@@ -48,13 +51,13 @@ export const dashboardStyles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "800",
-    color: "#344054",
+    color: t.text,
     marginBottom: 10,
   },
   card: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: t.surface,
     borderWidth: 1,
-    borderColor: THEME.line,
+    borderColor: t.line,
     borderRadius: 14,
     padding: 14,
     marginBottom: 14,
@@ -62,12 +65,12 @@ export const dashboardStyles = StyleSheet.create({
   cardTitle: {
     fontSize: 15,
     fontWeight: "800",
-    color: THEME.primary,
+    color: t.primary,
     marginBottom: 2,
   },
   cardSubtitle: {
     fontSize: 11,
-    color: THEME.textMuted,
+    color: t.textMuted,
     fontWeight: "600",
   },
   rowBetween: {
@@ -82,12 +85,17 @@ export const dashboardStyles = StyleSheet.create({
     rowGap: 10,
     columnGap: 0,
     marginBottom: 14,
-  },
+    },
+    gridThree: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
+    },
   // ── Dashboard alert card ──
   dashboardAlertsCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: t.surface,
     borderWidth: 1,
-    borderColor: THEME.line,
+    borderColor: t.line,
     borderRadius: 14,
     padding: 14,
     marginBottom: 14,
@@ -102,26 +110,26 @@ export const dashboardStyles = StyleSheet.create({
   dashboardAlertsTitle: {
     fontSize: 15,
     fontWeight: "800",
-    color: THEME.primary,
+    color: t.primary,
   },
   dashboardAlertsSubTitle: {
     fontSize: 11,
-    color: THEME.textMuted,
+    color: t.textMuted,
     fontWeight: "600",
     marginTop: 2,
   },
   hiveAlertCountBadge: {
-    backgroundColor: THEME.surfaceSoft,
+    backgroundColor: t.surfaceSoft,
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 3,
     borderWidth: 1,
-    borderColor: THEME.line,
+    borderColor: t.line,
   },
   hiveAlertCountText: {
     fontSize: 11,
     fontWeight: "700",
-    color: THEME.textMuted,
+    color: t.textMuted,
   },
   dashboardAlertMenuRow: {
     flexDirection: "row",
@@ -133,29 +141,29 @@ export const dashboardStyles = StyleSheet.create({
     alignItems: "center",
     gap: 5,
     borderWidth: 1,
-    borderColor: THEME.line,
+    borderColor: t.line,
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 6,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: t.surface,
   },
   dashboardAlertMenuChipActive: {
-    backgroundColor: THEME.primary,
-    borderColor: THEME.primary,
+    backgroundColor: t.primary,
+    borderColor: t.primary,
   },
   dashboardAlertMenuChipText: {
     fontSize: 12,
     fontWeight: "700",
-    color: THEME.primary,
+    color: t.primary,
   },
   dashboardAlertMenuChipTextActive: {
-    color: "#FFFFFF",
+    color: t.surface,
   },
   dashboardAlertSubMenu: {
     borderWidth: 1,
-    borderColor: THEME.line,
+    borderColor: t.line,
     borderRadius: 12,
-    backgroundColor: "#FAFAFA",
+    backgroundColor: t.surface,
     padding: 10,
     marginBottom: 8,
     gap: 8,
@@ -168,16 +176,21 @@ export const dashboardStyles = StyleSheet.create({
   dashboardAlertSubMenuTitle: {
     fontSize: 12,
     fontWeight: "800",
-    color: THEME.primary,
+    color: t.primary,
   },
-  dashboardAlertSubMenuCloseBtn: {
+dashboardAlertSubMenuCloseBtn: {
     padding: 4,
     borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: t.surface,
     borderWidth: 1,
-    borderColor: THEME.line,
+    borderColor: t.line,
+  },
+  dashboardAlertSubMenuDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
   },
   dashboardAlertSubMenuList: {
     flexDirection: "row",
@@ -189,33 +202,28 @@ export const dashboardStyles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
     borderWidth: 1,
-    borderColor: THEME.line,
+    borderColor: t.line,
     borderRadius: 999,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: t.surface,
     paddingHorizontal: 10,
     paddingVertical: 7,
   },
   dashboardAlertSubMenuItemActive: {
-    borderColor: THEME.primary,
-    backgroundColor: THEME.surfaceSoft,
+    borderColor: t.primary,
+    backgroundColor: t.surfaceSoft,
   },
   dashboardAlertSubMenuItemText: {
     fontSize: 11,
     fontWeight: "700",
-    color: THEME.text,
+    color: t.text,
     maxWidth: 160,
   },
   dashboardAlertSubMenuItemTextActive: {
-    color: THEME.primary,
-  },
-  dashboardAlertSubMenuDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
+    color: t.primary,
   },
   dashboardAlertSubMenuEmpty: {
     fontSize: 11,
-    color: THEME.textMuted,
+    color: t.textMuted,
     fontWeight: "600",
   },
   dashboardAlertsInlineError: {
@@ -232,15 +240,15 @@ export const dashboardStyles = StyleSheet.create({
   dashboardAlertCompactCard: {
     width: 165,
     borderWidth: 1,
-    borderColor: THEME.line,
+    borderColor: t.line,
     borderRadius: 12,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: t.surface,
     padding: 10,
     gap: 5,
   },
   dashboardAlertCompactCardActive: {
-    borderColor: THEME.primary,
-    backgroundColor: THEME.surfaceSoft,
+    borderColor: t.primary,
+    backgroundColor: t.surfaceSoft,
   },
   dashboardAlertCompactTopRow: {
     flexDirection: "row",
@@ -255,16 +263,16 @@ export const dashboardStyles = StyleSheet.create({
   dashboardAlertCompactHive: {
     fontSize: 10,
     fontWeight: "700",
-    color: THEME.textMuted,
+    color: t.textMuted,
   },
   dashboardAlertCompactTitle: {
     fontSize: 12,
     fontWeight: "800",
-    color: THEME.primary,
+    color: t.primary,
   },
   dashboardAlertCompactDate: {
     fontSize: 10,
-    color: THEME.textMuted,
+    color: t.textMuted,
     fontWeight: "600",
   },
   dashboardAlertsEmptyState: {
@@ -286,9 +294,9 @@ export const dashboardStyles = StyleSheet.create({
   dashboardAlertDetailsCard: {
     marginTop: 10,
     borderWidth: 1,
-    borderColor: THEME.line,
+    borderColor: t.line,
     borderRadius: 12,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: t.surface,
     padding: 12,
     gap: 5,
   },
@@ -297,7 +305,7 @@ export const dashboardStyles = StyleSheet.create({
     marginRight: 8,
     fontSize: 14,
     fontWeight: "800",
-    color: THEME.primary,
+    color: t.primary,
   },
   dashboardAlertDetailsSeverity: {
     borderRadius: 999,
@@ -311,12 +319,12 @@ export const dashboardStyles = StyleSheet.create({
   dashboardAlertDetailsMeta: {
     fontSize: 11,
     fontWeight: "600",
-    color: THEME.textMuted,
+    color: t.textMuted,
   },
   dashboardAlertDetailsSummary: {
     fontSize: 12,
     lineHeight: 18,
-    color: THEME.text,
+    color: t.text,
   },
   dashboardAlertDetailsLink: {
     marginTop: 4,
@@ -325,16 +333,16 @@ export const dashboardStyles = StyleSheet.create({
     alignItems: "center",
     gap: 2,
     borderWidth: 1,
-    borderColor: THEME.line,
+    borderColor: t.line,
     borderRadius: 999,
-    backgroundColor: THEME.surfaceSoft,
+    backgroundColor: t.surfaceSoft,
     paddingHorizontal: 10,
     paddingVertical: 7,
   },
   dashboardAlertDetailsLinkText: {
     fontSize: 11,
     fontWeight: "800",
-    color: THEME.primary,
+    color: t.primary,
   },
   // ── Overview tiles ──
   overviewCardRow: {
@@ -352,7 +360,7 @@ export const dashboardStyles = StyleSheet.create({
   overviewTileValue: {
     fontSize: 20,
     fontWeight: "800",
-    color: "#FFFFFF",
+    color: t.surface,
   },
   overviewTileLabel: {
     fontSize: 9,
@@ -384,13 +392,13 @@ export const dashboardStyles = StyleSheet.create({
   donutLegendLabel: {
     flex: 1,
     fontSize: 12,
-    color: THEME.text,
+    color: t.text,
     fontWeight: "600",
   },
   donutLegendCount: {
     fontSize: 13,
     fontWeight: "800",
-    color: THEME.primary,
+    color: t.primary,
   },
   // ── Trend range ──
   trendRangeRow: {
@@ -402,27 +410,35 @@ export const dashboardStyles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: THEME.line,
-    backgroundColor: THEME.surface,
+    borderColor: t.line,
+    backgroundColor: t.surface,
   },
   trendRangeBtnActive: {
-    backgroundColor: THEME.accent,
-    borderColor: THEME.accent,
+    backgroundColor: t.accent,
+    borderColor: t.accent,
   },
   trendRangeBtnText: {
     fontSize: 11,
     fontWeight: "600",
-    color: THEME.textMuted,
+    color: t.textMuted,
   },
   trendRangeBtnTextActive: {
-    color: "#FFFFFF",
+    color: t.surface,
   },
   // ── Metric / Stat cards ──
-  statCard: {
+statCard: {
     width: "49%",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: t.surface,
     borderWidth: 1,
-    borderColor: THEME.line,
+    borderColor: t.line,
+    borderRadius: 12,
+    padding: 12,
+  },
+  metricCard: {
+    width: "49%",
+    backgroundColor: t.surface,
+    borderWidth: 1,
+    borderColor: t.line,
     borderRadius: 12,
     padding: 12,
   },
@@ -435,35 +451,27 @@ export const dashboardStyles = StyleSheet.create({
   statLabel: {
     fontSize: 12,
     fontWeight: "700",
-    color: THEME.accent,
+    color: t.accent,
   },
   statValue: {
     fontSize: 28,
-    color: THEME.primary,
+    color: t.primary,
     fontWeight: "800",
-  },
-  metricCard: {
-    width: "49%",
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: THEME.line,
-    borderRadius: 12,
-    padding: 12,
   },
   metricTitle: {
     fontSize: 12,
-    color: THEME.accent,
+    color: t.accent,
     fontWeight: "700",
     marginBottom: 8,
   },
   metricValue: {
     fontSize: 32,
-    color: THEME.primary,
+    color: t.primary,
     fontWeight: "800",
   },
   metricUnit: {
     fontSize: 16,
-    color: THEME.primary,
+    color: t.primary,
     fontWeight: "700",
   },
   metricSubtitle: {
@@ -472,36 +480,43 @@ export const dashboardStyles = StyleSheet.create({
     marginTop: 6,
   },
   // ── Info cards ──
-  infoCard: {
-    width: "49%",
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: THEME.line,
-    borderRadius: 12,
-    padding: 12,
-    gap: 4,
-  },
+  // infoCard: {
+  //   width: "49%",
+  //   backgroundColor: t.surface,
+  //   borderWidth: 1,
+  //   borderColor: t.line,
+  //   borderRadius: 12,
+  //   padding: 12,
+  //   gap: 4,
+    // },
+      infoCard: {
+      flex: 1,
+      backgroundColor: THEME.surface,
+      borderRadius: 12,
+      padding: 16,
+      alignItems: "center",
+    },
   infoCardWarn: {
     borderColor: "#FCA5A5",
-    backgroundColor: "#FFF5F5",
+    backgroundColor: "#1A0F0F",
   },
   infoCardValue: {
     fontSize: 26,
     fontWeight: "800",
-    color: THEME.primary,
+    color: t.primary,
   },
   infoCardLabel: {
     fontSize: 11,
     fontWeight: "700",
-    color: THEME.text,
+    color: t.text,
   },
   infoCardSub: {
     fontSize: 10,
-    color: THEME.textMuted,
+    color: t.textMuted,
   },
   // ── Silent hives ──
   silentHivesList: {
-    backgroundColor: "#FFF5F5",
+    backgroundColor: "#1A0F0F",
     borderRadius: 10,
     borderWidth: 1,
     borderColor: "#FCA5A5",
@@ -518,7 +533,7 @@ export const dashboardStyles = StyleSheet.create({
     flex: 1,
     fontSize: 12,
     fontWeight: "700",
-    color: THEME.text,
+    color: t.text,
   },
   silentHiveTime: {
     fontSize: 11,
@@ -533,7 +548,7 @@ export const dashboardStyles = StyleSheet.create({
     marginTop: 10,
   },
   corrHiveChip: {
-    backgroundColor: THEME.surfaceSoft,
+    backgroundColor: t.surfaceSoft,
     borderRadius: 8,
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -542,12 +557,12 @@ export const dashboardStyles = StyleSheet.create({
   corrHiveChipText: {
     fontSize: 11,
     fontWeight: "700",
-    color: THEME.primary,
+    color: t.primary,
   },
   corrTempBar: {
     flex: 1,
     height: 8,
-    backgroundColor: "#F1F5F9",
+    backgroundColor: t.surfaceSoft,
     borderRadius: 99,
     overflow: "hidden",
   },
@@ -559,13 +574,13 @@ export const dashboardStyles = StyleSheet.create({
   corrTempValue: {
     fontSize: 12,
     fontWeight: "700",
-    color: THEME.primary,
+    color: t.primary,
     minWidth: 44,
     textAlign: "right",
   },
   // ── Metrics legend ──
   metricsSubtitle: {
-    color: "#667085",
+    color: t.textMuted,
     fontWeight: "600",
     fontSize: 12,
     marginTop: 2,
@@ -587,7 +602,10 @@ export const dashboardStyles = StyleSheet.create({
     marginRight: 8,
   },
   legendText: {
-    color: "#475467",
+    color: t.textMuted,
     fontWeight: "600",
   },
-});
+  });
+}
+
+export const dashboardStyles = createDashboardStyles(THEME);

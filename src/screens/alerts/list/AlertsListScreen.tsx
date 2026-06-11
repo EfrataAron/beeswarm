@@ -11,6 +11,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { AlertItem, AlertSeverity, fetchAlerts } from "../../../api";
 import { THEME } from "../../../theme";
+import { useTheme } from "../../../hooks/useTheme";
 import { AlertsStackParamList } from "../../../navigation/types";
 import { alertsListStyles as styles } from "./AlertsListScreen.styles";
 
@@ -34,6 +35,7 @@ const SEVERITY_ICON: Record<AlertSeverity, keyof typeof Ionicons.glyphMap> = {
 const ALL_SEVERITIES: AlertSeverity[] = ["Critical", "Warning", "Info"];
 
 export function AlertsListScreen({ navigation }: Props) {
+  const theme = useTheme();
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -59,9 +61,12 @@ export function AlertsListScreen({ navigation }: Props) {
     setRefreshing(false);
   }, [loadAlerts]);
 
-  useEffect(() => { void loadAlerts(); }, [loadAlerts]);
+  useEffect(() => {
+    void loadAlerts();
+  }, [loadAlerts]);
 
-  const filtered = filter === "All" ? alerts : alerts.filter((a) => a.severity === filter);
+  const filtered =
+    filter === "All" ? alerts : alerts.filter((a) => a.severity === filter);
 
   if (loading) {
     return (
@@ -77,7 +82,10 @@ export function AlertsListScreen({ navigation }: Props) {
       <View style={styles.centerState}>
         <Text style={styles.errorTitle}>Failed to load alerts</Text>
         <Text style={styles.errorBody}>{error}</Text>
-        <Pressable style={styles.primaryButtonSmall} onPress={() => void loadAlerts()}>
+        <Pressable
+          style={styles.primaryButtonSmall}
+          onPress={() => void loadAlerts()}
+        >
           <Text style={styles.primaryButtonText}>Retry</Text>
         </Pressable>
       </View>
@@ -86,7 +94,7 @@ export function AlertsListScreen({ navigation }: Props) {
 
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: THEME.page }}
+      style={{ flex: 1, backgroundColor: theme.page }}
       contentContainerStyle={[styles.appPage, { flexGrow: 1 }]}
       refreshControl={
         <RefreshControl
@@ -100,10 +108,18 @@ export function AlertsListScreen({ navigation }: Props) {
       {/* Filter pills */}
       <View style={styles.hiveSummaryStrip}>
         <Pressable
-          style={[styles.hiveSummaryPill, filter === "All" && styles.hiveSummaryPillActive]}
+          style={[
+            styles.hiveSummaryPill,
+            filter === "All" && styles.hiveSummaryPillActive,
+          ]}
           onPress={() => setFilter("All")}
         >
-          <Text style={[styles.hiveSummaryPillText, filter === "All" && styles.hiveSummaryPillTextActive]}>
+          <Text
+            style={[
+              styles.hiveSummaryPillText,
+              filter === "All" && styles.hiveSummaryPillTextActive,
+            ]}
+          >
             All {alerts.length}
           </Text>
         </Pressable>
@@ -121,8 +137,18 @@ export function AlertsListScreen({ navigation }: Props) {
               ]}
               onPress={() => setFilter(active ? "All" : s)}
             >
-              <View style={[styles.hiveSummaryDot, { backgroundColor: SEVERITY_COLOR[s] }]} />
-              <Text style={[styles.hiveSummaryPillText, { color: SEVERITY_COLOR[s] }]}>
+              <View
+                style={[
+                  styles.hiveSummaryDot,
+                  { backgroundColor: SEVERITY_COLOR[s] },
+                ]}
+              />
+              <Text
+                style={[
+                  styles.hiveSummaryPillText,
+                  { color: SEVERITY_COLOR[s] },
+                ]}
+              >
                 {s} {count}
               </Text>
             </Pressable>
@@ -131,7 +157,8 @@ export function AlertsListScreen({ navigation }: Props) {
       </View>
 
       <Text style={styles.hiveListCount}>
-        {filtered.length} {filter === "All" ? "alerts" : filter.toLowerCase() + " alerts"}
+        {filtered.length}{" "}
+        {filter === "All" ? "alerts" : filter.toLowerCase() + " alerts"}
       </Text>
 
       {filtered.length === 0 && (
@@ -141,32 +168,55 @@ export function AlertsListScreen({ navigation }: Props) {
         </View>
       )}
 
-      {filtered.map((alert) => (
-        <Pressable
-          key={alert.id}
-          style={({ pressed }) => [styles.alertCard, pressed && styles.pressedRow]}
-          onPress={() => navigation.navigate("AlertDetails", { alertId: alert.id })}
-        >
-          <View style={styles.alertCardBody}>
-            <View style={styles.alertCardTopRow}>
-              <View style={styles.alertCardIconWrap}>
-                <Ionicons name={SEVERITY_ICON[alert.severity]} size={20} color={SEVERITY_COLOR[alert.severity]} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.alertCardTitle}>{alert.title}</Text>
-                <View style={styles.alertCardMeta}>
-                  <Ionicons name="cube-outline" size={11} color={THEME.textMuted} />
-                  <Text style={styles.alertCardMetaText}>{alert.hiveId}</Text>
-                  <Text style={styles.alertCardMetaDot}>·</Text>
-                  <Text style={styles.alertCardMetaText}>{alert.date}</Text>
+      {filtered.map((alert) => {
+        return (
+          <Pressable
+            key={alert.id}
+            style={({ pressed }) => [
+              styles.alertCard,
+              pressed && styles.pressedRow,
+            ]}
+            onPress={() =>
+              navigation.navigate("AlertDetails", { alertId: alert.id })
+            }
+          >
+            <View style={styles.alertCardBody}>
+              <View style={styles.alertCardTopRow}>
+                <View style={styles.alertCardIconWrap}>
+                  <Ionicons
+                    name={SEVERITY_ICON[alert.severity]}
+                    size={20}
+                    color={SEVERITY_COLOR[alert.severity]}
+                  />
                 </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.alertCardTitle}>{alert.title}</Text>
+                  <View style={styles.alertCardMeta}>
+                    <Ionicons
+                      name="cube-outline"
+                      size={11}
+                      color={THEME.textMuted}
+                    />
+                    <Text style={styles.alertCardMetaText}>
+                      {alert.hiveName}
+                    </Text>
+                    <Text style={styles.alertCardMetaDot}>·</Text>
+                    <Text style={styles.alertCardMetaText}>{alert.date}</Text>
+                  </View>
+                </View>
+                <Ionicons
+                  name="chevron-forward"
+                  size={16}
+                  color={THEME.placeholder}
+                />
               </View>
-              <Ionicons name="chevron-forward" size={16} color={THEME.placeholder} />
+              <Text style={styles.alertCardSummary} numberOfLines={2}>
+                {alert.summary}
+              </Text>
             </View>
-            <Text style={styles.alertCardSummary} numberOfLines={2}>{alert.summary}</Text>
-          </View>
-        </Pressable>
-      ))}
+          </Pressable>
+        );
+      })}
     </ScrollView>
   );
 }

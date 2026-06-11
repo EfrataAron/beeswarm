@@ -81,6 +81,7 @@ export function normalizeAlertItem(
     date: String(item.date ?? item.createdAt ?? item.created_at ?? ""),
     summary: String(item.summary ?? item.message ?? ""),
     alertStatus: String(item.alertStatus ?? item.action_status ?? "pending"),
+    hiveName: String(item.hive_name ?? item.hiveName ?? ""),
   };
 }
 
@@ -109,6 +110,7 @@ export function normalizeHiveAlertItem(
       item.recommended_action ?? item.summary ?? item.message ?? "",
     ),
     alertStatus: String(item.action_status ?? ""),
+    hiveName: String(item.hive_name ?? item.hiveName ?? ""),
   };
 }
 

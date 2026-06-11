@@ -19,13 +19,15 @@ import {
   fetchDashboard,
 } from "../../api";
 import { THEME } from "../../theme";
+import { useTheme } from "../../hooks/useTheme";
 import { MainTabParamList } from "../../navigation/types";
-import { dashboardStyles as styles } from "./DashboardScreen.styles";
+import { createDashboardStyles } from "./DashboardScreen.styles";
 import { DonutChart } from "../../components/DonutChart";
 import { TrendLineChart } from "../../components/TrendLineChart";
 import { MetricCard } from "../../components/MetricCard";
 import { AllHivesMetricsChart } from "../../components/AllHivesMetricsChart";
-import { AllHivesHistoryChart } from "../../components/AllHivesHistoryChart";
+import { HiveMetricsLineChart } from "../../components/HiveMetricsLineChart";
+import { averageFleetMetrics } from "../../api/utils/metricsHistory";
 
 const TREND_24H: Array<{ label: string; count: number }> = [
   { label: "00", count: 0 },
@@ -54,6 +56,8 @@ const TREND_30D: Array<{ label: string; count: number }> = [
 type Props = BottomTabScreenProps<MainTabParamList, "Dashboard">;
 
 export function DashboardScreen({ navigation }: Props) {
+  const theme = useTheme();
+  const styles = useMemo(() => createDashboardStyles(theme), [theme]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
@@ -154,6 +158,11 @@ export function DashboardScreen({ navigation }: Props) {
     return (dashboard?.preSwarmTrend ?? []).map((d) => ({ label: d.day, count: d.count }));
   }, [trendRange, dashboard?.preSwarmTrend]);
 
+  const fleetMetricSeries = useMemo(
+    () => averageFleetMetrics(dashboard?.allHivesHistory ?? []),
+    [dashboard?.allHivesHistory],
+  );
+
   if (loading) {
     return (
       <View style={styles.centerState}>
@@ -199,7 +208,8 @@ export function DashboardScreen({ navigation }: Props) {
 
   return (
     <ScrollView
-      contentContainerStyle={styles.appPage}
+      style={{ flex: 1, backgroundColor: theme.page }}
+      contentContainerStyle={[styles.appPage, { backgroundColor: theme.page }]}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -210,7 +220,7 @@ export function DashboardScreen({ navigation }: Props) {
       }
     >
       {/* ── Alerts card ── */}
-      <View style={styles.dashboardAlertsCard}>
+      <View style={[styles.dashboardAlertsCard, { backgroundColor: theme.surface }]}>
         <View style={styles.dashboardAlertsTopRow}>
           <View style={styles.dashboardAlertsTitleWrap}>
             <Text style={styles.dashboardAlertsTitle}>Alerts</Text>
@@ -405,8 +415,35 @@ export function DashboardScreen({ navigation }: Props) {
         </View>
       </Pressable>
 
+      {/* ── All hives temp & humidity (same chart style as hive details) ── */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>All Hives — Temperature & Humidity</Text>
+        <Text style={styles.metricsSubtitle}>
+          Fleet average
+          {(dashboard.allHivesHistory?.length ?? 0) > 0
+            ? ` across ${dashboard.allHivesHistory!.length} hive${dashboard.allHivesHistory!.length === 1 ? "" : "s"}`
+            : ""}
+          {" · "}temp (orange) · humidity (blue) · tap a dot for hive names
+        </Text>
+        {fleetMetricSeries.length > 0 ? (
+          <HiveMetricsLineChart
+            metricSeries={fleetMetricSeries}
+            hiveId="fleet"
+            perHiveSeries={dashboard.allHivesHistory?.map((h) => ({
+              hiveId: h.hiveId,
+              hiveName: h.hiveName ?? h.hiveId,
+              history: h.history,
+            }))}
+          />
+        ) : (
+          <Text style={[styles.metricsSubtitle, { textAlign: "center", paddingVertical: 24 }]}>
+            No hive sensor data yet. Create a hive to see fleet trends here.
+          </Text>
+        )}
+      </View>
+
       {/* ── Hive State Donut ── */}
-      <Pressable style={styles.card} onPress={() => navigation.navigate("Hives", { screen: "HiveList" })}>
+      <Pressable style={[styles.card, { backgroundColor: theme.surface }]} onPress={() => navigation.navigate("Hives", { screen: "HiveList" })}>
         <View style={styles.rowBetween}>
           <Text style={styles.cardTitle}>Hive State</Text>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
@@ -429,7 +466,7 @@ export function DashboardScreen({ navigation }: Props) {
       </Pressable>
 
       {/* ── Swarm Activity Trend ── */}
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: theme.surface }]}>
         <View style={styles.rowBetween}>
           <Text style={styles.cardTitle}>Swarm Activity Trend</Text>
           <View style={styles.trendRangeRow}>
@@ -447,20 +484,9 @@ export function DashboardScreen({ navigation }: Props) {
         <TrendLineChart data={activeTrendData} />
       </View>
 
-      {/* ── All Hives Temperature & Humidity History ── */}
-      {dashboard.allHivesHistory && dashboard.allHivesHistory.length > 0 && (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Fleet Temperature &amp; Humidity</Text>
-          <Text style={styles.metricsSubtitle}>
-            Live readings per hive · tap a dot for details · toggle hives below
-          </Text>
-          <AllHivesHistoryChart allHivesHistory={dashboard.allHivesHistory} />
-        </View>
-      )}
-
       {/* ── All Hives Snapshot Scatter ── */}
       {dashboard.allHives && dashboard.allHives.length > 0 && (
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: theme.surface }]}>
           <View style={styles.rowBetween}>
             <Text style={styles.cardTitle}>Hive Metrics Snapshot</Text>
           </View>
@@ -486,70 +512,110 @@ export function DashboardScreen({ navigation }: Props) {
         <MetricCard title="Avg Humidity" value={displayHumidity.toFixed(0)} unit="%" subtitle={weatherSubtitle} />
       </View>
 
-      {/* ── Audio Ingestion ── */}
-      <Text style={styles.sectionTitle}>Audio Ingestion</Text>
-      <View style={styles.gridTwo}>
-        <View style={styles.infoCard}>
-          <Ionicons name="mic-outline" size={22} color={THEME.primary} />
-          <Text style={styles.infoCardValue}>{dashboard.recordingsToday}</Text>
-          <Text style={styles.infoCardLabel}>Recordings Today</Text>
-          <Text style={styles.infoCardSub}>Across all hives</Text>
-        </View>
-        <View style={[styles.infoCard, dashboard.silentHives.length > 0 && styles.infoCardWarn]}>
-          <Ionicons name="volume-mute-outline" size={22} color={dashboard.silentHives.length > 0 ? "#EF4444" : "#22C55E"} />
-          <Text style={[styles.infoCardValue, { color: dashboard.silentHives.length > 0 ? "#EF4444" : "#22C55E" }]}>
-            {dashboard.silentHives.length}
-          </Text>
-          <Text style={styles.infoCardLabel}>Silent Hives</Text>
-          <Text style={styles.infoCardSub}>No audio in 8h+</Text>
-        </View>
-      </View>
+      <Text style={styles.sectionTitle}>System Monitoring</Text>
+      
 
-      {dashboard.silentHives.length > 0 && (
-        <View style={styles.silentHivesList}>
-          {dashboard.silentHives.map((h) => (
-            <View key={h.hiveId} style={styles.silentHiveRow}>
-              <Ionicons name="radio-button-off-outline" size={14} color="#EF4444" />
-              <Text style={styles.silentHiveText}>{h.hiveId}</Text>
-              <Text style={styles.silentHiveTime}>Last seen {h.lastSeenHoursAgo}h ago</Text>
-            </View>
-          ))}
-        </View>
-      )}
+<View style={styles.gridThree}>
+  {/* Recordings Today */}
+  <View style={styles.infoCard}>
+    <Ionicons
+      name="mic-outline"
+      size={22}
+      color={THEME.primary}
+    />
+    <Text style={styles.infoCardValue}>
+      {dashboard.recordingsToday}
+    </Text>
+    <Text style={styles.infoCardLabel}>
+      Recordings Today
+    </Text>
+    <Text style={styles.infoCardSub}>
+      Across all hives
+    </Text>
+  </View>
 
-      {/* ── Environmental Correlation ── */}
-      {dashboard.highTempPreSwarmHives.length > 0 && (
-        <>
-          <Text style={styles.sectionTitle}>⚠ High Temp + Swarming Risk</Text>
-          <View style={styles.card}>
-            <Text style={styles.cardSubtitle}>Hives showing elevated temperature alongside swarming indicators</Text>
-            {dashboard.highTempPreSwarmHives.map((h) => (
-              <View key={h.hiveId} style={styles.corrRow}>
-                <View style={styles.corrHiveChip}>
-                  <Text style={styles.corrHiveChipText}>{h.hiveId}</Text>
-                </View>
-                <View style={styles.corrTempBar}>
-                  <View style={[styles.corrTempFill, { width: `${Math.min(((h.temperatureC - 30) / 15) * 100, 100)}%` as any }]} />
-                </View>
-                <Text style={styles.corrTempValue}>{h.temperatureC}°C</Text>
-              </View>
-            ))}
-          </View>
-        </>
-      )}
+  {/* Silent Hives */}
+  <View
+    style={[
+      styles.infoCard,
+      dashboard.silentHives.length > 0 &&
+        styles.infoCardWarn,
+    ]}
+  >
+    <Ionicons
+      name="volume-mute-outline"
+      size={22}
+      color={
+        dashboard.silentHives.length > 0
+          ? "#EF4444"
+          : "#22C55E"
+      }
+    />
 
-      {/* ── System Health ── */}
-      <Text style={styles.sectionTitle}>System Health</Text>
-      <View style={styles.gridTwo}>
-        <View style={[styles.infoCard, dashboard.lowConfidenceInferences > 0 && styles.infoCardWarn]}>
-          <Ionicons name="help-circle-outline" size={22} color={dashboard.lowConfidenceInferences > 0 ? "#EF4444" : "#22C55E"} />
-          <Text style={[styles.infoCardValue, { color: dashboard.lowConfidenceInferences > 0 ? "#EF4444" : "#22C55E" }]}>
-            {dashboard.lowConfidenceInferences}
-          </Text>
-          <Text style={styles.infoCardLabel}>Low-Confidence Inferences</Text>
-          <Text style={styles.infoCardSub}>Score &lt; 0.6</Text>
-        </View>
-      </View>
+    <Text
+      style={[
+        styles.infoCardValue,
+        {
+          color:
+            dashboard.silentHives.length > 0
+              ? "#EF4444"
+              : "#22C55E",
+        },
+      ]}
+    >
+      {dashboard.silentHives.length}
+    </Text>
+
+    <Text style={styles.infoCardLabel}>
+      Silent Hives
+    </Text>
+
+    <Text style={styles.infoCardSub}>
+      No audio in 8h+
+    </Text>
+  </View>
+
+  {/* Low Confidence */}
+  <View
+    style={[
+      styles.infoCard,
+      dashboard.lowConfidenceInferences > 0 &&
+        styles.infoCardWarn,
+    ]}
+  >
+    <Ionicons
+      name="help-circle-outline"
+      size={22}
+      color={
+        dashboard.lowConfidenceInferences > 0
+          ? "#EF4444"
+          : "#22C55E"
+      }
+    />
+
+    <Text
+      style={[
+        styles.infoCardValue,
+        {
+          color:
+            dashboard.lowConfidenceInferences > 0
+              ? "#EF4444"
+              : "#22C55E",
+        },
+      ]}
+    >
+      {dashboard.lowConfidenceInferences}
+    </Text>
+
+    <Text style={styles.infoCardLabel}>
+      Low Confidence
+    </Text>
+
+    <Text style={styles.infoCardSub}>
+      Score &lt; 0.6
+    </Text>
+  </View>
+</View>
     </ScrollView>
   );
 }

@@ -10,6 +10,8 @@ import {
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { Audio } from 'expo-av';
+import { useTheme } from "../../../hooks/useTheme";
+//  import { getServerUrl, getAuthToken } from "../../../api/client";
 import {
   Advisory,
   AlertDetailData,
@@ -48,6 +50,7 @@ function InfoRow({ label, value, valueColor = "#1F2A37" }: { label: string; valu
 }
 
 export function AlertDetailsScreen({ route }: Props) {
+  const theme = useTheme();
   const { alertId } = route.params;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -222,7 +225,7 @@ export function AlertDetailsScreen({ route }: Props) {
 
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: THEME.page }}
+      style={{ flex: 1, backgroundColor: theme.page }}
       contentContainerStyle={styles.detailPage}
     >
       {/* ── Hero ── */}
@@ -248,7 +251,7 @@ export function AlertDetailsScreen({ route }: Props) {
       </View>
 
       {/* ── Alert Info ── */}
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: theme.surface }]}>
         <Text style={styles.cardTitle}>Alert Information</Text>
         <InfoRow label="Severity" value={detail.severity} valueColor={severityColor(detail.severity)} />
         <InfoRow label="Hive" value={detail.hiveName || detail.hiveId} />
@@ -256,14 +259,14 @@ export function AlertDetailsScreen({ route }: Props) {
         <InfoRow label="Status" value={detail.acknowledged ? "Acknowledged" : "Pending"} valueColor={detail.acknowledged ? "#16A34A" : "#D97706"} />
       </View>
 
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: theme.surface }]}>
         <Text style={styles.cardTitle}>Details</Text>
         <Text style={styles.detailLongText}>{detail.details}</Text>
       </View>
 
       {/* ── Audio Recording ── */}
       {detail.audioRecording && (
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: theme.surface }]}>
           <View style={styles.audioHeader}>
             <Ionicons name="volume-high-outline" size={20} color={THEME.accent} />
             <Text style={styles.cardTitle}>Audio Recording</Text>

@@ -4,6 +4,7 @@ import { THEME } from "../theme";
 
 type HivePoint = {
   hiveId: string;
+  hiveName?: string;
   temperatureC: number;
   humidityPercent: number;
 };
@@ -92,7 +93,9 @@ export function AllHivesMetricsChart({ allHives }: Props) {
                   </Pressable>
                   {isHovered && (
                     <View style={{ position: "absolute", left: x - 30, top: y - 50, paddingHorizontal: 8, paddingVertical: 6, backgroundColor: color, borderRadius: 6 }}>
-                      <Text style={{ fontSize: 11, fontWeight: "700", color: "#FFFFFF", textAlign: "center" }}>{hive.hiveId}</Text>
+                      <Text style={{ fontSize: 11, fontWeight: "700", color: "#FFFFFF", textAlign: "center" }}>
+                        {hive.hiveName ?? hive.hiveId}
+                      </Text>
                       <Text style={{ fontSize: 9, color: "#FFFFFF", marginTop: 2 }}>{hive.temperatureC.toFixed(1)}°C / {hive.humidityPercent.toFixed(0)}%</Text>
                     </View>
                   )}

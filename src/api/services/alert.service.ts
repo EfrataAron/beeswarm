@@ -10,6 +10,7 @@ import {
   normalizeHiveAlertItem,
   normalizeSeverity,
 } from "../utils/normalizers";
+import { fetchHiveDetail } from "./hive.service";
 
 export async function fetchHiveAlerts(hiveId: string): Promise<AlertItem[]> {
   // Use the mobile alerts endpoint which properly formats data for mobile
@@ -27,7 +28,29 @@ export async function fetchAlerts(): Promise<AlertItem[]> {
   if (!Array.isArray(raw)) return [];
   console.log("Raw API Response: /fetchAlerts()", raw);
 
-  return raw.map((item, i) => normalizeAlertItem(item, i));
+  // Fetch hive details for each alert to get hive names
+  const alertsWithHiveNames = await Promise.all(
+    raw.map(async (item, i) => {
+      const hiveId = item.hive_id ?? item.hiveId ?? "";
+      let hiveName = item.hive_name ?? item.hiveName ?? "";
+
+      // If hive name not provided, fetch it
+      if (!hiveName && hiveId) {
+        try {
+          const hive = await fetchHiveDetail(hiveId);
+          hiveName = hive.name;
+          console.log(`Fetched hive name for ${hiveId}:`, hiveName);
+        } catch (error) {
+          console.warn(`Failed to fetch hive name for ${hiveId}:`, error);
+          hiveName = hiveId; // Fallback to hive ID
+        }
+      }
+
+      return normalizeAlertItem({ ...item, hiveName }, i);
+    })
+  );
+
+  return alertsWithHiveNames;
 }
 
 export async function fetchAlertDetail(

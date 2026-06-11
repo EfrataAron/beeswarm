@@ -70,7 +70,7 @@ export const alertDetailsStyles = StyleSheet.create({
   detailHiveName: {
     fontSize: 20,
     fontWeight: "800",
-    color: "#FFFFFF",
+    color: THEME.surface,
     marginBottom: 3,
   },
   detailHeroMeta: {
@@ -103,7 +103,7 @@ export const alertDetailsStyles = StyleSheet.create({
     fontSize: 12,
   },
   card: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: THEME.surface,
     borderWidth: 1,
     borderColor: THEME.line,
     borderRadius: 14,
@@ -250,7 +250,7 @@ export const alertDetailsStyles = StyleSheet.create({
     backgroundColor: "#D97706",
   },
   audioButtonText: {
-    color: "#FFFFFF",
+    color: THEME.surface,
     fontWeight: "700",
     fontSize: 14,
   },

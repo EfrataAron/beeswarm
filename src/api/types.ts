@@ -79,6 +79,7 @@ export type AlertItem = {
   date: string;
   summary: string;
   alertStatus:string;
+  hiveName?: string;
 };
 
 export type AudioRecording = {
@@ -134,11 +135,13 @@ export type DashboardData = {
   highTempPreSwarmHives: Array<{ hiveId: string; temperatureC: number }>;
   allHives: Array<{
     hiveId: string;
+    hiveName?: string;
     temperatureC: number;
     humidityPercent: number;
   }>;
   allHivesHistory?: Array<{
     hiveId: string;
+    hiveName?: string;
     history: Array<{
       timeLabel: string;
       temperatureC: number;

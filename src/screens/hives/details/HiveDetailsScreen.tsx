@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -25,8 +25,9 @@ import {
   formatStateDuration,
   formatRelativeTime,
 } from "../../../theme";
+import { useTheme } from "../../../hooks/useTheme";
 import { HivesStackParamList, MainTabParamList } from "../../../navigation/types";
-import { hiveDetailsStyles as styles } from "./HiveDetailsScreen.styles";
+import { createHiveDetailsStyles } from "./HiveDetailsScreen.styles";
 import { HiveMetricsLineChart } from "../../../components/HiveMetricsLineChart";
 
 type NavigationProp = CompositeNavigationProp<
@@ -38,23 +39,10 @@ type Props = NativeStackScreenProps<HivesStackParamList, "HiveDetails"> & {
   navigation: NavigationProp;
 };
 
-function StatusPill({ status }: { status: HiveDetailData["status"] }) {
-  return (
-    <View
-      style={[
-        styles.statusPill,
-        { backgroundColor: `${STATUS_COLOR[status]}20` },
-      ]}
-    >
-      <Text style={[styles.statusPillText, { color: STATUS_COLOR[status] }]}>
-        {displayStatus(status)}
-      </Text>
-    </View>
-  );
-}
-
 export function HiveDetailsScreen({ route, navigation }: Props) {
   const { hiveId, lastAnalysisTime } = route.params;
+  const theme = useTheme();
+  const styles = useMemo(() => createHiveDetailsStyles(theme), [theme]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [detail, setDetail] = useState<HiveDetailData | null>(null);
@@ -132,20 +120,20 @@ export function HiveDetailsScreen({ route, navigation }: Props) {
     Info: "#2563EB",
   };
   const severityBg: Record<AlertSeverity, string> = {
-    Critical: "#FEF2F2",
-    Warning: "#FFFBEB",
-    Info: "#EFF6FF",
+    Critical: theme.surfaceSoft,
+    Warning: theme.surfaceSoft,
+    Info: theme.surfaceSoft,
   };
   // console.log("DETAISLSSSS: ", detail);
   // console.log("lastAnalysisTime from route params is: ", lastAnalysisTime);
 
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: THEME.page }}
+      style={{ flex: 1, backgroundColor: theme.page }}
       contentContainerStyle={styles.detailPage}
     >
       {/* ── Hero Header ── */}
-      <View style={styles.detailHeroCard}>
+      <View style={[styles.detailHeroCard, { backgroundColor: theme.primary }]}>
         <View style={styles.detailHeroTopRow}>
           <View style={styles.detailHeroTextWrap}>
             <Text style={styles.detailHiveName}>{detail.name}</Text>
@@ -153,12 +141,21 @@ export function HiveDetailsScreen({ route, navigation }: Props) {
               <Ionicons
                 name="location-outline"
                 size={12}
-                color="rgba(255,255,255,0.7)"
+                color={theme.textMuted}
               />
-              <Text style={styles.detailHeroMeta}>{detail.location}</Text>
+              <Text style={[styles.detailHeroMeta, { color: theme.textMuted }]}>{detail.location}</Text>
             </View>
           </View>
-          <StatusPill status={detail.status} />
+          <View
+            style={[
+              styles.statusPill,
+              { backgroundColor: `${STATUS_COLOR[detail.status]}20` },
+            ]}
+          >
+            <Text style={[styles.statusPillText, { color: STATUS_COLOR[detail.status] }]}>
+              {displayStatus(detail.status)}
+            </Text>
+          </View>
         </View>
 
         <View style={styles.detailStateDurationRow}>
@@ -209,7 +206,7 @@ export function HiveDetailsScreen({ route, navigation }: Props) {
 
       {/* ── Weather Card ── */}
       {detail.weather && (
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: theme.surface }]}>
           <View style={styles.weatherHeader}>
             <Ionicons name="cloud-outline" size={18} color={THEME.primary} />
             <Text style={styles.cardTitle}>Latest Weather Readings</Text>
@@ -245,8 +242,20 @@ export function HiveDetailsScreen({ route, navigation }: Props) {
         </View>
       )}
 
+      {/* ── Metrics Graph ── */}
+      <View style={[styles.card, { backgroundColor: theme.surface }]}>
+        <Text style={styles.cardTitle}>
+          Temperature & Humidity Trends
+        </Text>
+
+        <HiveMetricsLineChart
+          metricSeries={metricSeries}
+          hiveId={detail.id}
+        />
+      </View>
+
       {/* ── Notifications ── */}
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: theme.surface }]}>
         <View style={styles.rowBetween}>
           <Text style={styles.cardTitle}>Previous Notifications</Text>
 
@@ -325,44 +334,6 @@ export function HiveDetailsScreen({ route, navigation }: Props) {
           );
         })}
       </View>
-
-      {/* ── Metrics Highlights ── */}
-      {/* <View style={styles.card}>
-        <Text style={styles.cardTitle}>Latest Readings</Text>
-        <Text style={styles.metricsSubtitle}>
-          Temperature & humidity over time with normal threshold
-        </Text>
-
-        <View style={styles.metricsHighlightsRow}>
-          <View style={[styles.metricHighlightCard, { borderLeftColor: THEME.accent, borderLeftWidth: 3 }]}>
-            <Ionicons name="thermometer-outline" size={16} color={THEME.accent} />
-            <Text style={styles.metricHighlightValue}>{latestTemperature.toFixed(1)}°C</Text>
-            <Text style={styles.metricHighlightLabel}>Hive Temperature</Text>
-          </View>
-          <View style={[styles.metricHighlightCard, { borderLeftColor: THEME.primary, borderLeftWidth: 3 }]}>
-            <Ionicons name="water-outline" size={16} color={THEME.primary} />
-            <Text style={styles.metricHighlightValue}>{latestHumidity.toFixed(0)}%</Text>
-            <Text style={styles.metricHighlightLabel}>Hive Humidity</Text>
-          </View>
-        </View>
-
-        <View style={styles.metricsLegendRow}>
-          <View style={styles.metricsLegendItem}>
-            <View style={[styles.legendDot, { backgroundColor: THEME.accent }]} />
-            <Text style={styles.legendText}>Temperature</Text>
-          </View>
-          <View style={styles.metricsLegendItem}>
-            <View style={[styles.legendDot, { backgroundColor: THEME.primary }]} />
-            <Text style={styles.legendText}>Humidity</Text>
-          </View>
-          <View style={styles.metricsLegendItem}>
-            <View style={[styles.legendDot, { backgroundColor: THEME.accent, opacity: 0.4, height: 2 }]} />
-            <Text style={styles.legendText}>Normal Threshold</Text>
-          </View>
-        </View>
-
-        <HiveMetricsLineChart metricSeries={metricSeries} hiveId={detail.id} />
-      </View> */}
     </ScrollView>
   );
 }
