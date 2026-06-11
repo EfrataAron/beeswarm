@@ -270,33 +270,4 @@ export const alertDetailsStyles = StyleSheet.create({
     fontWeight: "700",
     fontSize: 14,
   },
-
-  buttonRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12, // React Native 0.71+
-    marginTop: 20,
-  },
-
-  halfButton: {
-    flex: 1,
-  },
-
-  submitButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#4F46E5',
-    paddingVertical: 14,
-    borderRadius: 12,
-  },
-
-  cancelButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    paddingVertical: 14,
-    borderRadius: 12,
-  },
 });

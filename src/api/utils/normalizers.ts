@@ -133,6 +133,6 @@ export function validateServerUrl(
     new URL(s);
     return null;
   } catch {
-    return "Enter a valid URL, e.g.    https://jockstrap-boxlike-revisable.ngrok-free.dev";
+    return "Enter a valid URL, e.g.   https://jockstrap-boxlike-revisable.ngrok-free.dev";
   }
 }
