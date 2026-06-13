@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { THEME } from "../theme";
 
 type HivePoint = {
@@ -15,7 +15,7 @@ type Props = {
 
 export function AllHivesMetricsChart({ allHives }: Props) {
   const [chartWidth, setChartWidth] = useState(0);
-  const [hoveredHive, setHoveredHive] = useState<string | null>(null);
+  const [hoveredHive, setHoveredHive] = useState<string | null>(null); // stores hiveId
   const CHART_HEIGHT = 280;
   const PAD_LEFT = 50;
   const PAD_RIGHT = 20;
@@ -74,27 +74,112 @@ export function AllHivesMetricsChart({ allHives }: Props) {
             <Text style={{ position: "absolute", right: PAD_RIGHT, top: PAD_TOP + (1 - THRESHOLD_HUMIDITY / 100) * plotH - 16, fontSize: 8, fontWeight: "700", color: "#60A5FA", backgroundColor: "#FFFFFF", paddingHorizontal: 4, paddingVertical: 2, borderRadius: 3 }}>
               65%
             </Text>
-            {/* Hive dots */}
+            {/* Tap outside to dismiss tooltip */}
+            {hoveredHive && (
+              <Pressable
+                style={[StyleSheet.absoluteFillObject, { zIndex: 10 }]}
+                onPress={() => setHoveredHive(null)}
+              />
+            )}
+
+            {/* Hive dots — rendered above the dismiss overlay */}
             {allHives.map((hive) => {
               const x = PAD_LEFT + ((hive.temperatureC - minTemp) / (maxTemp - minTemp)) * plotW;
               const y = PAD_TOP + (1 - hive.humidityPercent / 100) * plotH;
               const isAbnormal = hive.temperatureC > THRESHOLD_TEMP || hive.humidityPercent > THRESHOLD_HUMIDITY;
               const color = isAbnormal ? "#DC2626" : "#22C55E";
               const isHovered = hoveredHive === hive.hiveId;
+
+              // Clamp tooltip so it stays inside the chart bounds
+              const tooltipW = 120;
+              const tooltipLeft = Math.min(
+                Math.max(x - tooltipW / 2, PAD_LEFT),
+                chartWidth - PAD_RIGHT - tooltipW,
+              );
+              const tooltipTop = y - 74 < PAD_TOP ? y + 16 : y - 74;
+
               return (
                 <React.Fragment key={hive.hiveId}>
                   <Pressable
-                    onPress={() => setHoveredHive(hive.hiveName)}
-                    onHoverIn={() => setHoveredHive(hive.hiveName)}
+                    onPress={() => setHoveredHive(isHovered ? null : hive.hiveId)}
+                    onHoverIn={() => setHoveredHive(hive.hiveId)}
                     onHoverOut={() => setHoveredHive(null)}
-                    style={{ position: "absolute", left: x - 12, top: y - 12, width: 24, height: 24, borderRadius: 12, justifyContent: "center", alignItems: "center" }}
+                    style={{
+                      position: "absolute",
+                      left: x - 12,
+                      top: y - 12,
+                      width: 24,
+                      height: 24,
+                      borderRadius: 12,
+                      justifyContent: "center",
+                      alignItems: "center",
+                      zIndex: isHovered ? 20 : 1,
+                    }}
                   >
-                    <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: color, borderWidth: 3, borderColor: "#FFFFFF" }} />
+                    <View
+                      style={{
+                        width: isHovered ? 20 : 16,
+                        height: isHovered ? 20 : 16,
+                        borderRadius: 10,
+                        backgroundColor: color,
+                        borderWidth: 3,
+                        borderColor: "#FFFFFF",
+                      }}
+                    />
                   </Pressable>
                   {isHovered && (
-                    <View style={{ position: "absolute", left: x - 30, top: y - 50, paddingHorizontal: 8, paddingVertical: 6, backgroundColor: color, borderRadius: 6 }}>
-                      <Text style={{ fontSize: 11, fontWeight: "700", color: "#FFFFFF", textAlign: "center" }}>{hive.hiveId}</Text>
-                      <Text style={{ fontSize: 9, color: "#FFFFFF", marginTop: 2 }}>{hive.temperatureC.toFixed(1)}°C / {hive.humidityPercent.toFixed(0)}%</Text>
+                    <View
+                      style={{
+                        position: "absolute",
+                        left: tooltipLeft,
+                        top: tooltipTop,
+                        width: tooltipW,
+                        paddingHorizontal: 10,
+                        paddingVertical: 8,
+                        backgroundColor: "#1E293B",
+                        borderRadius: 8,
+                        borderWidth: 1.5,
+                        borderColor: color,
+                        zIndex: 99,
+                        shadowColor: "#000",
+                        shadowOpacity: 0.15,
+                        shadowRadius: 4,
+                        shadowOffset: { width: 0, height: 2 },
+                        elevation: 6,
+                      }}
+                    >
+                      {/* Hive name */}
+                      <Text
+                        style={{
+                          fontSize: 11,
+                          fontWeight: "800",
+                          color: "#FFFFFF",
+                          marginBottom: 4,
+                        }}
+                        numberOfLines={1}
+                      >
+                        {hive.hiveName || hive.hiveId}
+                      </Text>
+                      {/* Temperature row */}
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 2 }}>
+                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: "#F97316" }} />
+                        <Text style={{ fontSize: 10, color: "#F97316", fontWeight: "700" }}>
+                          {hive.temperatureC.toFixed(1)}°C
+                        </Text>
+                        {hive.temperatureC > THRESHOLD_TEMP && (
+                          <Text style={{ fontSize: 8, color: "#FCA5A5", fontWeight: "600" }}>↑ high</Text>
+                        )}
+                      </View>
+                      {/* Humidity row */}
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: "#60A5FA" }} />
+                        <Text style={{ fontSize: 10, color: "#60A5FA", fontWeight: "700" }}>
+                          {hive.humidityPercent.toFixed(0)}%
+                        </Text>
+                        {hive.humidityPercent > THRESHOLD_HUMIDITY && (
+                          <Text style={{ fontSize: 8, color: "#93C5FD", fontWeight: "600" }}>↑ high</Text>
+                        )}
+                      </View>
                     </View>
                   )}
                 </React.Fragment>

@@ -14,6 +14,7 @@ import {
   AlertSeverity,
   AmbientWeather,
   DashboardData,
+  HiveStatus,
   fetchAlerts,
   fetchAmbientWeather,
   fetchDashboard,
@@ -28,30 +29,6 @@ import { MetricCard } from "../../components/MetricCard";
 import { AllHivesMetricsChart } from "../../components/AllHivesMetricsChart";
 import { HiveMetricsLineChart } from "../../components/HiveMetricsLineChart";
 import { averageFleetMetrics } from "../../api/utils/metricsHistory";
-
-const TREND_24H: Array<{ label: string; count: number }> = [
-  { label: "00", count: 0 },
-  { label: "03", count: 1 },
-  { label: "06", count: 2 },
-  { label: "09", count: 2 },
-  { label: "12", count: 3 },
-  { label: "15", count: 2 },
-  { label: "18", count: 3 },
-  { label: "21", count: 1 },
-];
-
-const TREND_30D: Array<{ label: string; count: number }> = [
-  { label: "Apr 1", count: 1 },
-  { label: "Apr 4", count: 2 },
-  { label: "Apr 7", count: 1 },
-  { label: "Apr 10", count: 3 },
-  { label: "Apr 13", count: 2 },
-  { label: "Apr 16", count: 4 },
-  { label: "Apr 19", count: 3 },
-  { label: "Apr 22", count: 5 },
-  { label: "Apr 25", count: 4 },
-  { label: "Apr 28", count: 3 },
-];
 
 type Props = BottomTabScreenProps<MainTabParamList, "Dashboard">;
 
@@ -69,6 +46,7 @@ export function DashboardScreen({ navigation }: Props) {
   const [hiveFilter, setHiveFilter] = useState<string>("All");
   const [selectedAlertId, setSelectedAlertId] = useState<string | null>(null);
   const [trendRange, setTrendRange] = useState<"24h" | "7d" | "30d">("7d");
+  const [trendStatusFilter, setTrendStatusFilter] = useState<HiveStatus | "All">("All");
   const [refreshing, setRefreshing] = useState(false);
 
   const loadDashboard = useCallback(async () => {
@@ -76,23 +54,33 @@ export function DashboardScreen({ navigation }: Props) {
     setError(null);
     setAlertsError(null);
     try {
-      const data = await fetchDashboard();
-      setDashboard(data);
-      try {
-        const alerts = await fetchAlerts();
-        setDashboardAlerts(alerts);
-      } catch (alertsErr) {
+      // Fire all three requests in parallel — this is the main performance win
+      const [data, alerts, weather] = await Promise.allSettled([
+        fetchDashboard(),
+        fetchAlerts(),
+        fetchAmbientWeather(),
+      ]);
+
+      if (data.status === "fulfilled") {
+        setDashboard(data.value);
+      } else {
+        throw data.reason;
+      }
+
+      if (alerts.status === "fulfilled") {
+        setDashboardAlerts(alerts.value);
+      } else {
         setDashboardAlerts([]);
         setAlertsError(
-          alertsErr instanceof Error ? alertsErr.message : "Could not load dashboard alerts",
+          alerts.reason instanceof Error
+            ? alerts.reason.message
+            : "Could not load dashboard alerts",
         );
       }
-      try {
-        const weather = await fetchAmbientWeather();
-        setAmbientWeather(weather);
-      } catch {
-        setAmbientWeather(null);
-      }
+
+      setAmbientWeather(
+        weather.status === "fulfilled" ? weather.value : null,
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load dashboard data");
     } finally {
@@ -153,10 +141,19 @@ export function DashboardScreen({ navigation }: Props) {
   }, [filteredDashboardAlerts, selectedAlertId]);
 
   const activeTrendData = useMemo(() => {
-    if (trendRange === "24h") return TREND_24H;
-    if (trendRange === "30d") return TREND_30D;
-    return (dashboard?.preSwarmTrend ?? []).map((d) => ({ label: d.day, count: d.count }));
-  }, [trendRange, dashboard?.preSwarmTrend]);
+    const allPoints = (dashboard?.preSwarmTrend ?? []).map((d) => ({
+      label: d.day,
+      count: trendStatusFilter === "All"
+        ? d.count
+        : (d.statusBreakdown?.[trendStatusFilter] ?? 0),
+    }));
+
+    if (allPoints.length === 0) return [];
+
+    if (trendRange === "24h") return allPoints.slice(-8);  // last 8 data points ≈ 24h
+    if (trendRange === "7d")  return allPoints.slice(-7);
+    return allPoints; // 30d — all available
+  }, [trendRange, trendStatusFilter, dashboard?.preSwarmTrend]);
 
   const fleetMetricSeries = useMemo(
     () => averageFleetMetrics(dashboard?.allHivesHistory ?? []),
@@ -482,7 +479,61 @@ export function DashboardScreen({ navigation }: Props) {
             ))}
           </View>
         </View>
-        <TrendLineChart data={activeTrendData} />
+
+        {/* Status filter chips */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ flexDirection: "row", gap: 6, marginTop: 8, marginBottom: 4, paddingBottom: 2 }}
+        >
+          {([
+            { key: "All",            label: "All",             color: THEME.accent },
+            { key: "swarming",       label: "Swarming",        color: "#EF4444" },
+            { key: "active",         label: "Active",          color: "#22C55E" },
+            { key: "queenless",      label: "Queenless",       color: "#EC4899" },
+            { key: "pests",          label: "Pests",           color: "#DC2626" },
+            { key: "quacking_queens",label: "Quacking Queens", color: "#8B5CF6" },
+            { key: "external_noise", label: "External Noise",  color: "#D97706" },
+            { key: "inactive_hive",  label: "Inactive",        color: "#94A3B8" },
+            { key: "Abscondment",    label: "Absconded",       color: "#6B7280" },
+          ] as Array<{ key: HiveStatus | "All"; label: string; color: string }>).map(({ key, label, color }) => {
+            const active = trendStatusFilter === key;
+            return (
+              <Pressable
+                key={key}
+                onPress={() => setTrendStatusFilter(key)}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 5,
+                  paddingHorizontal: 10,
+                  paddingVertical: 5,
+                  borderRadius: 999,
+                  borderWidth: 1.5,
+                  borderColor: active ? color : theme.line,
+                  backgroundColor: active ? `${color}18` : theme.surfaceSoft,
+                }}
+              >
+                {key !== "All" && (
+                  <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: active ? color : theme.textMuted }} />
+                )}
+                <Text style={{ fontSize: 10, fontWeight: "700", color: active ? color : theme.textMuted }}>
+                  {label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+
+        {activeTrendData.length > 0 ? (
+          <TrendLineChart data={activeTrendData} />
+        ) : (
+          <View style={{ paddingVertical: 24, alignItems: "center" }}>
+            <Text style={{ fontSize: 13, color: theme.textMuted, fontWeight: "600" }}>
+              No trend data available yet
+            </Text>
+          </View>
+        )}
       </View>
 
       {/* ── All Hives Snapshot Scatter ── */}

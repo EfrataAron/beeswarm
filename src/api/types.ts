@@ -129,7 +129,7 @@ export type DashboardData = {
   };
   pendingAlerts: number;
   acknowledgedAlerts: number;
-  preSwarmTrend: Array<{ day: string; count: number }>;
+  preSwarmTrend: Array<{ day: string; count: number; statusBreakdown?: Partial<Record<HiveStatus, number>> }>;
   recordingsToday: number;
   silentHives: Array<{ hiveId: string; lastSeenHoursAgo: number }>;
   highTempPreSwarmHives: Array<{ hiveId: string; temperatureC: number }>;
@@ -138,6 +138,7 @@ export type DashboardData = {
     hiveName: string;
     temperatureC: number;
     humidityPercent: number;
+    status?: HiveStatus;
   }>;
   allHivesHistory: Array<{
     hiveId: string;

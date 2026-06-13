@@ -1,7 +1,7 @@
 // gesture-handler MUST be the very first import in the entry file
 import "react-native-gesture-handler";
-import React, { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Platform, View } from "react-native";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ActivityIndicator, AppState, Platform, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { StatusBar as ExpoStatusBar } from "expo-status-bar";
 import Toast from "react-native-toast-message";
@@ -502,6 +502,40 @@ export default function App() {
     });
   }, []);
 
+  // ── 30-minute idle session timeout ────────────────────────────────────────
+  const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+  const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const resetIdleTimer = useCallback(() => {
+    if (!isAuthenticated) return;
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    idleTimerRef.current = setTimeout(() => {
+      void handleLogout();
+    }, SESSION_TIMEOUT_MS);
+  }, [isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Start / clear the timer whenever auth state changes
+  useEffect(() => {
+    if (isAuthenticated) {
+      resetIdleTimer();
+    } else {
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    }
+    return () => {
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    };
+  }, [isAuthenticated, resetIdleTimer]);
+
+  // Reset on app foreground (catches device coming back from sleep)
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "active" && isAuthenticated) {
+        resetIdleTimer();
+      }
+    });
+    return () => sub.remove();
+  }, [isAuthenticated, resetIdleTimer]);
+
   const handleDarkModeChange = async (value: boolean) => {
     applyThemeMode(value);
     setDarkModeEnabled(value);
@@ -534,6 +568,8 @@ export default function App() {
         linking={linking}
         initialState={navigationState}
         onStateChange={(state) => {
+          // Reset idle timer on any navigation (counts as user activity)
+          resetIdleTimer();
           // Save navigation state to AsyncStorage
           AsyncStorage.setItem(NAVIGATION_STATE_KEY, JSON.stringify(state)).catch(() => {});
         }}

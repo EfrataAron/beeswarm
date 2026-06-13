@@ -12,6 +12,7 @@ type HistoryPoint = {
 
 type HiveHistory = {
   hiveId: string;
+  hiveName?: string;
   history: HistoryPoint[];
 };
 
@@ -48,12 +49,11 @@ export function AllHivesHistoryChart({ allHivesHistory }: Props) {
   );
   const [chartWidth, setChartWidth] = useState(0);
   const [tooltip, setTooltip] = useState<{
-    hiveId: string;
     timeLabel: string;
-    value: number;
     x: number;
     y: number;
-    color: string;
+    /** All active hives' values at this time point, sorted by value desc */
+    hives: Array<{ hiveId: string; hiveName: string; value: number; color: string }>;
   } | null>(null);
 
   if (!allHivesHistory || allHivesHistory.length === 0) {
@@ -295,13 +295,33 @@ export function AllHivesHistoryChart({ allHivesHistory }: Props) {
                   {pts.map((p, i) => (
                     <Pressable
                       key={`dot-${hive.hiveId}-${i}`}
-                      onPress={() =>
+                      onPress={() => {
+                        // Build all-hives values at this time label
+                        const timeLabel = p.label;
+                        const allHivesAtTime = allHivesHistory
+                          .filter((h) => activeHives.has(h.hiveId))
+                          .map((h, hI) => {
+                            const point = h.history.find((pt: HistoryPoint) => pt.timeLabel === timeLabel);
+                            if (!point) return null;
+                            const val = isTemp ? point.temperatureC : point.humidityPercent;
+                            return {
+                              hiveId: h.hiveId,
+                              hiveName: h.hiveName || h.hiveId,
+                              value: val,
+                              color: HIVE_COLORS[allHivesHistory.indexOf(h) % HIVE_COLORS.length],
+                            };
+                          })
+                          .filter(Boolean) as Array<{ hiveId: string; hiveName: string; value: number; color: string }>;
+
+                        // Sort by value descending
+                        allHivesAtTime.sort((a, b) => b.value - a.value);
+
                         setTooltip((prev) =>
-                          prev?.hiveId === hive.hiveId && prev?.timeLabel === p.label
+                          prev?.timeLabel === timeLabel
                             ? null
-                            : { hiveId: hive.hiveId, timeLabel: p.label, value: p.value, x: p.x, y: p.y, color },
-                        )
-                      }
+                            : { timeLabel, x: p.x, y: p.y, hives: allHivesAtTime },
+                        );
+                      }}
                       style={{
                         position: "absolute",
                         left: p.x - 8,
@@ -329,29 +349,100 @@ export function AllHivesHistoryChart({ allHivesHistory }: Props) {
               );
             })}
 
-            {/* Tooltip */}
-            {tooltip && (
-              <View
-                style={{
-                  position: "absolute",
-                  left: Math.min(tooltip.x - 36, plotW + PAD_LEFT - 76),
-                  top: Math.max(tooltip.y - 52, 2),
-                  backgroundColor: tooltip.color,
-                  borderRadius: 8,
-                  paddingHorizontal: 8,
-                  paddingVertical: 6,
-                  zIndex: 99,
-                  minWidth: 72,
-                }}
-              >
-                <Text style={{ fontSize: 10, fontWeight: "800", color: "#FFFFFF" }}>
-                  {tooltip.hiveId}
-                </Text>
-                <Text style={{ fontSize: 9, color: "rgba(255,255,255,0.9)", marginTop: 1 }}>
-                  {tooltip.timeLabel} · {tooltip.value.toFixed(1)}{unit}
-                </Text>
-              </View>
-            )}
+            {/* Tooltip — shows all active hives at tapped time, scrollable after 5 */}
+            {tooltip && (() => {
+              const MAX_VISIBLE = 5;
+              const ROW_H = 26;
+              const HEADER_H = 32;
+              const listH = Math.min(tooltip.hives.length, MAX_VISIBLE) * ROW_H;
+              const tooltipW = 160;
+              const tooltipLeft = Math.min(
+                Math.max(tooltip.x - tooltipW / 2, PAD_LEFT),
+                chartWidth - PAD_RIGHT - tooltipW,
+              );
+              const tooltipTop = tooltip.y - HEADER_H - listH - 10 < PAD_TOP
+                ? tooltip.y + 14
+                : tooltip.y - HEADER_H - listH - 10;
+
+              return (
+                <View
+                  style={{
+                    position: "absolute",
+                    left: tooltipLeft,
+                    top: tooltipTop,
+                    width: tooltipW,
+                    backgroundColor: "#1E293B",
+                    borderRadius: 10,
+                    borderWidth: 1,
+                    borderColor: "#334155",
+                    zIndex: 99,
+                    overflow: "hidden",
+                    shadowColor: "#000",
+                    shadowOpacity: 0.2,
+                    shadowRadius: 6,
+                    shadowOffset: { width: 0, height: 3 },
+                    elevation: 8,
+                  }}
+                >
+                  {/* Header */}
+                  <View
+                    style={{
+                      paddingHorizontal: 10,
+                      paddingVertical: 6,
+                      borderBottomWidth: 1,
+                      borderBottomColor: "#334155",
+                    }}
+                  >
+                    <Text style={{ fontSize: 10, fontWeight: "800", color: "#94A3B8" }}>
+                      {tooltip.timeLabel}
+                    </Text>
+                    <Text style={{ fontSize: 8, color: "#64748B", marginTop: 1 }}>
+                      {isTemp ? "Temperature" : "Humidity"} · {tooltip.hives.length} hive{tooltip.hives.length !== 1 ? "s" : ""}
+                    </Text>
+                  </View>
+
+                  {/* Scrollable hive list */}
+                  <ScrollView
+                    style={{ maxHeight: MAX_VISIBLE * ROW_H }}
+                    showsVerticalScrollIndicator={tooltip.hives.length > MAX_VISIBLE}
+                    nestedScrollEnabled
+                  >
+                    {tooltip.hives.map((h) => (
+                      <View
+                        key={h.hiveId}
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          paddingHorizontal: 10,
+                          height: ROW_H,
+                          borderBottomWidth: 0.5,
+                          borderBottomColor: "#334155",
+                        }}
+                      >
+                        <View
+                          style={{
+                            width: 7,
+                            height: 7,
+                            borderRadius: 4,
+                            backgroundColor: h.color,
+                            marginRight: 6,
+                          }}
+                        />
+                        <Text
+                          style={{ fontSize: 10, fontWeight: "600", color: "#E2E8F0", flex: 1 }}
+                          numberOfLines={1}
+                        >
+                          {h.hiveName}
+                        </Text>
+                        <Text style={{ fontSize: 10, fontWeight: "700", color: h.color }}>
+                          {isTemp ? `${h.value.toFixed(1)}°` : `${h.value.toFixed(0)}%`}
+                        </Text>
+                      </View>
+                    ))}
+                  </ScrollView>
+                </View>
+              );
+            })()}
 
             {/* X-axis time labels — show every other label if many hives */}
             {timeLabels.map((label, i) => {

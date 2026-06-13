@@ -2,19 +2,17 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
-  ScrollView,
   Text,
   View,
 } from "react-native";
 import { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
-import { Hive, fetchHives } from "../../api";
+import { Hive, fetchHives, fetchDashboard } from "../../api";
 import { THEME, STATUS_COLOR } from "../../theme";
 import { useTheme } from "../../hooks/useTheme";
 import { MainTabParamList } from "../../navigation/types";
 import { mapStyles as styles } from "./MapScreen.styles";
 import HiveMap from "../../components/HiveMap";
-
-type MapHive = Hive & { latitude: number; longitude: number };
+import type { MapHive } from "../../components/HiveMap";
 
 const DEFAULT_MAP_REGION = {
   latitude: 0.3476,
@@ -23,7 +21,7 @@ const DEFAULT_MAP_REGION = {
   longitudeDelta: 0.012,
 };
 
-function hasMapCoordinates(hive: Hive): hive is MapHive {
+function hasMapCoordinates(hive: Hive): hive is Hive & { latitude: number; longitude: number } {
   return (
     typeof hive.latitude === "number" &&
     Number.isFinite(hive.latitude) &&
@@ -39,9 +37,6 @@ function getMapRegion(hives: MapHive[]) {
   return { latitude, longitude, latitudeDelta: 0.012, longitudeDelta: 0.012 };
 }
 
-function formatCoordinate(value: number) {
-  return value.toFixed(4);
-}
 
 function LegendItem({ color, text }: { color: string; text: string }) {
   return (
@@ -57,6 +52,7 @@ type Props = BottomTabScreenProps<MainTabParamList, "Map">;
 export function MapScreen({ navigation }: Props) {
   const theme = useTheme();
   const [hives, setHives] = useState<Hive[]>([]);
+  const [sensorMap, setSensorMap] = useState<Record<string, { temperatureC: number; humidityPercent: number }>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -64,8 +60,21 @@ export function MapScreen({ navigation }: Props) {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchHives();
+      // Fetch hives and sensor snapshot in parallel
+      const [data, dashboard] = await Promise.all([
+        fetchHives(),
+        fetchDashboard().catch(() => null),
+      ]);
       setHives(data);
+
+      // Build a lookup: hiveId → latest temp/humidity
+      if (dashboard?.allHives) {
+        const map: Record<string, { temperatureC: number; humidityPercent: number }> = {};
+        dashboard.allHives.forEach((h) => {
+          map[h.hiveId] = { temperatureC: h.temperatureC, humidityPercent: h.humidityPercent };
+        });
+        setSensorMap(map);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load hive map data");
     } finally {
@@ -75,7 +84,15 @@ export function MapScreen({ navigation }: Props) {
 
   useEffect(() => { void loadHives(); }, [loadHives]);
 
-  const mapHives = useMemo(() => hives.filter(hasMapCoordinates), [hives]);
+  const mapHives = useMemo(
+    () =>
+      hives.filter(hasMapCoordinates).map((h) => ({
+        ...h,
+        temperatureC: sensorMap[h.id]?.temperatureC,
+        humidityPercent: sensorMap[h.id]?.humidityPercent,
+      })),
+    [hives, sensorMap],
+  );
   const region = useMemo(() => getMapRegion(mapHives), [mapHives]);
 
   return (
