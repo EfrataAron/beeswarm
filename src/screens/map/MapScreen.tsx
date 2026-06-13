@@ -12,7 +12,7 @@ import { useTheme } from "../../hooks/useTheme";
 import { MainTabParamList } from "../../navigation/types";
 import { mapStyles as styles } from "./MapScreen.styles";
 import HiveMap from "../../components/HiveMap";
-import type { MapHive } from "../../components/HiveMap";
+import type { MapHive } from "../../components/HiveMap.native";
 
 const DEFAULT_MAP_REGION = {
   latitude: 0.3476,

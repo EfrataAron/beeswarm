@@ -75,12 +75,13 @@ export function normalizeMetricPoint(raw: Record<string, unknown>, index: number
 
 export function normalizeHiveHistory(raw: Record<string, unknown>, index: number) {
   const hiveId = String(raw.hiveId ?? raw.hive_id ?? raw.id ?? `Hive-${index + 1}`);
+  const hiveName = String(raw.hiveName ?? raw.hive_name ?? raw.name ?? hiveId);
   const historyRaw = raw.history ?? raw.metric_series ?? raw.metricSeries ?? [];
   const history: MetricPoint[] = Array.isArray(historyRaw)
     ? historyRaw.map((p, i) => normalizeMetricPoint(p as Record<string, unknown>, i))
     : [];
 
-  return { hiveId, history };
+  return { hiveId, hiveName, history };
 }
 
 /** Average fleet metrics per time index across all hives. */

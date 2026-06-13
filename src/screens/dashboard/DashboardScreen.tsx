@@ -14,7 +14,6 @@ import {
   AlertSeverity,
   AmbientWeather,
   DashboardData,
-  HiveStatus,
   fetchAlerts,
   fetchAmbientWeather,
   fetchDashboard,
@@ -24,10 +23,10 @@ import { useTheme } from "../../hooks/useTheme";
 import { MainTabParamList } from "../../navigation/types";
 import { createDashboardStyles } from "./DashboardScreen.styles";
 import { DonutChart } from "../../components/DonutChart";
-import { TrendLineChart } from "../../components/TrendLineChart";
 import { MetricCard } from "../../components/MetricCard";
 import { AllHivesMetricsChart } from "../../components/AllHivesMetricsChart";
 import { HiveMetricsLineChart } from "../../components/HiveMetricsLineChart";
+import { HiveStatusChart } from "../../components/HiveStatusChart";
 import { averageFleetMetrics } from "../../api/utils/metricsHistory";
 
 type Props = BottomTabScreenProps<MainTabParamList, "Dashboard">;
@@ -45,10 +44,7 @@ export function DashboardScreen({ navigation }: Props) {
   const [severityFilter, setSeverityFilter] = useState<AlertSeverity | "All">("All");
   const [hiveFilter, setHiveFilter] = useState<string>("All");
   const [selectedAlertId, setSelectedAlertId] = useState<string | null>(null);
-  const [trendRange, setTrendRange] = useState<"24h" | "7d" | "30d">("7d");
-  const [trendStatusFilter, setTrendStatusFilter] = useState<HiveStatus | "All">("All");
   const [refreshing, setRefreshing] = useState(false);
-
   const loadDashboard = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -139,21 +135,6 @@ export function DashboardScreen({ navigation }: Props) {
       filteredDashboardAlerts[0]
     );
   }, [filteredDashboardAlerts, selectedAlertId]);
-
-  const activeTrendData = useMemo(() => {
-    const allPoints = (dashboard?.preSwarmTrend ?? []).map((d) => ({
-      label: d.day,
-      count: trendStatusFilter === "All"
-        ? d.count
-        : (d.statusBreakdown?.[trendStatusFilter] ?? 0),
-    }));
-
-    if (allPoints.length === 0) return [];
-
-    if (trendRange === "24h") return allPoints.slice(-8);  // last 8 data points ≈ 24h
-    if (trendRange === "7d")  return allPoints.slice(-7);
-    return allPoints; // 30d — all available
-  }, [trendRange, trendStatusFilter, dashboard?.preSwarmTrend]);
 
   const fleetMetricSeries = useMemo(
     () => averageFleetMetrics(dashboard?.allHivesHistory ?? []),
@@ -463,77 +444,21 @@ export function DashboardScreen({ navigation }: Props) {
         </View>
       </Pressable>
 
-      {/* ── Swarm Activity Trend ── */}
+      {/* ── Hive Status Trend ── */}
       <View style={[styles.card, { backgroundColor: theme.surface }]}>
         <View style={styles.rowBetween}>
-          <Text style={styles.cardTitle}>Swarm Activity Trend</Text>
-          <View style={styles.trendRangeRow}>
-            {(["24h", "7d", "30d"] as const).map((r) => (
-              <Pressable
-                key={r}
-                style={[styles.trendRangeBtn, trendRange === r && styles.trendRangeBtnActive]}
-                onPress={() => setTrendRange(r)}
-              >
-                <Text style={[styles.trendRangeBtnText, trendRange === r && styles.trendRangeBtnTextActive]}>{r}</Text>
-              </Pressable>
-            ))}
-          </View>
+          <Text style={styles.cardTitle}>Hive Status Trend</Text>
+          <Text style={{ fontSize: 10, color: THEME.textMuted, fontWeight: "600" }}>
+            Live from DB
+          </Text>
         </View>
-
-        {/* Status filter chips */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ flexDirection: "row", gap: 6, marginTop: 8, marginBottom: 4, paddingBottom: 2 }}
-        >
-          {([
-            { key: "All",            label: "All",             color: THEME.accent },
-            { key: "swarming",       label: "Swarming",        color: "#EF4444" },
-            { key: "active",         label: "Active",          color: "#22C55E" },
-            { key: "queenless",      label: "Queenless",       color: "#EC4899" },
-            { key: "pests",          label: "Pests",           color: "#DC2626" },
-            { key: "quacking_queens",label: "Quacking Queens", color: "#8B5CF6" },
-            { key: "external_noise", label: "External Noise",  color: "#D97706" },
-            { key: "inactive_hive",  label: "Inactive",        color: "#94A3B8" },
-            { key: "Abscondment",    label: "Absconded",       color: "#6B7280" },
-          ] as Array<{ key: HiveStatus | "All"; label: string; color: string }>).map(({ key, label, color }) => {
-            const active = trendStatusFilter === key;
-            return (
-              <Pressable
-                key={key}
-                onPress={() => setTrendStatusFilter(key)}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 5,
-                  paddingHorizontal: 10,
-                  paddingVertical: 5,
-                  borderRadius: 999,
-                  borderWidth: 1.5,
-                  borderColor: active ? color : theme.line,
-                  backgroundColor: active ? `${color}18` : theme.surfaceSoft,
-                }}
-              >
-                {key !== "All" && (
-                  <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: active ? color : theme.textMuted }} />
-                )}
-                <Text style={{ fontSize: 10, fontWeight: "700", color: active ? color : theme.textMuted }}>
-                  {label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-
-        {activeTrendData.length > 0 ? (
-          <TrendLineChart data={activeTrendData} />
-        ) : (
-          <View style={{ paddingVertical: 24, alignItems: "center" }}>
-            <Text style={{ fontSize: 13, color: theme.textMuted, fontWeight: "600" }}>
-              No trend data available yet
-            </Text>
-          </View>
-        )}
+        <Text style={[styles.metricsSubtitle, { marginBottom: 4 }]}>
+          Current status distribution across all {dashboard.totalHives} hive{dashboard.totalHives !== 1 ? "s" : ""}
+        </Text>
+        <HiveStatusChart
+          statusCounts={dashboard.statusCounts}
+          totalHives={dashboard.totalHives}
+        />
       </View>
 
       {/* ── All Hives Snapshot Scatter ── */}

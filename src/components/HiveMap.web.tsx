@@ -228,7 +228,9 @@ function buildMarkerElement(
 
 export default function HiveMap({ mapHives, region, statusColor, onMarkerPress }: Props) {
   const mapElRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<any | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mapRef = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const markersRef = useRef<any[]>([]);
   const [ready, setReady] = useState(false);
 
@@ -239,15 +241,15 @@ export default function HiveMap({ mapHives, region, statusColor, onMarkerPress }
     ensureMapStyles();
     let cancelled = false;
 
-    // Dynamically import maplibre-gl so Metro doesn't fail during static analysis
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const ml = require("maplibre-gl") as typeof import("maplibre-gl");
+    // Dynamically require maplibre-gl to avoid Metro static-analysis failures
+    // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-explicit-any
+    const ml = require("maplibre-gl") as any;
 
     if (cancelled || !mapElRef.current || mapRef.current) return;
 
     const map = new ml.Map({
       container: mapElRef.current,
-      style: OSM_STYLE as Parameters<typeof ml.Map>[0]["style"],
+      style: OSM_STYLE,
       center: [region.longitude, region.latitude],
       zoom: 13,
     });
@@ -270,8 +272,8 @@ export default function HiveMap({ mapHives, region, statusColor, onMarkerPress }
   useEffect(() => {
     if (!ready || !mapRef.current) return;
 
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const ml = require("maplibre-gl") as typeof import("maplibre-gl");
+    // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-explicit-any
+    const ml = require("maplibre-gl") as any;
     const map = mapRef.current;
 
     markersRef.current.forEach((m) => m.remove());
@@ -288,7 +290,7 @@ export default function HiveMap({ mapHives, region, statusColor, onMarkerPress }
 
     if (renderedHives.length > 1) {
       const bounds = new ml.LngLatBounds();
-      renderedHives.forEach((h) => bounds.extend([h.longitude, h.latitude]));
+      renderedHives.forEach((h: MapHive) => bounds.extend([h.longitude, h.latitude]));
       map.fitBounds(bounds, { padding: 60, maxZoom: 15 });
     } else if (renderedHives.length === 1) {
       map.flyTo({ center: [renderedHives[0].longitude, renderedHives[0].latitude], zoom: 14 });
