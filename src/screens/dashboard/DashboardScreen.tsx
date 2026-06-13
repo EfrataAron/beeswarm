@@ -26,7 +26,7 @@ import { DonutChart } from "../../components/DonutChart";
 import { MetricCard } from "../../components/MetricCard";
 import { AllHivesMetricsChart } from "../../components/AllHivesMetricsChart";
 import { HiveMetricsLineChart } from "../../components/HiveMetricsLineChart";
-import { HiveStatusChart } from "../../components/HiveStatusChart";
+import { HiveStatusTrendChart } from "../../components/HiveStatusTrendChart";
 import { averageFleetMetrics } from "../../api/utils/metricsHistory";
 
 type Props = BottomTabScreenProps<MainTabParamList, "Dashboard">;
@@ -453,12 +453,9 @@ export function DashboardScreen({ navigation }: Props) {
           </Text>
         </View>
         <Text style={[styles.metricsSubtitle, { marginBottom: 4 }]}>
-          Current status distribution across all {dashboard.totalHives} hive{dashboard.totalHives !== 1 ? "s" : ""}
+          Status counts over time · tap chips to filter
         </Text>
-        <HiveStatusChart
-          statusCounts={dashboard.statusCounts}
-          totalHives={dashboard.totalHives}
-        />
+        <HiveStatusTrendChart statusTrend={dashboard.statusTrend ?? []} />
       </View>
 
       {/* ── All Hives Snapshot Scatter ── */}

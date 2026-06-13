@@ -75,6 +75,47 @@ export async function fetchFleetMetricsFromHives(): Promise<{
 }
 
 /**
+ * Build a per-time-label status-count trend from hive histories and their
+ * current statuses.  Because the API records the *current* state of each
+ * hive (not a full state-change log), we use the current status for every
+ * time point — giving a real picture of how many hives sit in each state
+ * across the time window.
+ *
+ * Returns points sorted chronologically, one entry per unique time label.
+ */
+function buildStatusTrend(
+  allHivesHistory: HiveHistoryEntry[],
+  allHives: HiveSnapshot[],
+): DashboardData["statusTrend"] {
+  // Collect ordered unique time labels
+  const labelSet: string[] = [];
+  const seen = new Set<string>();
+  allHivesHistory.forEach((h) => {
+    h.history.forEach((p) => {
+      if (!seen.has(p.timeLabel)) {
+        seen.add(p.timeLabel);
+        labelSet.push(p.timeLabel);
+      }
+    });
+  });
+
+  // Build a status→count map per time label.
+  // For each time label that a hive has a reading for, add its current status.
+  return labelSet.map((timeLabel) => {
+    const counts: Partial<Record<HiveStatus, number>> = {};
+    allHivesHistory.forEach((h, idx) => {
+      const hasReading = h.history.some((p) => p.timeLabel === timeLabel);
+      if (!hasReading) return;
+      const status = allHives[idx]?.status;
+      if (status) {
+        counts[status] = (counts[status] ?? 0) + 1;
+      }
+    });
+    return { timeLabel, counts };
+  });
+}
+
+/**
  * Build trend points per day from hive metric histories.
  * "Count" = number of hives whose last reading for that day exceeds the
  * pre-swarm temperature threshold (34.5 °C).
@@ -186,6 +227,7 @@ export async function fetchDashboard(): Promise<DashboardData> {
       : [],
     allHives: [],
     allHivesHistory: [],
+    statusTrend: [],
     pendingAdvisoryActions: Number(
       raw?.pending_advisory_actions ?? raw?.pendingAdvisoryActions ?? 0,
     ),
@@ -238,7 +280,10 @@ export async function fetchDashboard(): Promise<DashboardData> {
       result.allHivesHistory = allHivesHistory;
       result.allHives = allHives;
 
-      // Build trend from real hive history data (replaces / enriches API trend)
+      // Build status trend from real hive history + current statuses
+      result.statusTrend = buildStatusTrend(allHivesHistory, allHives);
+
+      // Build preSwarmTrend from real hive history data (replaces / enriches API trend)
       const historyTrend = buildTrendFromHistory(allHivesHistory, allHives);
       if (historyTrend.length > 0) {
         result.preSwarmTrend = historyTrend;
