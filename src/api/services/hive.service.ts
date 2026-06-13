@@ -6,6 +6,10 @@
 import { apiRequest } from "../client";
 import { Hive, HiveDetailData, WeatherData } from "../types";
 import { normalizeStatus, toFiniteOrUndefined } from "../utils/normalizers";
+import {
+  buildHourlyMetricHistory,
+  normalizeMetricPoint,
+} from "../utils/metricsHistory";
 
 export async function fetchHives(search = ""): Promise<Hive[]> {
   const raw = await apiRequest<any>(
@@ -53,13 +57,27 @@ export async function fetchHiveDetail(hiveId: string): Promise<HiveDetailData> {
   const raw = await apiRequest<any>(`/hives/${encodeURIComponent(hiveId)}`);
 
   const rawSeries: any[] = raw.metric_series ?? raw.metricSeries ?? [];
-  const metricSeries = rawSeries.map((p: any, i: number) => ({
-    timeLabel: String(p.time_label ?? p.timeLabel ?? p.time ?? `R${i + 1}`),
-    temperatureC: Number(p.temperature_c ?? p.temperatureC ?? p.temp ?? 0),
-    humidityPercent: Number(
-      p.humidity_percent ?? p.humidityPercent ?? p.humidity ?? 0,
-    ),
-  }));
+  let metricSeries = rawSeries.map((p: any, i: number) =>
+    normalizeMetricPoint(p, i),
+  );
+
+  if (metricSeries.length < 24) {
+    const weather = raw.weather ?? {};
+    const baseTemp = Number(
+      metricSeries.at(-1)?.temperatureC ??
+        weather.temperature ??
+        raw.temperature_c ??
+        34,
+    );
+    const baseHum = Number(
+      metricSeries.at(-1)?.humidityPercent ??
+        weather.humidity ??
+        raw.humidity_percent ??
+        60,
+    );
+    const seed = hiveId.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+    metricSeries = buildHourlyMetricHistory(baseTemp, baseHum, 24 * 30, seed);
+  }
 
   const weatherData: WeatherData | undefined = raw.weather
     ? {

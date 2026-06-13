@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -17,6 +18,7 @@ import { THEME } from "../../../theme";
 import { HivesStackParamList } from "../../../navigation/types";
 // import { createHiveStyles as styles } from "./CreateHiveScreen.styles";
 import { StyleSheet } from "react-native";
+import { CalendarPicker } from "../../../components/CalendarPicker";
 
 const styles = StyleSheet.create({
   container: { padding: 16, paddingBottom: 40 },
@@ -84,6 +86,73 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   dateButtonText: { color: THEME.primary, fontSize: 14, fontWeight: "600" },
+  calendarButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    backgroundColor: THEME.surfaceSoft,
+    borderWidth: 1,
+    borderColor: THEME.line,
+    borderRadius: 8,
+    paddingVertical: 11,
+    marginBottom: 10,
+  },
+  calendarButtonText: { color: THEME.primary, fontSize: 14, fontWeight: "600" },
+  calendarButtonValue: { color: THEME.accent, fontSize: 14, fontWeight: "700" },
+  // Success Modal
+  successModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  successModalBox: {
+    width: 300,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 18,
+    padding: 28,
+    alignItems: "center" as const,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 10,
+  },
+  successModalIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "#DCFCE7",
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    marginBottom: 16,
+  },
+  successModalTitle: {
+    fontSize: 18,
+    fontWeight: "800" as const,
+    color: THEME.primary,
+    textAlign: "center" as const,
+    marginBottom: 8,
+  },
+  successModalBody: {
+    fontSize: 14,
+    color: THEME.textMuted,
+    textAlign: "center" as const,
+    lineHeight: 20,
+    marginBottom: 22,
+  },
+  successModalBtn: {
+    backgroundColor: THEME.accent,
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 40,
+  },
+  successModalBtnText: {
+    color: THEME.primary,
+    fontWeight: "800" as const,
+    fontSize: 15,
+  },
   locationButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -126,6 +195,9 @@ export function CreateHiveScreen({ navigation, route, currentUser }: Props) {
   const [loading, setLoading] = useState(false);
   const [loadingLocation, setLoadingLocation] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [calendarVisible, setCalendarVisible] = useState(false);
+  const [successVisible, setSuccessVisible] = useState(false);
+  const [createdHiveName, setCreatedHiveName] = useState("");
 
   // Helper to format date as YYYY-MM-DD
   const formatDate = (date: Date): string => {
@@ -290,11 +362,9 @@ export function CreateHiveScreen({ navigation, route, currentUser }: Props) {
         owner_id: currentUser.id,
       });
 
-      // Navigate back to HiveList with a refresh parameter
-      navigation.navigate("HiveList", { refresh: Date.now() });
-      
-      // Show success message
-      Alert.alert("Success", "Hive created successfully!");
+      // Show success popup
+      setCreatedHiveName(hiveName.trim());
+      setSuccessVisible(true);
     } catch (err) {
       Alert.alert(
         "Error",
@@ -306,6 +376,7 @@ export function CreateHiveScreen({ navigation, route, currentUser }: Props) {
   };
 
   return (
+    <>
     <ScrollView
       style={{ flex: 1, backgroundColor: THEME.page }}
       contentContainerStyle={styles.container}
@@ -395,6 +466,7 @@ export function CreateHiveScreen({ navigation, route, currentUser }: Props) {
             <Text style={styles.label}>
               Installation Date <Text style={styles.required}>*</Text>
             </Text>
+            {/* Quick-select: Today / Tomorrow */}
             <View style={styles.dateButtonRow}>
               <Pressable style={styles.dateButton} onPress={setToday}>
                 <Ionicons
@@ -413,20 +485,19 @@ export function CreateHiveScreen({ navigation, route, currentUser }: Props) {
                 <Text style={styles.dateButtonText}>Tomorrow</Text>
               </Pressable>
             </View>
-            <TextInput
-              style={[
-                styles.input,
-                errors.installationDate && styles.inputError,
-              ]}
-              placeholder="YYYY-MM-DD (e.g., 2026-06-04)"
-              placeholderTextColor={THEME.placeholder}
-              value={installationDate}
-              onChangeText={(text) => {
-                setInstallationDate(text);
-                if (errors.installationDate)
-                  setErrors({ ...errors, installationDate: "" });
-              }}
-            />
+            {/* Calendar picker button */}
+            <Pressable
+              style={[styles.calendarButton, errors.installationDate ? { borderColor: "#EF4444" } : {}]}
+              onPress={() => setCalendarVisible(true)}
+            >
+              <Ionicons name="calendar" size={16} color={THEME.accent} />
+              <Text style={styles.calendarButtonText}>Pick a date  </Text>
+              {installationDate ? (
+                <Text style={styles.calendarButtonValue}>{installationDate}</Text>
+              ) : (
+                <Text style={{ color: THEME.placeholder, fontSize: 14 }}>YYYY-MM-DD</Text>
+              )}
+            </Pressable>
             {errors.installationDate && (
               <Text style={styles.errorText}>{errors.installationDate}</Text>
             )}
@@ -533,5 +604,53 @@ export function CreateHiveScreen({ navigation, route, currentUser }: Props) {
         </View>
       )}
     </ScrollView>
+
+    {/* ── Calendar Picker Modal ── */}
+    <CalendarPicker
+      visible={calendarVisible}
+      value={installationDate}
+      minDate={new Date().toISOString().slice(0, 10)}
+      onConfirm={(date) => {
+        setInstallationDate(date);
+        setCalendarVisible(false);
+        if (errors.installationDate) setErrors({ ...errors, installationDate: "" });
+      }}
+      onCancel={() => setCalendarVisible(false)}
+    />
+
+    {/* ── Success Popup ── */}
+    <Modal
+      visible={successVisible}
+      transparent
+      animationType="fade"
+      onRequestClose={() => {
+        setSuccessVisible(false);
+        navigation.navigate("HiveList", { refresh: Date.now() });
+      }}
+    >
+      <View style={styles.successModalOverlay}>
+        <View style={styles.successModalBox}>
+          <View style={styles.successModalIcon}>
+            <Ionicons name="checkmark-circle" size={34} color="#16A34A" />
+          </View>
+          <Text style={styles.successModalTitle}>
+            Hive Created!
+          </Text>
+          <Text style={styles.successModalBody}>
+            "{createdHiveName}" has been successfully added to your apiary.
+          </Text>
+          <Pressable
+            style={styles.successModalBtn}
+            onPress={() => {
+              setSuccessVisible(false);
+              navigation.navigate("HiveList", { refresh: Date.now() });
+            }}
+          >
+            <Text style={styles.successModalBtnText}>View Hives</Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
+  </>
   );
 }

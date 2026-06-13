@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Pressable,
   ScrollView,
@@ -10,8 +10,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { THEME } from "../../theme";
+import { useTheme } from "../../hooks/useTheme";
 import { RootStackParamList } from "../../navigation/types";
-import { settingsStyles as styles } from "./SettingsScreen.styles";
+import { createSettingsStyles } from "./SettingsScreen.styles";
 
 const PREF_PUSH = "@bsads/push_notifications";
 const PREF_CRITICAL = "@bsads/critical_alerts_only";
@@ -26,6 +27,8 @@ export function SettingsScreen({
   darkModeEnabled,
   onDarkModeChange,
 }: Props) {
+  const theme = useTheme();
+  const styles = useMemo(() => createSettingsStyles(theme), [theme]);
   const [pushNotificationsEnabled, setPushNotificationsEnabled] = useState(true);
   const [criticalAlertsOnly, setCriticalAlertsOnly] = useState(false);
   const [satelliteMapEnabled, setSatelliteMapEnabled] = useState(false);
@@ -65,11 +68,11 @@ export function SettingsScreen({
 
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: THEME.page }}
-      contentContainerStyle={styles.settingsPage}
+      style={{ flex: 1, backgroundColor: theme.page }}
+      contentContainerStyle={[styles.settingsPage, { backgroundColor: theme.page }]}
       showsVerticalScrollIndicator={false}
     >
-      <View style={styles.settingsSection}>
+      <View style={[styles.settingsSection, { backgroundColor: theme.surface, borderColor: theme.line }]}>
         <Text style={styles.settingsSectionTitle}>Account</Text>
         <View style={styles.settingsAccountCard}>
           <View style={styles.settingsAvatar}>

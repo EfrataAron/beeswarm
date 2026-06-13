@@ -1,7 +1,347 @@
+// import { StyleSheet } from "react-native";
+// import { THEME } from "../../../theme";
+
+// export const hiveDetailsStyles = StyleSheet.create({
+//   centerState: {
+//     flex: 1,
+//     alignItems: "center",
+//     justifyContent: "center",
+//     gap: 12,
+//     padding: 24,
+//   },
+//   stateText: {
+//     color: THEME.textMuted,
+//     fontWeight: "600",
+//     fontSize: 14,
+//   },
+//   errorTitle: {
+//     fontSize: 16,
+//     fontWeight: "800",
+//     color: THEME.primary,
+//   },
+//   errorBody: {
+//     color: "#B91C1C",
+//     fontSize: 13,
+//     fontWeight: "600",
+//     textAlign: "center",
+//   },
+//   primaryButtonSmall: {
+//     marginTop: 12,
+//     backgroundColor: THEME.accent,
+//     borderRadius: 10,
+//     paddingVertical: 10,
+//     paddingHorizontal: 16,
+//     alignItems: "center",
+//     justifyContent: "center",
+//     alignSelf: "center",
+//   },
+//   primaryButtonText: {
+//     color: THEME.primary,
+//     fontWeight: "800",
+//     fontSize: 15,
+//   },
+//   detailPage: {
+//     paddingHorizontal: 14,
+//     paddingTop: 14,
+//     paddingBottom: 32,
+//   },
+//   detailHeroCard: {
+//     backgroundColor: THEME.primary,
+//     borderRadius: 16,
+//     padding: 18,
+//     marginBottom: 14,
+//   },
+//   detailHeroTopRow: {
+//     flexDirection: "row",
+//     alignItems: "center",
+//     gap: 12,
+//   },
+//   detailHeroTextWrap: { flex: 1 },
+//   detailHiveName: {
+//     fontSize: 20,
+//     fontWeight: "800",
+//     color: "#FFFFFF",
+//     marginBottom: 3,
+//   },
+//   detailHeroMetaRow: {
+//     flexDirection: "row",
+//     alignItems: "center",
+//     gap: 3,
+//   },
+//   detailHeroMeta: {
+//     fontSize: 12,
+//     color: "rgba(255,255,255,0.6)",
+//     fontWeight: "500",
+//   },
+//   detailStateDurationRow: {
+//     flexDirection: "row",
+//     alignItems: "center",
+//     justifyContent: "space-between",
+//     gap: 10,
+//     marginTop: 10,
+//   },
+//   detailStateLabelContainer: {
+//     flex: 1,
+//   },
+//   detailStateLabel: {
+//     fontSize: 15,
+//     fontWeight: "800",
+//   },
+//   detailLastAnalysisTime: {
+//     fontSize: 11,
+//     color: "rgba(255,255,255,0.6)",
+//     fontWeight: "500",
+//     marginTop: 2,
+//   },
+//   detailDurationBadge: {
+//     flexDirection: "row",
+//     alignItems: "center",
+//     gap: 3,
+//     backgroundColor: "rgba(255,255,255,0.15)",
+//     paddingHorizontal: 8,
+//     paddingVertical: 3,
+//     borderRadius: 20,
+//   },
+//   detailDurationText: {
+//     fontSize: 11,
+//     color: "rgba(255,255,255,0.8)",
+//     fontWeight: "600",
+//   },
+//   heroDivider: {
+//     height: 1,
+//     backgroundColor: "rgba(255,255,255,0.12)",
+//     marginVertical: 14,
+//   },
+//   detailAlertBanner: {
+//     flexDirection: "row",
+//     alignItems: "flex-start",
+//     gap: 10,
+//     backgroundColor: "rgba(255,178,104,0.12)",
+//     borderRadius: 10,
+//     padding: 12,
+//   },
+//   detailAlertIconWrap: {
+//     width: 32,
+//     height: 32,
+//     borderRadius: 8,
+//     backgroundColor: "rgba(255,178,104,0.2)",
+//     alignItems: "center",
+//     justifyContent: "center",
+//   },
+//   detailAlertTitle: {
+//     color: THEME.accent,
+//     fontSize: 13,
+//     fontWeight: "800",
+//     marginBottom: 3,
+//   },
+//   detailAlertSubtitle: {
+//     color: "rgba(255,255,255,0.7)",
+//     fontSize: 12,
+//     lineHeight: 17,
+//   },
+//   statusPill: {
+//     borderRadius: 999,
+//     paddingHorizontal: 12,
+//     paddingVertical: 8,
+//   },
+//   statusPillText: {
+//     fontSize: 12,
+//     fontWeight: "800",
+//   },
+//   card: {
+//     backgroundColor: "#FFFFFF",
+//     borderWidth: 1,
+//     borderColor: THEME.line,
+//     borderRadius: 14,
+//     padding: 14,
+//     marginBottom: 14,
+//   },
+//   cardTitle: {
+//     fontSize: 15,
+//     fontWeight: "800",
+//     color: THEME.primary,
+//     marginBottom: 2,
+//   },
+//   rowBetween: {
+//     flexDirection: "row",
+//     alignItems: "center",
+//     justifyContent: "space-between",
+//   },
+//   hiveAlertCountBadge: {
+//     backgroundColor: THEME.surfaceSoft,
+//     borderRadius: 999,
+//     paddingHorizontal: 10,
+//     paddingVertical: 3,
+//     borderWidth: 1,
+//     borderColor: THEME.line,
+//   },
+//   hiveAlertCountText: {
+//     fontSize: 11,
+//     fontWeight: "700",
+//     color: THEME.textMuted,
+//   },
+//   hiveAlertEmpty: {
+//     alignItems: "center",
+//     paddingVertical: 20,
+//     gap: 8,
+//   },
+//   hiveAlertEmptyText: {
+//     fontSize: 13,
+//     color: THEME.textMuted,
+//     fontWeight: "600",
+//   },
+//   hiveAlertRow: {
+//     flexDirection: "row",
+//     borderRadius: 12,
+//     borderWidth: 1,
+//     borderColor: THEME.line,
+//     backgroundColor: "#FFFFFF",
+//     marginTop: 10,
+//     overflow: "hidden",
+//   },
+//   hiveAlertSeverityBar: {
+//     width: 4,
+//     borderTopLeftRadius: 12,
+//     borderBottomLeftRadius: 12,
+//   },
+//   hiveAlertContent: {
+//     flex: 1,
+//     padding: 12,
+//     gap: 6,
+//   },
+//   hiveAlertHeader: {
+//     flexDirection: "row",
+//     alignItems: "center",
+//     justifyContent: "space-between",
+//   },
+//   hiveAlertSeverityBadge: {
+//     borderRadius: 999,
+//     paddingHorizontal: 8,
+//     paddingVertical: 3,
+//   },
+//   hiveAlertSeverityText: {
+//     fontSize: 11,
+//     fontWeight: "700",
+//   },
+//   hiveAlertDate: {
+//     fontSize: 11,
+//     color: THEME.textMuted,
+//     fontWeight: "500",
+//   },
+//   hiveAlertTitle: {
+//     fontSize: 13,
+//     fontWeight: "700",
+//     color: THEME.primary,
+//   },
+//   hiveAlertSummary: {
+//     fontSize: 12,
+//     color: THEME.textMuted,
+//     lineHeight: 17,
+//   },
+//   metricsSubtitle: {
+//     color: "#667085",
+//     fontWeight: "600",
+//     fontSize: 12,
+//     marginTop: 2,
+//     marginBottom: 10,
+//   },
+//   metricsHighlightsRow: {
+//     flexDirection: "row",
+//     flexWrap: "nowrap",
+//     gap: 8,
+//     marginBottom: 10,
+//   },
+//   metricHighlightCard: {
+//     flex: 1,
+//     backgroundColor: THEME.surfaceSoft,
+//     borderWidth: 1,
+//     borderColor: THEME.line,
+//     borderRadius: 12,
+//     paddingVertical: 12,
+//     paddingHorizontal: 12,
+//     gap: 4,
+//   },
+//   metricHighlightLabel: {
+//     color: THEME.textMuted,
+//     fontSize: 11,
+//     fontWeight: "600",
+//   },
+//   metricHighlightValue: {
+//     color: THEME.primary,
+//     fontSize: 20,
+//     fontWeight: "800",
+//   },
+//   metricsLegendRow: {
+//     flexDirection: "row",
+//     gap: 14,
+//     marginBottom: 8,
+//   },
+//   metricsLegendItem: {
+//     flexDirection: "row",
+//     alignItems: "center",
+//   },
+//   legendDot: {
+//     width: 10,
+//     height: 10,
+//     borderRadius: 10,
+//     marginRight: 8,
+//   },
+//   legendText: {
+//     color: "#475467",
+//     fontWeight: "600",
+//   },
+//   weatherHeader: {
+//     flexDirection: "row",
+//     alignItems: "center",
+//     gap: 8,
+//     marginBottom: 4,
+//   },
+//   weatherSubtitle: {
+//     color: "#667085",
+//     fontWeight: "600",
+//     fontSize: 12,
+//     marginBottom: 14,
+//   },
+//   weatherDataRow: {
+//     flexDirection: "row",
+//     gap: 12,
+//     marginBottom: 10,
+//   },
+//   weatherCard: {
+//     flex: 1,
+//     borderRadius: 12,
+//     paddingVertical: 16,
+//     paddingHorizontal: 14,
+//     alignItems: "center",
+//     gap: 6,
+//     borderWidth: 1,
+//     borderColor: THEME.line,
+//   },
+//   weatherValue: {
+//     color: THEME.primary,
+//     fontSize: 22,
+//     fontWeight: "800",
+//   },
+//   weatherLabel: {
+//     color: THEME.textMuted,
+//     fontSize: 11,
+//     fontWeight: "600",
+//   },
+//   weatherTimestamp: {
+//     fontSize: 11,
+//     color: THEME.textMuted,
+//     fontWeight: "500",
+//     textAlign: "center",
+//   },
+// });
+
 import { StyleSheet } from "react-native";
 import { THEME } from "../../../theme";
 
-export const hiveDetailsStyles = StyleSheet.create({
+type ThemeSnapshot = typeof THEME;
+
+export function createHiveDetailsStyles(t: ThemeSnapshot) {
+  return StyleSheet.create({
   centerState: {
     flex: 1,
     alignItems: "center",
@@ -10,14 +350,14 @@ export const hiveDetailsStyles = StyleSheet.create({
     padding: 24,
   },
   stateText: {
-    color: THEME.textMuted,
+    color: t.textMuted,
     fontWeight: "600",
     fontSize: 14,
   },
   errorTitle: {
     fontSize: 16,
     fontWeight: "800",
-    color: THEME.primary,
+    color: t.primary,
   },
   errorBody: {
     color: "#B91C1C",
@@ -27,7 +367,7 @@ export const hiveDetailsStyles = StyleSheet.create({
   },
   primaryButtonSmall: {
     marginTop: 12,
-    backgroundColor: THEME.accent,
+    backgroundColor: t.accent,
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 16,
@@ -36,7 +376,7 @@ export const hiveDetailsStyles = StyleSheet.create({
     alignSelf: "center",
   },
   primaryButtonText: {
-    color: THEME.primary,
+    color: t.primary,
     fontWeight: "800",
     fontSize: 15,
   },
@@ -46,7 +386,7 @@ export const hiveDetailsStyles = StyleSheet.create({
     paddingBottom: 32,
   },
   detailHeroCard: {
-    backgroundColor: THEME.primary,
+    backgroundColor: t.primary,
     borderRadius: 16,
     padding: 18,
     marginBottom: 14,
@@ -60,7 +400,7 @@ export const hiveDetailsStyles = StyleSheet.create({
   detailHiveName: {
     fontSize: 20,
     fontWeight: "800",
-    color: "#FFFFFF",
+    color: t.surface,
     marginBottom: 3,
   },
   detailHeroMetaRow: {
@@ -89,7 +429,7 @@ export const hiveDetailsStyles = StyleSheet.create({
   },
   detailLastAnalysisTime: {
     fontSize: 11,
-    color: "rgba(255,255,255,0.6)",
+    color: t.textMuted,
     fontWeight: "500",
     marginTop: 2,
   },
@@ -129,7 +469,7 @@ export const hiveDetailsStyles = StyleSheet.create({
     justifyContent: "center",
   },
   detailAlertTitle: {
-    color: THEME.accent,
+    color: t.accent,
     fontSize: 13,
     fontWeight: "800",
     marginBottom: 3,
@@ -148,10 +488,10 @@ export const hiveDetailsStyles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "800",
   },
-  card: {
-    backgroundColor: "#FFFFFF",
+card: {
+    backgroundColor: t.surface,
     borderWidth: 1,
-    borderColor: THEME.line,
+    borderColor: t.line,
     borderRadius: 14,
     padding: 14,
     marginBottom: 14,
@@ -159,7 +499,7 @@ export const hiveDetailsStyles = StyleSheet.create({
   cardTitle: {
     fontSize: 15,
     fontWeight: "800",
-    color: THEME.primary,
+    color: t.primary,
     marginBottom: 2,
   },
   rowBetween: {
@@ -168,34 +508,35 @@ export const hiveDetailsStyles = StyleSheet.create({
     justifyContent: "space-between",
   },
   hiveAlertCountBadge: {
-    backgroundColor: THEME.surfaceSoft,
+    backgroundColor: "#DC2626",
     borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderWidth: 1,
-    borderColor: THEME.line,
+    minWidth: 22,
+    height: 22,
+    paddingHorizontal: 6,
+    alignItems: "center",
+    justifyContent: "center",
   },
   hiveAlertCountText: {
     fontSize: 11,
-    fontWeight: "700",
-    color: THEME.textMuted,
+    fontWeight: "800",
+    color: t.surface,
   },
   hiveAlertEmpty: {
     alignItems: "center",
-    paddingVertical: 20,
-    gap: 8,
+    paddingVertical: 24,
+    gap: 6,
   },
   hiveAlertEmptyText: {
     fontSize: 13,
-    color: THEME.textMuted,
-    fontWeight: "600",
+    color: "#16A34A",
+    fontWeight: "700",
   },
   hiveAlertRow: {
     flexDirection: "row",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: THEME.line,
-    backgroundColor: "#FFFFFF",
+    borderColor: t.line,
+    backgroundColor: t.surface,
     marginTop: 10,
     overflow: "hidden",
   },
@@ -225,21 +566,55 @@ export const hiveDetailsStyles = StyleSheet.create({
   },
   hiveAlertDate: {
     fontSize: 11,
-    color: THEME.textMuted,
+    color: t.textMuted,
     fontWeight: "500",
   },
   hiveAlertTitle: {
     fontSize: 13,
     fontWeight: "700",
-    color: THEME.primary,
+    color: t.primary,
   },
   hiveAlertSummary: {
     fontSize: 12,
-    color: THEME.textMuted,
+    color: t.textMuted,
     lineHeight: 17,
   },
+  // Compact Alert Styles
+  hiveAlertRowCompact: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    backgroundColor: t.surfaceSoft,
+    borderWidth: 1,
+    borderColor: t.line,
+    marginTop: 8,
+  },
+  alertIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  alertContentCompact: {
+    flex: 1,
+    gap: 2,
+  },
+  alertTitleCompact: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: t.primary,
+  },
+  alertTimeCompact: {
+    fontSize: 11,
+    color: t.textMuted,
+    fontWeight: "500",
+  },
   metricsSubtitle: {
-    color: "#667085",
+    color: t.textMuted,
     fontWeight: "600",
     fontSize: 12,
     marginTop: 2,
@@ -253,21 +628,21 @@ export const hiveDetailsStyles = StyleSheet.create({
   },
   metricHighlightCard: {
     flex: 1,
-    backgroundColor: THEME.surfaceSoft,
+    backgroundColor: t.surfaceSoft,
     borderWidth: 1,
-    borderColor: THEME.line,
+    borderColor: t.line,
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 12,
     gap: 4,
   },
   metricHighlightLabel: {
-    color: THEME.textMuted,
+    color: t.textMuted,
     fontSize: 11,
     fontWeight: "600",
   },
   metricHighlightValue: {
-    color: THEME.primary,
+    color: t.primary,
     fontSize: 20,
     fontWeight: "800",
   },
@@ -287,7 +662,7 @@ export const hiveDetailsStyles = StyleSheet.create({
     marginRight: 8,
   },
   legendText: {
-    color: "#475467",
+    color: t.textMuted,
     fontWeight: "600",
   },
   weatherHeader: {
@@ -297,7 +672,7 @@ export const hiveDetailsStyles = StyleSheet.create({
     marginBottom: 4,
   },
   weatherSubtitle: {
-    color: "#667085",
+    color: t.textMuted,
     fontWeight: "600",
     fontSize: 12,
     marginBottom: 14,
@@ -315,22 +690,25 @@ export const hiveDetailsStyles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
     borderWidth: 1,
-    borderColor: THEME.line,
+    borderColor: t.line,
   },
   weatherValue: {
-    color: THEME.primary,
+    color: t.primary,
     fontSize: 22,
     fontWeight: "800",
   },
   weatherLabel: {
-    color: THEME.textMuted,
+    color: t.textMuted,
     fontSize: 11,
     fontWeight: "600",
   },
   weatherTimestamp: {
     fontSize: 11,
-    color: THEME.textMuted,
+    color: t.textMuted,
     fontWeight: "500",
     textAlign: "center",
   },
-});
+  });
+}
+
+export const hiveDetailsStyles = createHiveDetailsStyles(THEME);

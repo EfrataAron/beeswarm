@@ -1,6 +1,6 @@
-import React, { useState } from "react";
-import { Text, View } from "react-native";
-import { THEME } from "../theme";
+import React, { useMemo, useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useTheme } from "../hooks/useTheme";
 
 type MetricPoint = {
   timeLabel: string;
@@ -8,135 +8,435 @@ type MetricPoint = {
   humidityPercent: number;
 };
 
-type Props = {
-  metricSeries: MetricPoint[];
+type TimeRange = "24h" | "7d" | "30d";
+
+type PerHiveSeries = {
   hiveId: string;
+  hiveName: string;
+  history: MetricPoint[];
 };
 
-export function HiveMetricsLineChart({ metricSeries, hiveId: _hiveId }: Props) {
+type Props = {
+  metricSeries: MetricPoint[];
+  // hiveId: string;
+  hiveName: string;
+  showRangeFilter?: boolean;
+  /** When set (dashboard), tapping a dot lists each hive's name and value at that time. */
+  perHiveSeries?: PerHiveSeries[];
+};
+
+const RANGE_LABELS: Record<TimeRange, string> = { "24h": "24 h", "7d": "7 d", "30d": "30 d" };
+const RANGES: TimeRange[] = ["24h", "7d", "30d"];
+
+/** Slice the series to simulate the selected range. */
+function sliceForRange(series: MetricPoint[], range: TimeRange): MetricPoint[] {
+  if (series.length === 0) return series;
+  if (range === "24h") return series.slice(-24);
+  if (range === "7d")  return series.slice(-7 * 24);
+  return series; // 30d — show all
+}
+
+type SelectedPoint = {
+  x: number;
+  y: number;
+  value: number;
+  label: string;
+  type: string;
+  index: number;
+  hiveBreakdown?: Array<{ hiveName: string; value: number }>;
+};
+
+export function HiveMetricsLineChart({
+  metricSeries,
+  // hiveId: _hiveId,
+  hiveName: _hiveName,
+  showRangeFilter = true,
+  perHiveSeries,
+}: Props) {
+  const theme = useTheme();
+  const [range, setRange] = useState<TimeRange>("24h");
   const [chartWidth, setChartWidth] = useState(0);
-  const CHART_HEIGHT = 160;
-  const PAD_TOP = 16;
-  const PAD_BOTTOM = 26;
-  const PAD_LEFT = 36;
-  const PAD_RIGHT = 12;
+  const [selectedPoint, setSelectedPoint] = useState<SelectedPoint | null>(null);
+
+  const series = useMemo(() => sliceForRange(metricSeries, range), [metricSeries, range]);
+
+  const slicedPerHive = useMemo(
+    () =>
+      perHiveSeries?.map((hive) => ({
+        ...hive,
+        history: sliceForRange(hive.history, range),
+      })) ?? [],
+    [perHiveSeries, range],
+  );
+
+  const selectPoint = (
+    point: { x: number; y: number; value: number; label: string },
+    type: string,
+    index: number,
+  ) => {
+    const isTemp = type === "Temperature";
+    const hiveBreakdown = slicedPerHive
+      .map((hive) => {
+        const reading = hive.history[index];
+        if (!reading) return null;
+        return {
+          hiveName: hive.hiveName || hive.hiveId,
+          value: isTemp ? reading.temperatureC : reading.humidityPercent,
+        };
+      })
+      .filter((row): row is { hiveName: string; value: number } => row !== null);
+
+    setSelectedPoint({
+      ...point,
+      type,
+      index,
+      hiveBreakdown: hiveBreakdown.length > 0 ? hiveBreakdown : undefined,
+    });
+  };
+
+  const CHART_HEIGHT   = 220;
+  const PAD_TOP        = 20;
+  const PAD_BOTTOM     = 32;
+  const PAD_LEFT       = 36;
+  const PAD_RIGHT      = 40;
   const THRESHOLD_TEMP = 34.5;
+  const THRESHOLD_HUM  = 65;
 
   if (metricSeries.length === 0) {
-    return <Text style={{ textAlign: "center", color: THEME.textMuted }}>No data available</Text>;
+    return (
+      <Text style={{ textAlign: "center", color: theme.textMuted, paddingVertical: 20 }}>
+        No sensor data available yet.
+      </Text>
+    );
   }
 
-  const tempValues = metricSeries.map((p) => p.temperatureC);
-  const humidityValues = metricSeries.map((p) => p.humidityPercent);
-  const maxTemp = Math.max(...tempValues, THRESHOLD_TEMP + 5, 40);
-  const minTemp = Math.min(...tempValues, THRESHOLD_TEMP - 5, 25);
-  const maxHumidity = Math.max(...humidityValues, 100);
-  const minHumidity = Math.min(...humidityValues, 0);
+  const tempVals = series.map(p => p.temperatureC);
+  const humVals  = series.map(p => p.humidityPercent);
 
-  const avgTemp = tempValues.reduce((a, b) => a + b) / tempValues.length;
-  const avgHumidity = humidityValues.reduce((a, b) => a + b) / humidityValues.length;
-  const maxTempVal = Math.max(...tempValues);
-  const minTempVal = Math.min(...tempValues);
-  const maxHumidityVal = Math.max(...humidityValues);
-  const minHumidityVal = Math.min(...humidityValues);
+  slicedPerHive.forEach((hive) => {
+    hive.history.forEach((p) => {
+      tempVals.push(p.temperatureC);
+      humVals.push(p.humidityPercent);
+    });
+  });
 
-  const n = metricSeries.length;
+  const maxT = Math.max(...tempVals, THRESHOLD_TEMP + 4, 38);
+  const minT = Math.min(...tempVals, THRESHOLD_TEMP - 4, 24);
+  const maxH = Math.max(...humVals, 100);
+  const minH = Math.min(...humVals, 0);
+
+  const n     = series.length;
   const plotW = Math.max(chartWidth - PAD_LEFT - PAD_RIGHT, 1);
   const plotH = CHART_HEIGHT - PAD_TOP - PAD_BOTTOM;
 
-  const tempPts = metricSeries.map((d, i) => ({
-    x: PAD_LEFT + (n > 1 ? (i / (n - 1)) * plotW : plotW / 2),
-    y: PAD_TOP + ((maxTemp - d.temperatureC) / (maxTemp - minTemp)) * plotH,
-    label: d.timeLabel,
-    value: d.temperatureC,
-  }));
+  const xOf = (i: number) => PAD_LEFT + (n > 1 ? (i / (n - 1)) * plotW : plotW / 2);
+  const yT  = (v: number) => PAD_TOP + ((maxT - v) / (maxT - minT)) * plotH;
+  const yH  = (v: number) => PAD_TOP + ((maxH - v) / (maxH - minH)) * plotH;
 
-  const humidityPts = metricSeries.map((d, i) => ({
-    x: PAD_LEFT + (n > 1 ? (i / (n - 1)) * plotW : plotW / 2),
-    y: PAD_TOP + ((maxHumidity - d.humidityPercent) / (maxHumidity - minHumidity)) * plotH,
-    label: d.timeLabel,
-    value: d.humidityPercent,
-  }));
+  const tPts = series.map((d, i) => ({ x: xOf(i), y: yT(d.temperatureC),    label: d.timeLabel, value: d.temperatureC }));
+  const hPts = series.map((d, i) => ({ x: xOf(i), y: yH(d.humidityPercent), label: d.timeLabel, value: d.humidityPercent }));
 
-  const thresholdY = PAD_TOP + ((maxTemp - THRESHOLD_TEMP) / (maxTemp - minTemp)) * plotH;
+  const threshY    = yT(THRESHOLD_TEMP);
+  const humThreshY = yH(THRESHOLD_HUM);
+
+  // Decide which x-labels to show so they don't overlap
+  const labelStep = Math.max(1, Math.ceil(n / 6));
 
   return (
-    <View style={{ marginTop: 12 }}>
+    <View style={{ marginTop: 8 }}>
+
+      {/* Legend */}
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12, marginBottom: 8 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+          <View style={{ width: 12, height: 3, backgroundColor: theme.accent, borderRadius: 2 }} />
+          <Text style={{ fontSize: 11, color: theme.textMuted, fontWeight: "600" }}>Temp</Text>
+        </View>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+          <View style={{ width: 12, height: 3, backgroundColor: "#3B82F6", borderRadius: 2 }} />
+          <Text style={{ fontSize: 11, color: theme.textMuted, fontWeight: "600" }}>Humidity</Text>
+        </View>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+          <View style={{ width: 12, height: 1.5, backgroundColor: "#22C55E" }} />
+          <Text style={{ fontSize: 11, color: theme.textMuted, fontWeight: "600" }}>Temp threshold</Text>
+        </View>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+          <View style={{ width: 12, height: 1.5, backgroundColor: "#3B82F6" }} />
+          <Text style={{ fontSize: 11, color: theme.textMuted, fontWeight: "600" }}>Hum threshold</Text>
+        </View>
+      </View>
+
+      {/* Range filter */}
+      {showRangeFilter && (
+        <View style={{ flexDirection: "row", gap: 6, marginBottom: 10 }}>
+          {RANGES.map(r => (
+            <Pressable
+              key={r}
+              onPress={() => { setRange(r); setSelectedPoint(null); }}
+              style={{
+                paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20,
+                backgroundColor: range === r ? theme.accent : theme.surfaceSoft,
+                borderWidth: 1,
+                borderColor: range === r ? theme.accent : theme.line,
+              }}
+            >
+              <Text style={{
+                fontSize: 11, fontWeight: "700",
+                color: range === r ? theme.primary : theme.textMuted,
+              }}>
+                {RANGE_LABELS[r]}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
+
+      {/* Chart canvas */}
       <View
         style={{ height: CHART_HEIGHT, position: "relative" }}
-        onLayout={(e) => setChartWidth(e.nativeEvent.layout.width)}
+        onLayout={e => setChartWidth(e.nativeEvent.layout.width)}
       >
         {chartWidth > 0 && (
           <>
-            {[0, 0.5, 1].map((pct) => {
-              const tempVal = minTemp + (1 - pct) * (maxTemp - minTemp);
+            {/* Left Y-axis labels (temp) */}
+            {[0, 0.5, 1].map(pct => (
+              <Text key={`tl-${pct}`} style={{
+                position: "absolute", left: 0, top: PAD_TOP + pct * plotH - 8,
+                width: 32, textAlign: "right", fontSize: 9,
+                color: theme.accent, fontWeight: "600",
+              }}>
+                {(minT + (1 - pct) * (maxT - minT)).toFixed(0)}°
+              </Text>
+            ))}
+
+            {/* Right Y-axis labels (humidity) */}
+            {[0, 0.5, 1].map(pct => (
+              <Text key={`hl-${pct}`} style={{
+                position: "absolute", right: 0, top: PAD_TOP + pct * plotH - 8,
+                width: 36, textAlign: "left", fontSize: 9,
+                color: "#3B82F6", fontWeight: "600",
+              }}>
+                {(minH + (1 - pct) * (maxH - minH)).toFixed(0)}%
+              </Text>
+            ))}
+
+            {/* Grid lines */}
+            {[0, 0.25, 0.5, 0.75, 1].map(pct => (
+              <View key={`g-${pct}`} style={{
+                position: "absolute", left: PAD_LEFT, top: PAD_TOP + pct * plotH,
+                width: plotW, height: 1,
+                backgroundColor: pct === 0 || pct === 1 ? theme.line : theme.surfaceSoft,
+              }} />
+            ))}
+
+            {/* Left axis spine */}
+            <View style={{
+              position: "absolute", left: PAD_LEFT, top: PAD_TOP,
+              width: 1, height: plotH, backgroundColor: theme.line,
+            }} />
+
+            {/* Temp threshold */}
+            <View style={{
+              position: "absolute", left: PAD_LEFT, top: threshY,
+              width: plotW, height: 1.5, backgroundColor: "#22C55E", opacity: 0.7,
+            }} />
+            <Text style={{
+              position: "absolute", left: PAD_LEFT + 4, top: threshY - 13,
+              fontSize: 8, fontWeight: "700", color: "#22C55E",
+              backgroundColor: theme.surface, paddingHorizontal: 3,
+            }}>
+              {THRESHOLD_TEMP}°C
+            </Text>
+
+            {/* Humidity threshold */}
+            <View style={{
+              position: "absolute", left: PAD_LEFT, top: humThreshY,
+              width: plotW, height: 1.5, backgroundColor: "#3B82F6", opacity: 0.6,
+            }} />
+            <Text style={{
+              position: "absolute", right: PAD_RIGHT + 2, top: humThreshY - 13,
+              fontSize: 8, fontWeight: "700", color: "#3B82F6",
+              backgroundColor: theme.surface, paddingHorizontal: 3,
+            }}>
+              {THRESHOLD_HUM}%
+            </Text>
+
+            {/* Temperature line segments */}
+            {tPts.slice(0, -1).map((p, i) => {
+              const q = tPts[i + 1];
+              const dx = q.x - p.x, dy = q.y - p.y;
+              const len = Math.sqrt(dx * dx + dy * dy);
+              const angle = Math.atan2(dy, dx) * (180 / Math.PI);
               return (
-                <Text
-                  key={`y-temp-${pct}`}
-                  style={{ position: "absolute", left: 0, top: PAD_TOP + pct * plotH - 8, width: 32, textAlign: "right", fontSize: 9, color: THEME.textMuted, fontWeight: "600" }}
-                >
-                  {tempVal.toFixed(0)}°
-                </Text>
+                <View key={`tl-${i}`} style={{
+                  position: "absolute",
+                  left: (p.x + q.x) / 2 - len / 2, top: (p.y + q.y) / 2 - 2,
+                  width: len, height: 3, backgroundColor: theme.accent, borderRadius: 2,
+                  transform: [{ rotate: `${angle}deg` }],
+                }} />
               );
             })}
-            {[0, 0.5, 1].map((pct) => (
-              <View key={`grid-${pct}`} style={{ position: "absolute", left: PAD_LEFT, top: PAD_TOP + pct * plotH, width: plotW, height: 1, backgroundColor: pct === 0 || pct === 1 ? "#E2E8F0" : "#F1F5F9" }} />
-            ))}
-            <View style={{ position: "absolute", left: PAD_LEFT, top: PAD_TOP, width: 1, height: plotH, backgroundColor: "#CBD5E1" }} />
-            <View style={{ position: "absolute", left: PAD_LEFT, top: thresholdY, width: plotW, height: 2, backgroundColor: "#22C55E", opacity: 0.6 }} />
 
-            {/* Temperature line */}
-            {tempPts.slice(0, -1).map((p, i) => {
-              const q = tempPts[i + 1];
-              const dx = q.x - p.x; const dy = q.y - p.y;
+            {/* Humidity line segments */}
+            {hPts.slice(0, -1).map((p, i) => {
+              const q = hPts[i + 1];
+              const dx = q.x - p.x, dy = q.y - p.y;
               const len = Math.sqrt(dx * dx + dy * dy);
               const angle = Math.atan2(dy, dx) * (180 / Math.PI);
-              return <View key={`temp-line-${i}`} style={{ position: "absolute", left: (p.x + q.x) / 2 - len / 2, top: (p.y + q.y) / 2 - 1.5, width: len, height: 3, backgroundColor: THEME.accent, borderRadius: 1.5, transform: [{ rotate: `${angle}deg` }] }} />;
+              return (
+                <View key={`hl-${i}`} style={{
+                  position: "absolute",
+                  left: (p.x + q.x) / 2 - len / 2, top: (p.y + q.y) / 2 - 2,
+                  width: len, height: 3, backgroundColor: "#3B82F6", borderRadius: 2,
+                  transform: [{ rotate: `${angle}deg` }],
+                }} />
+              );
             })}
-            {/* Humidity line */}
-            {humidityPts.slice(0, -1).map((p, i) => {
-              const q = humidityPts[i + 1];
-              const dx = q.x - p.x; const dy = q.y - p.y;
-              const len = Math.sqrt(dx * dx + dy * dy);
-              const angle = Math.atan2(dy, dx) * (180 / Math.PI);
-              return <View key={`humidity-line-${i}`} style={{ position: "absolute", left: (p.x + q.x) / 2 - len / 2, top: (p.y + q.y) / 2 - 1.5, width: len, height: 3, backgroundColor: THEME.primary, borderRadius: 1.5, transform: [{ rotate: `${angle}deg` }] }} />;
-            })}
+
             {/* Temperature dots */}
-            {tempPts.map((p, i) => <View key={`temp-dot-${i}`} style={{ position: "absolute", left: p.x - 5, top: p.y - 5, width: 10, height: 10, borderRadius: 5, backgroundColor: THEME.accent, borderWidth: 2.5, borderColor: "#FFFFFF" }} />)}
-            {/* Humidity dots */}
-            {humidityPts.map((p, i) => <View key={`humidity-dot-${i}`} style={{ position: "absolute", left: p.x - 5, top: p.y - 5, width: 10, height: 10, borderRadius: 5, backgroundColor: THEME.primary, borderWidth: 2.5, borderColor: "#FFFFFF" }} />)}
-            {/* Time labels */}
-            {tempPts.map((p, i) => (
-              <Text key={`time-label-${i}`} style={{ position: "absolute", left: p.x - 16, top: PAD_TOP + plotH + 6, width: 32, textAlign: "center", fontSize: 7, color: THEME.textMuted, fontWeight: "600" }}>{p.label}</Text>
+            {tPts.map((p, i) => (
+              <Pressable key={`td-${i}`}
+                onPress={() => selectPoint(p, "Temperature", i)}
+                style={{
+                  position: "absolute", left: p.x - 6, top: p.y - 6,
+                  width: 12, height: 12, borderRadius: 6,
+                  backgroundColor: theme.accent, borderWidth: 2, borderColor: theme.surface,
+                }}
+              />
             ))}
-            <Text style={{ position: "absolute", left: PAD_LEFT + 4, top: thresholdY - 14, fontSize: 8, fontWeight: "700", color: "#22C55E", backgroundColor: "#FFFFFF", paddingHorizontal: 6, paddingVertical: 2 }}>
-              Normal: {THRESHOLD_TEMP}°C
-            </Text>
+
+            {/* Humidity dots */}
+            {hPts.map((p, i) => (
+              <Pressable key={`hd-${i}`}
+                onPress={() => selectPoint(p, "Humidity", i)}
+                style={{
+                  position: "absolute", left: p.x - 6, top: p.y - 6,
+                  width: 12, height: 12, borderRadius: 6,
+                  backgroundColor: "#3B82F6", borderWidth: 2, borderColor: theme.surface,
+                }}
+              />
+            ))}
+
+            {/* X-axis labels */}
+            {tPts.map((p, i) => i % labelStep === 0 && (
+              <Text key={`xl-${i}`} style={{
+                position: "absolute", left: p.x - 16, top: PAD_TOP + plotH + 6,
+                width: 32, textAlign: "center", fontSize: 8,
+                color: theme.textMuted, fontWeight: "600",
+              }}>
+                {p.label}
+              </Text>
+            ))}
+
+            {/* Tap outside tooltip to dismiss */}
+            {selectedPoint && (
+              <Pressable
+                style={[StyleSheet.absoluteFillObject, { zIndex: 5 }]}
+                onPress={() => setSelectedPoint(null)}
+              />
+            )}
+
+            {/* Tooltip */}
+            {selectedPoint && (
+              <View
+                style={{
+                  position: "absolute",
+                  left: Math.min(Math.max(selectedPoint.x - 70, PAD_LEFT), chartWidth - 160),
+                  top: Math.max(selectedPoint.y - (selectedPoint.hiveBreakdown ? 110 : 68), 4),
+                  backgroundColor: theme.surface,
+                  borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6,
+                  borderWidth: 1, borderColor: theme.line,
+                  elevation: 4, shadowColor: "#000", shadowOpacity: 0.1,
+                  shadowRadius: 4, shadowOffset: { width: 0, height: 2 },
+                  maxWidth: 155,
+                  zIndex: 10,
+                }}
+              >
+                <Text style={{ fontSize: 10, fontWeight: "800", color: theme.primary }}>
+                  {selectedPoint.type}
+                </Text>
+                <Text style={{ fontSize: 14, fontWeight: "700",
+                  color: selectedPoint.type === "Temperature" ? theme.accent : "#3B82F6" }}>
+                  {selectedPoint.type === "Temperature"
+                    ? `${selectedPoint.value.toFixed(1)} °C avg`
+                    : `${selectedPoint.value.toFixed(0)} % avg`}
+                </Text>
+                <Text style={{ fontSize: 9, color: theme.textMuted, marginBottom: selectedPoint.hiveBreakdown ? 6 : 0 }}>
+                  {selectedPoint.label}
+                </Text>
+                {selectedPoint.hiveBreakdown?.map((hive) => (
+                  <View
+                    key={hive.hiveName}
+                    style={{ flexDirection: "row", justifyContent: "space-between", gap: 8, marginTop: 3 }}
+                  >
+                    <Text
+                      style={{ fontSize: 9, fontWeight: "700", color: theme.text, flex: 1 }}
+                      numberOfLines={1}
+                    >
+                      {hive.hiveName}
+                    </Text>
+                    <Text style={{
+                      fontSize: 9, fontWeight: "700",
+                      color: selectedPoint.type === "Temperature" ? theme.accent : "#3B82F6",
+                    }}>
+                      {selectedPoint.type === "Temperature"
+                        ? `${hive.value.toFixed(1)}°`
+                        : `${hive.value.toFixed(0)}%`}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
           </>
         )}
       </View>
 
-      {/* Statistics below chart */}
-      <View style={{ marginTop: 12 }}>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 12 }}>
-          <View style={{ flex: 1, paddingHorizontal: 8, paddingVertical: 8, backgroundColor: "#FFF8F3", borderRadius: 6 }}>
-            <Text style={{ fontSize: 10, color: THEME.textMuted, fontWeight: "600" }}>Temperature</Text>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 4 }}>
-              <View><Text style={{ fontSize: 8, color: THEME.textMuted }}>Min</Text><Text style={{ fontSize: 12, fontWeight: "700", color: THEME.accent }}>{minTempVal.toFixed(1)}°</Text></View>
-              <View><Text style={{ fontSize: 8, color: THEME.textMuted }}>Avg</Text><Text style={{ fontSize: 12, fontWeight: "700", color: THEME.accent }}>{avgTemp.toFixed(1)}°</Text></View>
-              <View><Text style={{ fontSize: 8, color: THEME.textMuted }}>Max</Text><Text style={{ fontSize: 12, fontWeight: "700", color: THEME.accent }}>{maxTempVal.toFixed(1)}°</Text></View>
+      {/* Stats row */}
+      {series.length > 0 && (
+        <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
+          <View style={{
+            flex: 1, backgroundColor: theme.surfaceSoft, borderRadius: 8,
+            padding: 8, borderWidth: 1, borderColor: theme.line,
+          }}>
+            <Text style={{ fontSize: 10, color: theme.textMuted, fontWeight: "600", marginBottom: 4 }}>
+              Temperature
+            </Text>
+            <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+              {["Min", "Avg", "Max"].map((lbl, i) => {
+                const vals = [Math.min(...tempVals), tempVals.reduce((a, b) => a + b, 0) / tempVals.length, Math.max(...tempVals)];
+                return (
+                  <View key={lbl} style={{ alignItems: "center" }}>
+                    <Text style={{ fontSize: 8, color: theme.textMuted }}>{lbl}</Text>
+                    <Text style={{ fontSize: 12, fontWeight: "700", color: theme.accent }}>
+                      {vals[i].toFixed(1)}°
+                    </Text>
+                  </View>
+                );
+              })}
             </View>
           </View>
-          <View style={{ flex: 1, paddingHorizontal: 8, paddingVertical: 8, backgroundColor: "#F0F4F8", borderRadius: 6 }}>
-            <Text style={{ fontSize: 10, color: THEME.textMuted, fontWeight: "600" }}>Humidity</Text>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 4 }}>
-              <View><Text style={{ fontSize: 8, color: THEME.textMuted }}>Min</Text><Text style={{ fontSize: 12, fontWeight: "700", color: THEME.primary }}>{minHumidityVal.toFixed(0)}%</Text></View>
-              <View><Text style={{ fontSize: 8, color: THEME.textMuted }}>Avg</Text><Text style={{ fontSize: 12, fontWeight: "700", color: THEME.primary }}>{avgHumidity.toFixed(0)}%</Text></View>
-              <View><Text style={{ fontSize: 8, color: THEME.textMuted }}>Max</Text><Text style={{ fontSize: 12, fontWeight: "700", color: THEME.primary }}>{maxHumidityVal.toFixed(0)}%</Text></View>
+          <View style={{
+            flex: 1, backgroundColor: theme.surfaceSoft, borderRadius: 8,
+            padding: 8, borderWidth: 1, borderColor: theme.line,
+          }}>
+            <Text style={{ fontSize: 10, color: theme.textMuted, fontWeight: "600", marginBottom: 4 }}>
+              Humidity
+            </Text>
+            <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+              {["Min", "Avg", "Max"].map((lbl, i) => {
+                const vals = [Math.min(...humVals), humVals.reduce((a, b) => a + b, 0) / humVals.length, Math.max(...humVals)];
+                return (
+                  <View key={lbl} style={{ alignItems: "center" }}>
+                    <Text style={{ fontSize: 8, color: theme.textMuted }}>{lbl}</Text>
+                    <Text style={{ fontSize: 12, fontWeight: "700", color: "#3B82F6" }}>
+                      {vals[i].toFixed(0)}%
+                    </Text>
+                  </View>
+                );
+              })}
             </View>
           </View>
         </View>
-      </View>
+      )}
     </View>
   );
 }

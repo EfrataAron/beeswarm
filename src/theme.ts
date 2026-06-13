@@ -108,6 +108,25 @@ export function formatRelativeTime(timestamp?: string | null): string {
   return `${years}y ago`;
 }
 
+export function formatAbsoluteTime(timestamp?: string | null): string {
+  if (!timestamp) return "No time available";
+  
+  const date = new Date(timestamp);
+  if (isNaN(date.getTime())) return "Invalid date";
+  
+  // Format: "Jun 10, 2026 at 11:50 PM"
+  const options: Intl.DateTimeFormatOptions = {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  };
+  
+  return date.toLocaleString("en-US", options);
+}
+
 export function severityColor(severity: AlertSeverity): string {
   if (severity === "Critical") return "#DC2626";
   if (severity === "Warning") return "#D97706";

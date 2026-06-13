@@ -18,11 +18,11 @@ export type MainTabParamList = {
 
 export type HivesStackParamList = {
   HiveList: { refresh?: number } | undefined;
-  HiveDetails: { hiveId: string };
+  HiveDetails: { hiveId: string, lastAnalysisTime?: string | null };
   CreateHive: undefined;
 };
 
 export type AlertsStackParamList = {
-  AlertsList: undefined;
-  AlertDetails: { alertId: string };
+  AlertsList: { onAlertOpened?: () => void } | undefined;
+  AlertDetails: { alertId: string; onAlertOpened?: () => void };
 };

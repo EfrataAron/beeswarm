@@ -3,7 +3,12 @@
  * Transforms raw API responses into typed application models
  */
 
-import { HiveStatus, AlertSeverity, BeekeeperProfile, AlertItem } from "../types";
+import {
+  HiveStatus,
+  AlertSeverity,
+  BeekeeperProfile,
+  AlertItem
+} from "../types";
 
 export function normalizeStatus(raw: string): HiveStatus {
   const s = raw.trim().toLowerCase();
@@ -12,22 +17,29 @@ export function normalizeStatus(raw: string): HiveStatus {
   if (!s || s === "" || s === "unknown" || s === "null" || s === "undefined")
     return "inactive_hive";
   
-  if (s === "healthy" || s === "normal" || s === "active_colony" || s === "active")
+  if (
+    s === "healthy" ||
+    s === "normal" ||
+    s === "active_colony" ||
+    s === "active"
+
+  )
     return "active";
-  if (s === "inactive" || s === "inactive_hive")
-    return "inactive_hive";
-  if (s === "swarm" || s === "swarming" || s === "pre-swarm" || s === "preswarm" || s === "pre_swarm")
+  if (s === "inactive" || s === "inactive_hive") return "inactive_hive";
+  if (
+    s === "swarm" ||
+    s === "swarming" ||
+    s === "pre-swarm" ||
+    s === "preswarm" ||
+    s === "pre_swarm"
+    
+  )
     return "swarming";
-  if (s === "abscondment")
-    return "Abscondment";
-  if (s === "external_noise" || s === "noise")
-    return "external_noise";
-  if (s === "quacking_queens" || s === "quacking" || s === "queenbee_present")
-    return "quacking_queens";
-  if (s === "pests" || s === "pest")
-    return "pests";
-  if (s === "queenless" || s === "no_queen")
-    return "queenless";
+  if (s === "abscondment") return "Abscondment";
+  if (s === "external_noise" || s === "noise") return "external_noise";
+  if (s === "quacking_queens" || s === "quacking" || s === "queenbee_present") return "quacking_queens";
+  if (s === "pests" || s === "pest") return "pests";
+  if (s === "queenless" || s === "no_queen") return "queenless";
   
   // Default fallback for unknown statuses - treat as inactive (no sensor data)
   return "inactive_hive";
@@ -40,7 +52,9 @@ export function normalizeSeverity(raw: string): AlertSeverity {
   return "Info";
 }
 
-export function normalizeProfile(raw: Record<string, unknown>): BeekeeperProfile {
+export function normalizeProfile(
+  raw: Record<string, unknown>
+): BeekeeperProfile {
   return {
     id: String(raw.user_id ?? raw.id ?? ""),
     name: String(raw.full_name ?? raw.name ?? "Beekeeper"),
@@ -59,7 +73,7 @@ export function normalizeAlertItem(
   item: any,
   index: number,
   fallbackHiveId = "",
-): AlertItem {
+): AlertItem { 
   return {
     id: String(item.id ?? `ALT-${index + 1}`),
     hiveId: String(item.hive_id ?? item.hiveId ?? fallbackHiveId),
@@ -67,6 +81,8 @@ export function normalizeAlertItem(
     title: String(item.title ?? item.alert ?? "Alert"),
     date: String(item.date ?? item.createdAt ?? item.created_at ?? ""),
     summary: String(item.summary ?? item.message ?? ""),
+    alertStatus: String(item.alertStatus ?? item.action_status ?? "pending"),
+    hiveName: String(item.hive_name ?? item.hiveName ?? ""),
   };
 }
 
@@ -90,10 +106,12 @@ export function normalizeHiveAlertItem(
         item.createdAt ??
         item.created_at ??
         "",
-    ),
+    ), 
     summary: String(
       item.recommended_action ?? item.summary ?? item.message ?? "",
     ),
+    alertStatus: String(item.action_status ?? ""),
+    hiveName: String(item.hive_name ?? item.hiveName ?? ""),
   };
 }
 
@@ -118,6 +136,6 @@ export function validateServerUrl(
     new URL(s);
     return null;
   } catch {
-    return "Enter a valid URL, e.g. https://bsads-api-production.up.railway.app";
+    return "Enter a valid URL, e.g. https://jockstrap-boxlike-revisable.ngrok-free.dev";
   }
 }

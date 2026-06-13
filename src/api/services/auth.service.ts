@@ -47,8 +47,9 @@ export async function register(
   email: string,
   phone: string,
   password: string,
-  apiKey?: string | null,
-  farmerServerUrl?: string | null,
+  address: string,
+  apiKey: string,
+  farmerServerUrl: string,
 ): Promise<AuthResponse> {
   const raw = await apiRequestWithRetry<any>("/auth/register", {
     method: "POST",
@@ -57,10 +58,9 @@ export async function register(
       email,
       phone,
       password,
-      ...(apiKey?.trim() ? { api_key: apiKey.trim() } : {}),
-      ...(farmerServerUrl?.trim()
-        ? { server_url: normalizeUrl(farmerServerUrl.trim()) }
-        : {}),
+      address,
+      api_key: apiKey,
+      server_url: farmerServerUrl,
     }),
   });
 
@@ -96,6 +96,23 @@ export async function fetchProfile(): Promise<BeekeeperProfile> {
   return profile;
 }
 
+/**
+ * PUT /auth/password
+ * Change the current user's password.
+ */
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string,
+): Promise<void> {
+  await apiRequest<void>("/auth/password", {
+    method: "PUT",
+    body: JSON.stringify({
+      current_password: currentPassword,
+      new_password: newPassword,
+    }),
+  });
+}
+
 export async function updateProfile(data: {
   name: string;
   email?: string;
@@ -112,11 +129,24 @@ export async function updateProfile(data: {
       address: data.address,
       ...(data.api_key?.trim() ? { api_key: data.api_key.trim() } : {}),
       ...(data.server_url?.trim()
-        ? { server_url: normalizeUrl(data.server_url.trim()) }
+        ? { server_url: data.server_url.trim() }
+        // ? { server_url: normalizeUrl(data.server_url.trim()) } 
         : {}),
     }),
   });
-  const profile = normalizeProfile(raw);
-  await saveProfile(profile);
-  return profile;
+
+  // The backend's UserResponse only returns: user_id, full_name, email, role, created_at.
+  // Fields like phone, address, api_key are stored in the DB but not echoed back.
+
+  const fromServer = normalizeProfile(raw);
+  const merged: BeekeeperProfile = {
+    ...fromServer,
+
+    phone:   fromServer.phone   || data.phone,
+    address: fromServer.address ?? data.address,
+    api_key: fromServer.api_key ?? data.api_key ?? null,
+  };
+
+  await saveProfile(merged);
+  return merged;
 }

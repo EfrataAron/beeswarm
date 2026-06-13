@@ -188,9 +188,11 @@ function HivesStackScreen({
 function AlertsStackScreen({
   onOpenSettings,
   onLogout,
+  onAlertOpened,
 }: {
   onOpenSettings: () => void;
   onLogout: () => void;
+  onAlertOpened: () => void;
 }) {
   return (
     <AlertsStack.Navigator
@@ -208,9 +210,15 @@ function AlertsStackScreen({
     >
       <AlertsStack.Screen
         name="AlertsList"
-        component={AlertsListScreen}
         options={{ title: "Recent Alerts" }}
-      />
+      >
+        {(props) => (
+          <AlertsListScreen
+            {...props}
+            route={{ ...props.route, params: { onAlertOpened } }}
+          />
+        )}
+      </AlertsStack.Screen>
       <AlertsStack.Screen
         name="AlertDetails"
         component={AlertDetailsScreen}
@@ -243,6 +251,11 @@ function MainTabsScreen({
       .then((alerts) => setUnreadAlertCount(alerts.length))
       .catch(() => {});
   }, []);
+
+  // Called each time a single alert detail screen is opened
+  const handleAlertOpened = () => {
+    setUnreadAlertCount((c) => Math.max(0, c - 1));
+  };
 
   return (
     <Tab.Navigator
@@ -339,6 +352,7 @@ function MainTabsScreen({
           <AlertsStackScreen
             onOpenSettings={openSettingsPage}
             onLogout={onLogout}
+            onAlertOpened={handleAlertOpened}
           />
         )}
       </Tab.Screen>

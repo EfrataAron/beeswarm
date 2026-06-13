@@ -2,156 +2,190 @@ import { StyleSheet } from "react-native";
 import { THEME } from "../../theme";
 
 export const mapStyles = StyleSheet.create({
-  appPage: {
-    paddingHorizontal: 14,
-    paddingTop: 14,
-    paddingBottom: 32,
+  fullScreenContainer: {
+    flex: 1,
+    backgroundColor: THEME.page,
   },
-  mapCard: {
+  
+  floatingHeader: {
+    position: "absolute",
+    top: 16,
+    left: 16,
+    right: 16,
+    zIndex: 10,
     backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: THEME.line,
-    borderRadius: 14,
-    padding: 12,
+    borderRadius: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
   },
-  mapHeaderRow: {
+  
+  headerContent: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: 12,
-    marginBottom: 12,
+    padding: 16,
   },
-  cardTitle: {
-    fontSize: 15,
+  
+  headerTitle: {
+    fontSize: 18,
     fontWeight: "800",
     color: THEME.primary,
     marginBottom: 2,
   },
-  mapHeaderSub: {
-    marginTop: 4,
-    color: "#667085",
-    fontWeight: "600",
-    fontSize: 12,
-  },
-  mapRefreshButton: {
-    backgroundColor: THEME.surfaceSoft,
-    borderWidth: 1,
-    borderColor: THEME.line,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  mapRefreshText: {
-    color: "#344054",
-    fontWeight: "700",
-    fontSize: 12,
-  },
-  mapViewport: {
-    height: 320,
-    borderRadius: 12,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: THEME.line,
-    backgroundColor: THEME.surfaceSoft,
-  },
-  mapOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(248, 249, 251, 0.88)",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-  },
-  stateTextSmall: {
+  
+  headerSubtitle: {
     fontSize: 13,
-    color: THEME.textMuted,
-    fontWeight: "600",
-  },
-  mapFallback: {
-    minHeight: 320,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: THEME.line,
-    backgroundColor: THEME.surfaceSoft,
-    padding: 12,
-  },
-  mapFallbackTitle: {
-    color: "#253242",
-    fontSize: 16,
-    fontWeight: "800",
-  },
-  mapFallbackText: {
-    marginTop: 6,
-    color: "#667085",
-    lineHeight: 20,
-    fontWeight: "600",
-  },
-  mapFallbackList: {
-    marginTop: 12,
-    gap: 10,
-  },
-  mapFallbackRow: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: THEME.line,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  mapFallbackRowTitle: {
-    color: "#253242",
-    fontWeight: "800",
-  },
-  mapFallbackRowSub: {
-    marginTop: 4,
-    color: "#667085",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  hiveStatus: {
-    fontSize: 12,
     fontWeight: "600",
     color: THEME.textMuted,
     marginTop: 2,
   },
-  emptyMapState: {
-    marginTop: 12,
-    backgroundColor: THEME.surfaceSoft,
+  
+  refreshButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: THEME.accent,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  
+  refreshButtonText: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
+  
+  mapContainer: {
+    flex: 1,
+    position: "relative",
+  },
+  
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(248, 249, 251, 0.95)",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    zIndex: 5,
+  },
+  
+  loadingText: {
+    fontSize: 14,
+    color: THEME.textMuted,
+    fontWeight: "600",
+  },
+  
+  emptyState: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 32,
+    backgroundColor: THEME.page,
+  },
+  
+  emptyStateTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: THEME.primary,
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  
+  emptyStateText: {
+    fontSize: 14,
+    color: THEME.textMuted,
+    textAlign: "center",
+    lineHeight: 20,
+    fontWeight: "500",
+  },
+  
+  errorOverlay: {
+    position: "absolute",
+    bottom: 16,
+    left: 16,
+    right: 16,
+    backgroundColor: "#FEF2F2",
+    borderRadius: 12,
+    padding: 16,
     borderWidth: 1,
-    borderColor: THEME.line,
+    borderColor: "#FEE2E2",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    zIndex: 10,
+  },
+  
+  errorText: {
+    color: "#B42318",
+    fontWeight: "600",
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 8,
+  },
+  
+  retryButton: {
+    backgroundColor: "#DC2626",
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    alignItems: "center",
+  },
+  
+  retryButtonText: {
+    color: "#FFFFFF",
+    fontWeight: "700",
+    fontSize: 14,
+  },
+  
+  floatingLegend: {
+    position: "absolute",
+    bottom: 16,
+    left: 16,
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
     borderRadius: 12,
     padding: 12,
+    gap: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: "rgba(0, 0, 0, 0.05)",
   },
-  stateTitle: {
-    color: "#253242",
-    fontWeight: "800",
-    fontSize: 15,
-  },
-  errorText: {
-    marginTop: 12,
-    color: "#B42318",
-    fontWeight: "700",
-    lineHeight: 20,
-  },
-  legendWrap: {
-    marginTop: 12,
-    gap: 6,
-  },
+  
   legendItem: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 8,
   },
+  
   legendDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 10,
-    marginRight: 8,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
   },
+  
   legendText: {
-    color: "#475467",
+    fontSize: 13,
+    color: THEME.primary,
     fontWeight: "600",
   },
 });

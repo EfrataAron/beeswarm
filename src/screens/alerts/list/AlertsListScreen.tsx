@@ -33,12 +33,21 @@ const SEVERITY_ICON: Record<AlertSeverity, keyof typeof Ionicons.glyphMap> = {
 };
 const ALL_SEVERITIES: AlertSeverity[] = ["Critical", "Warning", "Info"];
 
-export function AlertsListScreen({ navigation }: Props) {
+export function AlertsListScreen({ navigation, route }: Props) {
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
+  const [openedIds, setOpenedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<AlertSeverity | "All">("All");
+
+  // Track which alerts have been opened to update the badge correctly
+  const markAlertOpened = (alertId: string) => {
+    if (!openedIds.has(alertId)) {
+      setOpenedIds((prev) => new Set([...prev, alertId]));
+      route.params?.onAlertOpened?.();
+    }
+  };
 
   const loadAlerts = useCallback(async () => {
     setLoading(true);
@@ -145,7 +154,14 @@ export function AlertsListScreen({ navigation }: Props) {
         <Pressable
           key={alert.id}
           style={({ pressed }) => [styles.alertCard, pressed && styles.pressedRow]}
-          onPress={() => navigation.navigate("AlertDetails", { alertId: alert.id })}
+          onPress={() => {
+            // Decrement badge only the first time this alert is opened
+            markAlertOpened(alert.id);
+            navigation.navigate("AlertDetails", {
+              alertId: alert.id,
+              onAlertOpened: () => markAlertOpened(alert.id),
+            });
+          }}
         >
           <View style={styles.alertCardBody}>
             <View style={styles.alertCardTopRow}>
@@ -156,7 +172,7 @@ export function AlertsListScreen({ navigation }: Props) {
                 <Text style={styles.alertCardTitle}>{alert.title}</Text>
                 <View style={styles.alertCardMeta}>
                   <Ionicons name="cube-outline" size={11} color={THEME.textMuted} />
-                  <Text style={styles.alertCardMetaText}>{alert.hiveId}</Text>
+                  <Text style={styles.alertCardMetaText}>{alert.hiveName}</Text>
                   <Text style={styles.alertCardMetaDot}>·</Text>
                   <Text style={styles.alertCardMetaText}>{alert.date}</Text>
                 </View>

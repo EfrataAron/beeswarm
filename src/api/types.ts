@@ -78,16 +78,29 @@ export type AlertItem = {
   title: string;
   date: string;
   summary: string;
+  alertStatus: string;
+  hiveName: string;
+};
+
+export type AudioRecording = {
+  id: string;
+  file_path: string;
+  duration_seconds: number;
+  recorded_at: string;
 };
 
 export type AlertDetailData = {
   id: string;
   hiveId: string;
+  hiveName: string;
   severity: AlertSeverity;
   title: string;
   time: string;
+  createdAt?: string;
   details: string;
   acknowledged: boolean;
+  audioRecording?: AudioRecording | null; 
+  advisory?: Advisory | null;
 };
 
 export type AdvisoryAction = {
@@ -122,8 +135,18 @@ export type DashboardData = {
   highTempPreSwarmHives: Array<{ hiveId: string; temperatureC: number }>;
   allHives: Array<{
     hiveId: string;
+    hiveName: string;
     temperatureC: number;
     humidityPercent: number;
+  }>;
+  allHivesHistory: Array<{
+    hiveId: string;
+    hiveName?: string;
+    history: Array<{
+      timeLabel: string;
+      temperatureC: number;
+      humidityPercent: number
+    }>;
   }>;
   pendingAdvisoryActions: number;
   lowConfidenceInferences: number;

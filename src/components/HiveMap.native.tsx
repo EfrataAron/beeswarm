@@ -76,18 +76,33 @@ function buildMapHtml(
         cursor: pointer;
       }
       .pin-badge {
-        font-size: 11px;
-        font-weight: 700;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
         font-family: system-ui, -apple-system, sans-serif;
-        color: #ffffff;
-        padding: 4px 9px;
+        padding: 5px 10px;
         border-radius: 12px;
         border: 2px solid #ffffff;
         box-shadow: 0 2px 8px rgba(0,0,0,0.35);
         white-space: nowrap;
-        max-width: 90px;
+        max-width: 110px;
+      }
+      .pin-name {
+        font-size: 11px;
+        font-weight: 700;
+        color: #ffffff;
         overflow: hidden;
         text-overflow: ellipsis;
+        max-width: 90px;
+      }
+      .pin-status {
+        font-size: 9px;
+        font-weight: 600;
+        color: rgba(255,255,255,0.85);
+        text-transform: capitalize;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 90px;
       }
       .pin-tail {
         width: 0;
@@ -145,7 +160,17 @@ function buildMapHtml(
         const badge = document.createElement("div");
         badge.className = "pin-badge";
         badge.style.background = color;
-        badge.textContent = hive.id;
+
+        const nameEl = document.createElement("div");
+        nameEl.className = "pin-name";
+        nameEl.textContent = hive.id;
+
+        const statusEl = document.createElement("div");
+        statusEl.className = "pin-status";
+        statusEl.textContent = hive.status.replace(/_/g, " ");
+
+        badge.appendChild(nameEl);
+        badge.appendChild(statusEl);
 
         const tail = document.createElement("div");
         tail.className = "pin-tail";

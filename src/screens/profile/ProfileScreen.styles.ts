@@ -1,7 +1,10 @@
 import { StyleSheet } from "react-native";
 import { THEME } from "../../theme";
 
-export const profileStyles = StyleSheet.create({
+type ThemeSnapshot = typeof THEME;
+
+export function createProfileStyles(t: ThemeSnapshot) {
+  return StyleSheet.create({
   centerState: {
     flex: 1,
     alignItems: "center",
@@ -10,7 +13,7 @@ export const profileStyles = StyleSheet.create({
     padding: 24,
   },
   stateText: {
-    color: THEME.textMuted,
+    color: t.textMuted,
     fontWeight: "600",
     fontSize: 14,
   },
@@ -20,60 +23,60 @@ export const profileStyles = StyleSheet.create({
     paddingBottom: 32,
     gap: 12,
   },
-  profileHeroCard: {
-    backgroundColor: "#FFFFFF",
+profileHeroCard: {
+    backgroundColor: t.surface,
     borderRadius: 16,
     padding: 20,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: THEME.line,
+    borderColor: t.line,
     gap: 8,
   },
   profileAvatarCircle: {
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: THEME.primary,
+    backgroundColor: t.primary,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 4,
   },
   profileAvatarInitials: {
-    color: THEME.accent,
+    color: t.accent,
     fontSize: 26,
     fontWeight: "800",
   },
   profileHeroName: {
     fontSize: 20,
     fontWeight: "800",
-    color: THEME.primary,
+    color: t.primary,
   },
   profileHeroRole: {
     fontSize: 13,
-    color: THEME.textMuted,
+    color: t.textMuted,
     fontWeight: "600",
   },
   profileNameInput: {
     fontSize: 18,
     fontWeight: "700",
-    color: THEME.primary,
+    color: t.primary,
     borderBottomWidth: 2,
-    borderBottomColor: THEME.accent,
+    borderBottomColor: t.accent,
     paddingBottom: 4,
     textAlign: "center",
     width: "100%",
   },
-  profileSection: {
-    backgroundColor: "#FFFFFF",
+profileSection: {
+    backgroundColor: t.surface,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: THEME.line,
+    borderColor: t.line,
     padding: 14,
   },
   profileSectionTitle: {
     fontSize: 12,
     fontWeight: "800",
-    color: THEME.primary,
+    color: t.primary,
     textTransform: "uppercase",
     letterSpacing: 0.6,
     marginBottom: 12,
@@ -89,58 +92,40 @@ export const profileStyles = StyleSheet.create({
   },
   profileFieldLabel: {
     fontSize: 11,
-    color: THEME.textMuted,
+    color: t.textMuted,
     fontWeight: "600",
     marginBottom: 2,
   },
   profileFieldValue: {
     fontSize: 14,
-    color: THEME.primary,
+    color: t.primary,
     fontWeight: "600",
   },
   profileFieldInput: {
     fontSize: 14,
-    color: THEME.primary,
+    color: t.primary,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.line,
+    borderBottomColor: t.line,
     paddingVertical: 4,
   },
   profileDivider: {
     height: 1,
-    backgroundColor: THEME.line,
+    backgroundColor: t.line,
     marginVertical: 10,
   },
   profileActionsRow: {
     flexDirection: "row",
     gap: 10,
   },
-  profileSecondaryBtn: {
+profileSecondaryBtn: {
     flex: 1,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: THEME.line,
-    backgroundColor: "#FFFFFF",
+    borderColor: t.line,
+    backgroundColor: t.surface,
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 12,
-  },
-  profileSecondaryBtnText: {
-    color: THEME.text,
-    fontWeight: "700",
-    fontSize: 13,
-  },
-  profilePrimaryBtn: {
-    flex: 1,
-    borderRadius: 10,
-    backgroundColor: THEME.accent,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 12,
-  },
-  profilePrimaryBtnText: {
-    color: THEME.primary,
-    fontWeight: "800",
-    fontSize: 13,
   },
   profileEditBtn: {
     flexDirection: "row",
@@ -149,12 +134,30 @@ export const profileStyles = StyleSheet.create({
     gap: 8,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: THEME.line,
-    backgroundColor: "#FFFFFF",
+    borderColor: t.line,
+    backgroundColor: t.surface,
     paddingVertical: 12,
   },
+  profileSecondaryBtnText: {
+    color: t.text,
+    fontWeight: "700",
+    fontSize: 13,
+  },
+  profilePrimaryBtn: {
+    flex: 1,
+    borderRadius: 10,
+    backgroundColor: t.accent,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+  },
+  profilePrimaryBtnText: {
+    color: t.primary,
+    fontWeight: "800",
+    fontSize: 13,
+  },
   profileEditBtnText: {
-    color: THEME.primary,
+    color: t.primary,
     fontWeight: "700",
     fontSize: 13,
   },
@@ -168,7 +171,7 @@ export const profileStyles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontWeight: "600",
-    color: THEME.primary,
+    color: t.primary,
   },
   profileLogoutBtn: {
     flexDirection: "row",
@@ -178,7 +181,7 @@ export const profileStyles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     borderColor: "#FEE2E2",
-    backgroundColor: "#FEF2F2",
+    backgroundColor: t.surface,
     paddingVertical: 13,
   },
   profileLogoutText: {
@@ -189,8 +192,102 @@ export const profileStyles = StyleSheet.create({
   profileVersion: {
     textAlign: "center",
     fontSize: 12,
-    color: THEME.textMuted,
+    color: t.textMuted,
     fontWeight: "500",
     marginTop: 4,
   },
-});
+  pwModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 20,
+  },
+  pwModalCard: {
+    backgroundColor: t.surface,
+    borderRadius: 16,
+    padding: 20,
+    width: "100%",
+    maxWidth: 340,
+    gap: 14,
+  },
+  pwModalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  pwModalTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: t.text,
+  },
+  pwModalCloseBtn: {
+    padding: 4,
+  },
+  pwModalField: {
+    gap: 6,
+  },
+  pwModalLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: t.textMuted,
+  },
+  pwModalInputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: t.line,
+    borderRadius: 10,
+    backgroundColor: t.surface,
+    paddingHorizontal: 12,
+    paddingRight: 8,
+  },
+  pwModalInput: {
+    flex: 1,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: t.text,
+  },
+  pwModalError: {
+    color: "#DC2626",
+    fontSize: 12,
+    fontWeight: "600",
+    marginTop: 4,
+  },
+  pwModalActions: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 4,
+  },
+  pwModalCancelBtn: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: t.line,
+    borderRadius: 10,
+    paddingVertical: 11,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: t.surface,
+  },
+  pwModalCancelText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: t.text,
+  },
+  pwModalSaveBtn: {
+    flex: 1,
+    backgroundColor: t.accent,
+    borderRadius: 10,
+    paddingVertical: 11,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pwModalSaveText: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: t.primary,
+  },
+  });
+}
+
+export const profileStyles = createProfileStyles(THEME);

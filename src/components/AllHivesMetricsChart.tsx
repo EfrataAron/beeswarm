@@ -4,6 +4,7 @@ import { THEME } from "../theme";
 
 type HivePoint = {
   hiveId: string;
+  hiveName: string;
   temperatureC: number;
   humidityPercent: number;
 };
@@ -83,8 +84,8 @@ export function AllHivesMetricsChart({ allHives }: Props) {
               return (
                 <React.Fragment key={hive.hiveId}>
                   <Pressable
-                    onPress={() => setHoveredHive(hive.hiveId)}
-                    onHoverIn={() => setHoveredHive(hive.hiveId)}
+                    onPress={() => setHoveredHive(hive.hiveName)}
+                    onHoverIn={() => setHoveredHive(hive.hiveName)}
                     onHoverOut={() => setHoveredHive(null)}
                     style={{ position: "absolute", left: x - 12, top: y - 12, width: 24, height: 24, borderRadius: 12, justifyContent: "center", alignItems: "center" }}
                   >
