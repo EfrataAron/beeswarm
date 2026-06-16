@@ -19,7 +19,6 @@ import { HivesStackParamList } from "../../../navigation/types";
 // import { createHiveStyles as styles } from "./CreateHiveScreen.styles";
 import { StyleSheet } from "react-native";
 import { CalendarPicker } from "../../../components/CalendarPicker";
-
 const styles = StyleSheet.create({
   container: { padding: 16, paddingBottom: 40 },
   card: { backgroundColor: "#FFFFFF", borderRadius: 12, padding: 20 },
@@ -194,6 +193,7 @@ export function CreateHiveScreen({ navigation, route, currentUser }: Props) {
   const [longitude, setLongitude] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingLocation, setLoadingLocation] = useState(false);
+  const [geocoding, setGeocoding] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [calendarVisible, setCalendarVisible] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
@@ -217,6 +217,37 @@ export function CreateHiveScreen({ navigation, route, currentUser }: Props) {
     tomorrow.setDate(tomorrow.getDate() + 1);
     setInstallationDate(formatDate(tomorrow));
     if (errors.installationDate) setErrors({ ...errors, installationDate: "" });
+  };
+
+  /**
+   * Geocode a place name → lat/lng using OpenStreetMap Nominatim (free, no key).
+   * Called when the user finishes typing in the Location field.
+   */
+  const geocodeLocation = async (place: string) => {
+    const trimmed = place.trim();
+    if (!trimmed || trimmed.length < 3) return;
+    // Don't re-geocode if coords already filled manually
+    if (latitude && longitude) return;
+
+    setGeocoding(true);
+    try {
+      const encoded = encodeURIComponent(trimmed);
+      const url = `https://nominatim.openstreetmap.org/search?q=${encoded}&format=json&limit=1`;
+      const res = await fetch(url, {
+        headers: { "Accept-Language": "en", "User-Agent": "beeswarm-app" },
+      });
+      const data = await res.json() as Array<{ lat: string; lon: string; display_name: string }>;
+      if (data.length > 0) {
+        const { lat, lon } = data[0];
+        setLatitude(parseFloat(lat).toFixed(6));
+        setLongitude(parseFloat(lon).toFixed(6));
+        setErrors((prev) => ({ ...prev, latitude: "", longitude: "" }));
+      }
+    } catch {
+      // Geocoding failure is silent — user can still enter coords manually
+    } finally {
+      setGeocoding(false);
+    }
   };
 
   const getCurrentLocation = async () => {
@@ -425,19 +456,39 @@ export function CreateHiveScreen({ navigation, route, currentUser }: Props) {
             <Text style={styles.label}>
               Location <Text style={styles.required}>*</Text>
             </Text>
-            <TextInput
-              style={[styles.input, errors.hiveLocation && styles.inputError]}
-              placeholder="e.g., Kampala"
-              placeholderTextColor={THEME.placeholder}
-              value={hiveLocation}
-              onChangeText={(text) => {
-                setHiveLocation(text);
-                if (errors.hiveLocation)
-                  setErrors({ ...errors, hiveLocation: "" });
-              }}
-            />
+            <View style={{ position: "relative" }}>
+              <TextInput
+                style={[styles.input, errors.hiveLocation && styles.inputError]}
+                placeholder="e.g., Makerere Western Gate, Kampala"
+                placeholderTextColor={THEME.placeholder}
+                value={hiveLocation}
+                onChangeText={(text) => {
+                  setHiveLocation(text);
+                  // Clear coords when location text changes so they get re-geocoded
+                  setLatitude("");
+                  setLongitude("");
+                  if (errors.hiveLocation)
+                    setErrors({ ...errors, hiveLocation: "" });
+                }}
+                onBlur={() => void geocodeLocation(hiveLocation)}
+                returnKeyType="done"
+                onSubmitEditing={() => void geocodeLocation(hiveLocation)}
+              />
+              {geocoding && (
+                <ActivityIndicator
+                  size="small"
+                  color={THEME.accent}
+                  style={{ position: "absolute", right: 12, top: 13 }}
+                />
+              )}
+            </View>
             {errors.hiveLocation && (
               <Text style={styles.errorText}>{errors.hiveLocation}</Text>
+            )}
+            {!geocoding && latitude && longitude && (
+              <Text style={{ fontSize: 11, color: "#16A34A", marginTop: 4, fontWeight: "600" }}>
+                📍 {parseFloat(latitude).toFixed(4)}, {parseFloat(longitude).toFixed(4)}
+              </Text>
             )}
           </View>
 

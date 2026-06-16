@@ -6,6 +6,7 @@ import {
   View,
 } from "react-native";
 import { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
+import { useFocusEffect } from "@react-navigation/native";
 import { Hive, fetchHives, fetchDashboard } from "../../api";
 import { THEME, STATUS_COLOR } from "../../theme";
 import { useTheme } from "../../hooks/useTheme";
@@ -82,7 +83,12 @@ export function MapScreen({ navigation }: Props) {
     }
   }, []);
 
-  useEffect(() => { void loadHives(); }, [loadHives]);
+  // Reload whenever this tab comes into focus — catches hives created elsewhere
+  useFocusEffect(
+    useCallback(() => {
+      void loadHives();
+    }, [loadHives]),
+  );
 
   const mapHives = useMemo(
     () =>
