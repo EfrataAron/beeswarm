@@ -77,28 +77,31 @@ function buildMapHtml(
       }
       .pin-badge {
         display: flex; flex-direction: column; align-items: center;
-        padding: 5px 10px; border-radius: 12px;
-        border: 2px solid #fff;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.35);
-        white-space: nowrap; max-width: 120px;
-        transition: transform 0.15s;
+        padding: 6px 11px; border-radius: 14px;
+        border: 2.5px solid #fff;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.4);
+        white-space: nowrap; max-width: 130px;
+        transition: transform 0.15s, box-shadow 0.15s;
       }
       .pin-wrapper:hover .pin-badge,
-      .pin-wrapper.active .pin-badge { transform: scale(1.08); }
+      .pin-wrapper.active .pin-badge { transform: scale(1.1); box-shadow: 0 5px 16px rgba(0,0,0,0.45); }
       .pin-name {
-        font-size: 11px; font-weight: 700; color: #fff;
-        overflow: hidden; text-overflow: ellipsis; max-width: 100px;
+        font-size: 12px; font-weight: 800; color: #fff;
+        overflow: hidden; text-overflow: ellipsis; max-width: 110px;
         font-family: system-ui, -apple-system, sans-serif;
+        letter-spacing: 0.1px;
       }
       .pin-status {
-        font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.85);
+        font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.9);
         text-transform: capitalize; overflow: hidden; text-overflow: ellipsis;
-        max-width: 100px;
+        max-width: 110px;
         font-family: system-ui, -apple-system, sans-serif;
+        margin-top: 1px;
       }
       .pin-tail {
         width: 0; height: 0;
-        border-left: 5px solid transparent; border-right: 5px solid transparent;
+        border-left: 6px solid transparent; border-right: 6px solid transparent;
+        filter: drop-shadow(0 2px 2px rgba(0,0,0,0.25));
       }
 
       /* Tooltip card */
@@ -233,7 +236,7 @@ function buildMapHtml(
 
         const nameEl = document.createElement("div");
         nameEl.className = "pin-name";
-        nameEl.textContent = hive.name || hive.id;
+        nameEl.textContent = hive.name || hive.id;  // prefer display name
 
         const statusEl = document.createElement("div");
         statusEl.className = "pin-status";
@@ -243,7 +246,7 @@ function buildMapHtml(
         badge.appendChild(statusEl);
         const tail = document.createElement("div");
         tail.className = "pin-tail";
-        tail.style.borderTop = "7px solid " + color;
+        tail.style.borderTop = "10px solid " + color;  // taller tail = proper pin shape
 
         wrapper.appendChild(badge);
         wrapper.appendChild(tail);

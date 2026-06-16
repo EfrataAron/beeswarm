@@ -248,7 +248,13 @@ function MainTabsScreen({
 
   useEffect(() => {
     void fetchAlerts()
-      .then((alerts) => setUnreadAlertCount(alerts.length))
+      .then((alerts) => {
+        // Only count alerts that haven't been acknowledged yet
+        const unread = alerts.filter(
+          (a) => a.alertStatus !== "acknowledged" && a.alertStatus !== "read",
+        );
+        setUnreadAlertCount(unread.length);
+      })
       .catch(() => {});
   }, []);
 
@@ -334,7 +340,6 @@ function MainTabsScreen({
       </Tab.Screen>
       <Tab.Screen
         name="Alerts"
-        listeners={{ tabPress: () => setUnreadAlertCount(0) }}
         options={{
           headerShown: false,
           tabBarLabel: "Alerts",

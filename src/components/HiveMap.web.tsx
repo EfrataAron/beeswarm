@@ -74,26 +74,28 @@ function ensureMapStyles() {
     }
     .hive-pin-badge {
       display: flex; flex-direction: column; align-items: center;
-      padding: 5px 10px; border-radius: 12px;
-      border: 2px solid #fff;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.35);
-      white-space: nowrap; max-width: 130px;
-      transition: transform 0.15s;
+      padding: 6px 11px; border-radius: 14px;
+      border: 2.5px solid #fff;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.4);
+      white-space: nowrap; max-width: 140px;
+      transition: transform 0.15s, box-shadow 0.15s;
       font-family: system-ui, -apple-system, sans-serif;
     }
-    .hive-pin-wrapper:hover .hive-pin-badge { transform: scale(1.08); }
+    .hive-pin-wrapper:hover .hive-pin-badge { transform: scale(1.1); box-shadow: 0 5px 16px rgba(0,0,0,0.45); }
     .hive-pin-name {
-      font-size: 11px; font-weight: 700; color: #fff;
-      overflow: hidden; text-overflow: ellipsis; max-width: 110px;
+      font-size: 12px; font-weight: 800; color: #fff;
+      overflow: hidden; text-overflow: ellipsis; max-width: 120px;
+      letter-spacing: 0.1px;
     }
     .hive-pin-status {
-      font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.85);
+      font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.9);
       text-transform: capitalize; overflow: hidden; text-overflow: ellipsis;
-      max-width: 110px;
+      max-width: 120px; margin-top: 1px;
     }
     .hive-pin-tail {
       width: 0; height: 0;
-      border-left: 5px solid transparent; border-right: 5px solid transparent;
+      border-left: 6px solid transparent; border-right: 6px solid transparent;
+      filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2));
     }
     .hive-tooltip {
       display: none;
@@ -205,7 +207,7 @@ function buildMarkerElement(
 
   const nameEl = document.createElement("div");
   nameEl.className = "hive-pin-name";
-  nameEl.textContent = hive.name || hive.id;
+  nameEl.textContent = hive.name || hive.id;  // prefer display name
 
   const statusEl = document.createElement("div");
   statusEl.className = "hive-pin-status";
@@ -216,7 +218,7 @@ function buildMarkerElement(
 
   const tail = document.createElement("div");
   tail.className = "hive-pin-tail";
-  tail.style.borderTop = `7px solid ${color}`;
+  tail.style.borderTop = `10px solid ${color}`;  // taller tail = proper pin shape
 
   wrapper.appendChild(badge);
   wrapper.appendChild(tail);
