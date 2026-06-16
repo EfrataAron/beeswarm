@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { THEME } from "../theme";
+import { useTemperatureUnit, convertTemp } from "../hooks/useTemperatureUnit";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -48,6 +49,7 @@ export function AllHivesHistoryChart({ allHivesHistory }: Props) {
     new Set(allHivesHistory.map((h) => h.hiveId)),
   );
   const [chartWidth, setChartWidth] = useState(0);
+  const { unit: tempUnit, formatTemp } = useTemperatureUnit();
   const [tooltip, setTooltip] = useState<{
     timeLabel: string;
     x: number;
@@ -87,15 +89,19 @@ export function AllHivesHistoryChart({ allHivesHistory }: Props) {
 
   // ── Y-axis domain ────────────────────────────────────────────────────────
   const isTemp = metric === "temperature";
-  const threshold = isTemp ? TEMP_THRESHOLD : HUM_THRESHOLD;
-  const unit = isTemp ? "°C" : "%";
-  const thresholdLabel = isTemp ? `${TEMP_THRESHOLD}°C Normal` : `${HUM_THRESHOLD}% Normal`;
+  // For temperature, convert the threshold and domain to display unit
+  const thresholdC = isTemp ? TEMP_THRESHOLD : HUM_THRESHOLD;
+  const thresholdDisplay = isTemp ? convertTemp(TEMP_THRESHOLD, tempUnit) : HUM_THRESHOLD;
+  const unit = isTemp ? `°${tempUnit}` : "%";
+  const thresholdLabel = isTemp
+    ? `${thresholdDisplay.toFixed(1)}°${tempUnit} Normal`
+    : `${HUM_THRESHOLD}% Normal`;
 
-  let domainMin = isTemp ? 25 : 0;
-  let domainMax = isTemp ? 42 : 100;
+  let domainMin = isTemp ? convertTemp(25, tempUnit) : 0;
+  let domainMax = isTemp ? convertTemp(42, tempUnit) : 100;
   allHivesHistory.forEach((h) => {
     h.history.forEach((p) => {
-      const v = isTemp ? p.temperatureC : p.humidityPercent;
+      const v = isTemp ? convertTemp(p.temperatureC, tempUnit) : p.humidityPercent;
       if (v < domainMin) domainMin = v - 1;
       if (v > domainMax) domainMax = v + 1;
     });
@@ -123,7 +129,7 @@ export function AllHivesHistoryChart({ allHivesHistory }: Props) {
   const yFor = (value: number) =>
     PAD_TOP + ((domainMax - value) / (domainMax - domainMin)) * plotH;
 
-  const thresholdY = yFor(threshold);
+  const thresholdY = yFor(thresholdDisplay);
 
   // ── Y-axis tick values ────────────────────────────────────────────────────
   const yTicks = [0, 0.25, 0.5, 0.75, 1].map((p) =>
@@ -254,12 +260,14 @@ export function AllHivesHistoryChart({ allHivesHistory }: Props) {
               if (!activeHives.has(hive.hiveId)) return null;
               const color = HIVE_COLORS[hIdx % HIVE_COLORS.length];
 
-              // Map each point to (x, y, value)
+              // Map each point to (x, y, value) — convert temp to display unit
               const pts = hive.history
                 .map((p) => {
                   const tIdx = timeLabels.indexOf(p.timeLabel);
                   if (tIdx < 0) return null;
-                  const value = isTemp ? p.temperatureC : p.humidityPercent;
+                  const value = isTemp
+                    ? convertTemp(p.temperatureC, tempUnit)
+                    : p.humidityPercent;
                   return { x: xFor(tIdx), y: yFor(value), value, label: p.timeLabel };
                 })
                 .filter(Boolean) as { x: number; y: number; value: number; label: string }[];
@@ -435,7 +443,7 @@ export function AllHivesHistoryChart({ allHivesHistory }: Props) {
                           {h.hiveName}
                         </Text>
                         <Text style={{ fontSize: 10, fontWeight: "700", color: h.color }}>
-                          {isTemp ? `${h.value.toFixed(1)}°` : `${h.value.toFixed(0)}%`}
+                          {isTemp ? formatTemp(h.value, 1) : `${h.value.toFixed(0)}%`}
                         </Text>
                       </View>
                     ))}
@@ -538,7 +546,7 @@ export function AllHivesHistoryChart({ allHivesHistory }: Props) {
             const latest = h.history[h.history.length - 1];
             if (!latest) return;
             const v = isTemp ? latest.temperatureC : latest.humidityPercent;
-            if (v <= threshold) normal++;
+            if (isTemp ? v <= TEMP_THRESHOLD : v <= HUM_THRESHOLD) normal++;
             else atRisk++;
           });
           return (

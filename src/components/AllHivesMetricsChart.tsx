@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { THEME } from "../theme";
+import { useTemperatureUnit, convertTemp } from "../hooks/useTemperatureUnit";
 
 type HivePoint = {
   hiveId: string;
@@ -15,23 +16,29 @@ type Props = {
 
 export function AllHivesMetricsChart({ allHives }: Props) {
   const [chartWidth, setChartWidth] = useState(0);
-  const [hoveredHive, setHoveredHive] = useState<string | null>(null); // stores hiveId
+  const [hoveredHive, setHoveredHive] = useState<string | null>(null);
+  const { formatTemp, unit: tempUnit } = useTemperatureUnit();
+
   const CHART_HEIGHT = 280;
   const PAD_LEFT = 50;
   const PAD_RIGHT = 20;
   const PAD_TOP = 20;
   const PAD_BOTTOM = 50;
-  const THRESHOLD_TEMP = 34.5;
+  const THRESHOLD_TEMP = 34.5; // always in °C for logic
   const THRESHOLD_HUMIDITY = 65;
 
-  const maxTemp = Math.max(...allHives.map((h) => h.temperatureC), 40);
-  const minTemp = Math.min(...allHives.map((h) => h.temperatureC), 25);
+  // Convert all temperatures to the display unit for axis scaling
+  const displayTemps = allHives.map((h) => convertTemp(h.temperatureC, tempUnit));
+  const thresholdDisplay = convertTemp(THRESHOLD_TEMP, tempUnit);
+
+  const maxTemp = Math.max(...displayTemps, convertTemp(40, tempUnit));
+  const minTemp = Math.min(...displayTemps, convertTemp(25, tempUnit));
 
   const plotW = Math.max(chartWidth - PAD_LEFT - PAD_RIGHT, 1);
   const plotH = CHART_HEIGHT - PAD_TOP - PAD_BOTTOM;
 
   return (
-    <View style={{ marginTop: 12 }}>
+    <View key={`snapshot-${tempUnit}`} style={{ marginTop: 12 }}>
       <View
         style={{ height: CHART_HEIGHT, position: "relative" }}
         onLayout={(e) => setChartWidth(e.nativeEvent.layout.width)}
@@ -50,7 +57,7 @@ export function AllHivesMetricsChart({ allHives }: Props) {
             {/* X-axis labels */}
             {[minTemp, (minTemp + maxTemp) / 2, maxTemp].map((val, idx) => (
               <Text key={`x-label-${idx}`} style={{ position: "absolute", left: PAD_LEFT + (idx / 2) * plotW - 14, bottom: 8, fontSize: 9, color: THEME.textMuted, fontWeight: "500" }}>
-                {val.toFixed(0)}°C
+                {val.toFixed(0)}°{tempUnit}
               </Text>
             ))}
             <Text style={{ position: "absolute", left: PAD_LEFT + plotW / 2 - 40, bottom: 18, fontSize: 11, fontWeight: "700", color: THEME.textMuted }}>
@@ -64,12 +71,12 @@ export function AllHivesMetricsChart({ allHives }: Props) {
               </React.Fragment>
             ))}
             {/* Normal zone */}
-            <View style={{ position: "absolute", left: PAD_LEFT, top: PAD_TOP + (1 - THRESHOLD_HUMIDITY / 100) * plotH, width: ((THRESHOLD_TEMP - minTemp) / (maxTemp - minTemp)) * plotW, height: (THRESHOLD_HUMIDITY / 100) * plotH, backgroundColor: "#22C55E", opacity: 0.1, borderWidth: 2, borderColor: "#22C55E", borderStyle: "dashed" }} />
+            <View style={{ position: "absolute", left: PAD_LEFT, top: PAD_TOP + (1 - THRESHOLD_HUMIDITY / 100) * plotH, width: ((thresholdDisplay - minTemp) / (maxTemp - minTemp)) * plotW, height: (THRESHOLD_HUMIDITY / 100) * plotH, backgroundColor: "#22C55E", opacity: 0.1, borderWidth: 2, borderColor: "#22C55E", borderStyle: "dashed" }} />
             {/* Threshold lines */}
-            <View style={{ position: "absolute", left: PAD_LEFT + ((THRESHOLD_TEMP - minTemp) / (maxTemp - minTemp)) * plotW, top: PAD_TOP, width: 2, height: plotH, backgroundColor: "#FFB268", opacity: 0.7 }} />
+            <View style={{ position: "absolute", left: PAD_LEFT + ((thresholdDisplay - minTemp) / (maxTemp - minTemp)) * plotW, top: PAD_TOP, width: 2, height: plotH, backgroundColor: "#FFB268", opacity: 0.7 }} />
             <View style={{ position: "absolute", left: PAD_LEFT, top: PAD_TOP + (1 - THRESHOLD_HUMIDITY / 100) * plotH, width: plotW, height: 2, backgroundColor: "#60A5FA", opacity: 0.7 }} />
-            <Text style={{ position: "absolute", left: PAD_LEFT + ((THRESHOLD_TEMP - minTemp) / (maxTemp - minTemp)) * plotW - 18, top: PAD_TOP - 18, fontSize: 8, fontWeight: "700", color: "#FFB268", backgroundColor: "#FFFFFF", paddingHorizontal: 4, paddingVertical: 2, borderRadius: 3 }}>
-              34.5°C
+            <Text style={{ position: "absolute", left: PAD_LEFT + ((thresholdDisplay - minTemp) / (maxTemp - minTemp)) * plotW - 18, top: PAD_TOP - 18, fontSize: 8, fontWeight: "700", color: "#FFB268", backgroundColor: "#FFFFFF", paddingHorizontal: 4, paddingVertical: 2, borderRadius: 3 }}>
+              {thresholdDisplay.toFixed(1)}°{tempUnit}
             </Text>
             <Text style={{ position: "absolute", right: PAD_RIGHT, top: PAD_TOP + (1 - THRESHOLD_HUMIDITY / 100) * plotH - 16, fontSize: 8, fontWeight: "700", color: "#60A5FA", backgroundColor: "#FFFFFF", paddingHorizontal: 4, paddingVertical: 2, borderRadius: 3 }}>
               65%
@@ -84,7 +91,8 @@ export function AllHivesMetricsChart({ allHives }: Props) {
 
             {/* Hive dots — rendered above the dismiss overlay */}
             {allHives.map((hive) => {
-              const x = PAD_LEFT + ((hive.temperatureC - minTemp) / (maxTemp - minTemp)) * plotW;
+              const displayT = convertTemp(hive.temperatureC, tempUnit);
+              const x = PAD_LEFT + ((displayT - minTemp) / (maxTemp - minTemp)) * plotW;
               const y = PAD_TOP + (1 - hive.humidityPercent / 100) * plotH;
               const isAbnormal = hive.temperatureC > THRESHOLD_TEMP || hive.humidityPercent > THRESHOLD_HUMIDITY;
               const color = isAbnormal ? "#DC2626" : "#22C55E";
@@ -164,7 +172,7 @@ export function AllHivesMetricsChart({ allHives }: Props) {
                       <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 2 }}>
                         <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: "#F97316" }} />
                         <Text style={{ fontSize: 10, color: "#F97316", fontWeight: "700" }}>
-                          {hive.temperatureC.toFixed(1)}°C
+                          {formatTemp(hive.temperatureC, 1)}
                         </Text>
                         {hive.temperatureC > THRESHOLD_TEMP && (
                           <Text style={{ fontSize: 8, color: "#FCA5A5", fontWeight: "600" }}>↑ high</Text>

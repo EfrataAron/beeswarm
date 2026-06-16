@@ -478,7 +478,10 @@ export function DashboardScreen({ navigation }: Props) {
               <Text style={styles.legendText}>Normal</Text>
             </View>
           </View>
-          <AllHivesMetricsChart allHives={dashboard.allHives} />
+          <AllHivesMetricsChart
+            key={`snapshot-${tempUnit}`}
+            allHives={dashboard.allHives}
+          />
         </View>
       )}
 
