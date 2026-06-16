@@ -13,6 +13,7 @@ import { THEME } from "../../theme";
 import { useTheme } from "../../hooks/useTheme";
 import { RootStackParamList } from "../../navigation/types";
 import { createSettingsStyles } from "./SettingsScreen.styles";
+import { PREF_SATELLITE_MAP, notifySatelliteChange } from "../../hooks/useMapStyle";
 
 const PREF_PUSH = "@bsads/push_notifications";
 const PREF_CRITICAL = "@bsads/critical_alerts_only";
@@ -38,12 +39,14 @@ export function SettingsScreen({
   useEffect(() => {
     void (async () => {
       try {
-        const [push, critical] = await Promise.all([
+        const [push, critical, satellite] = await Promise.all([
           AsyncStorage.getItem(PREF_PUSH),
           AsyncStorage.getItem(PREF_CRITICAL),
+          AsyncStorage.getItem(PREF_SATELLITE_MAP),
         ]);
         if (push !== null) setPushNotificationsEnabled(push === "true");
         if (critical !== null) setCriticalAlertsOnly(critical === "true");
+        if (satellite !== null) setSatelliteMapEnabled(satellite === "true");
       } catch {
         // use defaults if storage unavailable
       }
@@ -144,7 +147,13 @@ export function SettingsScreen({
           </View>
           <Switch
             value={satelliteMapEnabled}
-            onValueChange={setSatelliteMapEnabled}
+            onValueChange={async (v) => {
+              setSatelliteMapEnabled(v);
+              notifySatelliteChange(v);
+              try {
+                await AsyncStorage.setItem(PREF_SATELLITE_MAP, String(v));
+              } catch {}
+            }}
             trackColor={{ false: "#D0D5DD", true: THEME.accent }}
             thumbColor="#FFFFFF"
           />

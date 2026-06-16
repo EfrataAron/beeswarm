@@ -14,6 +14,7 @@ type Props = {
   region: MapRegion;
   statusColor: Record<HiveStatus, string>;
   onMarkerPress: (hiveId: string) => void;
+  satellite?: boolean;
 };
 
 const SAMPLE_HIVES: MapHive[] = [
@@ -39,26 +40,21 @@ const SAMPLE_HIVES: MapHive[] = [
   },
 ];
 
-const OSM_STYLE = {
-  version: 8 as const,
-  sources: {
-    osm: {
-      type: "raster" as const,
-      tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-      tileSize: 256,
-      attribution: "&copy; OpenStreetMap contributors",
+function buildMapStyle(satellite: boolean) {
+  const tileUrl = satellite
+    ? "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+    : "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
+  const attribution = satellite
+    ? "Tiles &copy; Esri &mdash; Source: Esri, Maxar, GeoEye"
+    : "&copy; OpenStreetMap contributors";
+  return {
+    version: 8 as const,
+    sources: {
+      base: { type: "raster" as const, tiles: [tileUrl], tileSize: 256, attribution },
     },
-  },
-  layers: [
-    {
-      id: "osm-tiles",
-      type: "raster" as const,
-      source: "osm",
-      minzoom: 0,
-      maxzoom: 19,
-    },
-  ],
-};
+    layers: [{ id: "base-tiles", type: "raster" as const, source: "base", minzoom: 0, maxzoom: 19 }],
+  };
+}
 
 // Inject CSS once into the document head
 function ensureMapStyles() {
@@ -72,58 +68,62 @@ function ensureMapStyles() {
       background: none; border: none; padding: 0; cursor: pointer;
       position: relative;
     }
-    .hive-pin-badge {
-      display: flex; flex-direction: column; align-items: center;
-      padding: 6px 11px; border-radius: 14px;
-      border: 2.5px solid #fff;
-      box-shadow: 0 3px 10px rgba(0,0,0,0.4);
-      white-space: nowrap; max-width: 140px;
+    .hive-pin-head {
+      width: 36px; height: 36px; border-radius: 50%;
+      border: 3px solid #fff;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.35);
+      display: flex; align-items: center; justify-content: center;
       transition: transform 0.15s, box-shadow 0.15s;
-      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 16px;
+      position: relative; z-index: 2;
     }
-    .hive-pin-wrapper:hover .hive-pin-badge { transform: scale(1.1); box-shadow: 0 5px 16px rgba(0,0,0,0.45); }
-    .hive-pin-name {
-      font-size: 12px; font-weight: 800; color: #fff;
-      overflow: hidden; text-overflow: ellipsis; max-width: 120px;
-      letter-spacing: 0.1px;
-    }
-    .hive-pin-status {
-      font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.9);
-      text-transform: capitalize; overflow: hidden; text-overflow: ellipsis;
-      max-width: 120px; margin-top: 1px;
+    .hive-pin-wrapper:hover .hive-pin-head {
+      transform: scale(1.15);
+      box-shadow: 0 5px 18px rgba(0,0,0,0.45);
     }
     .hive-pin-tail {
       width: 0; height: 0;
-      border-left: 6px solid transparent; border-right: 6px solid transparent;
-      filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2));
+      border-left: 7px solid transparent;
+      border-right: 7px solid transparent;
+      margin-top: -2px;
+      position: relative; z-index: 1;
+      filter: drop-shadow(0 3px 3px rgba(0,0,0,0.2));
     }
-    .hive-tooltip {
+    .hive-popup {
       display: none;
       position: absolute;
-      bottom: calc(100% + 8px);
+      bottom: calc(100% + 10px);
       left: 50%; transform: translateX(-50%);
       background: #1e293b;
-      border-radius: 10px; padding: 10px 13px;
-      min-width: 155px; max-width: 210px;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.35);
-      pointer-events: none;
+      border-radius: 10px; padding: 10px 14px;
+      min-width: 140px; max-width: 200px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+      white-space: nowrap;
       z-index: 9999;
       font-family: system-ui, -apple-system, sans-serif;
+      pointer-events: none;
     }
-    .hive-pin-wrapper:hover .hive-tooltip { display: block; }
-    .hive-tooltip-name {
-      font-size: 12px; font-weight: 800; color: #f1f5f9;
-      margin-bottom: 2px; white-space: nowrap;
-      overflow: hidden; text-overflow: ellipsis;
+    .hive-popup::after {
+      content: "";
+      position: absolute;
+      top: 100%; left: 50%; transform: translateX(-50%);
+      border-left: 7px solid transparent;
+      border-right: 7px solid transparent;
+      border-top: 8px solid #1e293b;
     }
-    .hive-tooltip-location {
-      font-size: 10px; color: #94a3b8; margin-bottom: 5px;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    .hive-pin-wrapper:hover .hive-popup { display: block; }
+    .hive-popup-name {
+      font-size: 13px; font-weight: 800; color: #f1f5f9;
+      overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px;
     }
-    .hive-tooltip-divider { width: 100%; height: 1px; background: #334155; margin: 5px 0 4px; }
-    .hive-tooltip-row { display: flex; align-items: center; gap: 5px; margin-top: 3px; }
-    .hive-tooltip-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-    .hive-tooltip-value { font-size: 10px; font-weight: 700; }
+    .hive-popup-status {
+      font-size: 10px; font-weight: 700; text-transform: capitalize;
+      padding: 2px 7px; border-radius: 20px; display: inline-block;
+    }
+    .hive-popup-divider { height: 1px; background: #334155; margin: 6px 0; }
+    .hive-popup-row { display: flex; align-items: center; gap: 5px; margin-top: 3px; }
+    .hive-popup-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .hive-popup-val { font-size: 10px; font-weight: 700; }
   `;
   document.head.appendChild(style);
 }
@@ -135,103 +135,85 @@ function buildMarkerElement(
 ): HTMLElement {
   const hasSensor = hive.temperatureC != null && hive.humidityPercent != null;
   const tempHigh = (hive.temperatureC ?? 0) > 34.5;
-  const humHigh = (hive.humidityPercent ?? 0) > 65;
+  const humHigh  = (hive.humidityPercent ?? 0) > 65;
 
   const wrapper = document.createElement("button");
   wrapper.className = "hive-pin-wrapper";
   wrapper.setAttribute("aria-label", `${hive.name} — ${hive.status}`);
 
-  // Tooltip
-  const tooltip = document.createElement("div");
-  tooltip.className = "hive-tooltip";
+  // Popup card
+  const popup = document.createElement("div");
+  popup.className = "hive-popup";
 
-  const tName = document.createElement("div");
-  tName.className = "hive-tooltip-name";
-  tName.textContent = hive.name || hive.id;
-  tooltip.appendChild(tName);
+  const pName = document.createElement("div");
+  pName.className = "hive-popup-name";
+  pName.textContent = hive.name || hive.id;
+  popup.appendChild(pName);
 
-  const tLoc = document.createElement("div");
-  tLoc.className = "hive-tooltip-location";
-  tLoc.textContent = "📍 " + (hive.location || "—");
-  tooltip.appendChild(tLoc);
-
-  // Status row
-  const tStatus = document.createElement("div");
-  tStatus.className = "hive-tooltip-location";
-  tStatus.style.color = color;
-  tStatus.style.fontWeight = "700";
-  tStatus.style.marginBottom = "5px";
-  tStatus.textContent = "● " + hive.status.replace(/_/g, " ");
-  tooltip.appendChild(tStatus);
+  const pStatus = document.createElement("span");
+  pStatus.className = "hive-popup-status";
+  pStatus.style.background = color + "33";
+  pStatus.style.color = color;
+  pStatus.textContent = hive.status.replace(/_/g, " ");
+  popup.appendChild(pStatus);
 
   if (hasSensor) {
-    const divider = document.createElement("div");
-    divider.className = "hive-tooltip-divider";
-    tooltip.appendChild(divider);
+    const div = document.createElement("div");
+    div.className = "hive-popup-divider";
+    popup.appendChild(div);
 
-    // Temp row
     const tempRow = document.createElement("div");
-    tempRow.className = "hive-tooltip-row";
-    const tempDot = document.createElement("div");
-    tempDot.className = "hive-tooltip-dot";
-    tempDot.style.background = "#f97316";
-    const tempVal = document.createElement("span");
-    tempVal.className = "hive-tooltip-value";
-    tempVal.style.color = tempHigh ? "#fb923c" : "#fdba74";
-    tempVal.textContent = (hive.temperatureC as number).toFixed(1) + "°C" + (tempHigh ? "  ↑" : "");
-    tempRow.appendChild(tempDot);
-    tempRow.appendChild(tempVal);
-    tooltip.appendChild(tempRow);
+    tempRow.className = "hive-popup-row";
+    const tDot = document.createElement("div");
+    tDot.className = "hive-popup-dot"; tDot.style.background = "#f97316";
+    const tVal = document.createElement("span");
+    tVal.className = "hive-popup-val";
+    tVal.style.color = tempHigh ? "#fb923c" : "#fdba74";
+    tVal.textContent = "🌡 " + (hive.temperatureC as number).toFixed(1) + "°C" + (tempHigh ? " ↑" : "");
+    tempRow.appendChild(tDot); tempRow.appendChild(tVal);
+    popup.appendChild(tempRow);
 
-    // Humidity row
     const humRow = document.createElement("div");
-    humRow.className = "hive-tooltip-row";
-    const humDot = document.createElement("div");
-    humDot.className = "hive-tooltip-dot";
-    humDot.style.background = "#60a5fa";
-    const humVal = document.createElement("span");
-    humVal.className = "hive-tooltip-value";
-    humVal.style.color = humHigh ? "#93c5fd" : "#bfdbfe";
-    humVal.textContent = (hive.humidityPercent as number).toFixed(0) + "%" + (humHigh ? "  ↑" : "");
-    humRow.appendChild(humDot);
-    humRow.appendChild(humVal);
-    tooltip.appendChild(humRow);
+    humRow.className = "hive-popup-row";
+    const hDot = document.createElement("div");
+    hDot.className = "hive-popup-dot"; hDot.style.background = "#60a5fa";
+    const hVal = document.createElement("span");
+    hVal.className = "hive-popup-val";
+    hVal.style.color = humHigh ? "#93c5fd" : "#bfdbfe";
+    hVal.textContent = "💧 " + (hive.humidityPercent as number).toFixed(0) + "%" + (humHigh ? " ↑" : "");
+    humRow.appendChild(hDot); humRow.appendChild(hVal);
+    popup.appendChild(humRow);
   }
 
-  wrapper.appendChild(tooltip);
+  wrapper.appendChild(popup);
 
-  // Pin badge
-  const badge = document.createElement("div");
-  badge.className = "hive-pin-badge";
-  badge.style.background = color;
+  // Teardrop head
+  const head = document.createElement("div");
+  head.className = "hive-pin-head";
+  head.style.background = color;
+  head.textContent = "🐝";
+  wrapper.appendChild(head);
 
-  const nameEl = document.createElement("div");
-  nameEl.className = "hive-pin-name";
-  nameEl.textContent = hive.name || hive.id;  // prefer display name
-
-  const statusEl = document.createElement("div");
-  statusEl.className = "hive-pin-status";
-  statusEl.textContent = hive.status.replace(/_/g, " ");
-
-  badge.appendChild(nameEl);
-  badge.appendChild(statusEl);
-
+  // Teardrop tail
   const tail = document.createElement("div");
   tail.className = "hive-pin-tail";
-  tail.style.borderTop = `10px solid ${color}`;  // taller tail = proper pin shape
-
-  wrapper.appendChild(badge);
+  tail.style.borderTop = `12px solid ${color}`;
   wrapper.appendChild(tail);
 
   wrapper.addEventListener("click", () => onPress(hive.id));
-
   return wrapper;
 }
 
-export default function HiveMap({ mapHives, region, statusColor, onMarkerPress }: Props) {
-  const mapElRef = useRef<HTMLDivElement | null>(null);
+export default function HiveMap({
+  mapHives,
+  region,
+  statusColor,
+  onMarkerPress,
+  satellite = false,
+}: Props) {
+  const mapElRef  = useRef<HTMLDivElement | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const mapRef = useRef<any>(null);
+  const mapRef    = useRef<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const markersRef = useRef<any[]>([]);
   const [ready, setReady] = useState(false);
@@ -242,23 +224,18 @@ export default function HiveMap({ mapHives, region, statusColor, onMarkerPress }
   useEffect(() => {
     ensureMapStyles();
     let cancelled = false;
-
-    // Dynamically require maplibre-gl to avoid Metro static-analysis failures
     // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-explicit-any
     const ml = require("maplibre-gl") as any;
-
     if (cancelled || !mapElRef.current || mapRef.current) return;
 
     const map = new ml.Map({
       container: mapElRef.current,
-      style: OSM_STYLE,
+      style: buildMapStyle(satellite),
       center: [region.longitude, region.latitude],
       zoom: 13,
     });
     mapRef.current = map;
-    map.on("load", () => {
-      if (!cancelled) setReady(true);
-    });
+    map.on("load", () => { if (!cancelled) setReady(true); });
 
     return () => {
       cancelled = true;
@@ -270,10 +247,22 @@ export default function HiveMap({ mapHives, region, statusColor, onMarkerPress }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Add / refresh markers whenever hives, region or statusColor change
+  // Swap tile layer when satellite preference changes
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const style = buildMapStyle(satellite) as any;
+    // Replace the source and layer without remounting the map
+    if (map.getLayer("base-tiles")) map.removeLayer("base-tiles");
+    if (map.getSource("base"))      map.removeSource("base");
+    map.addSource("base", style.sources.base);
+    map.addLayer(style.layers[0], map.getLayer("base-tiles") ? undefined : undefined);
+  }, [satellite, ready]);
+
+  // Refresh markers whenever hives / region / colors change
   useEffect(() => {
     if (!ready || !mapRef.current) return;
-
     // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-explicit-any
     const ml = require("maplibre-gl") as any;
     const map = mapRef.current;
@@ -302,23 +291,13 @@ export default function HiveMap({ mapHives, region, statusColor, onMarkerPress }
   }, [ready, renderedHives, region.longitude, region.latitude, statusColor, onMarkerPress]);
 
   return (
-    <div
-      ref={mapElRef}
-      style={{ width: "100%", height: "100%" }}
-    >
+    <div ref={mapElRef} style={{ width: "100%", height: "100%" }}>
       {!ready && (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            height: "100%",
-            color: "#667085",
-            fontSize: 13,
-            fontWeight: 600,
-            fontFamily: "system-ui, -apple-system, sans-serif",
-          }}
-        >
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "center",
+          height: "100%", color: "#667085", fontSize: 13, fontWeight: 600,
+          fontFamily: "system-ui, -apple-system, sans-serif",
+        }}>
           Loading map…
         </div>
       )}

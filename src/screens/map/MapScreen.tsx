@@ -10,6 +10,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { Hive, fetchHives, fetchDashboard } from "../../api";
 import { THEME, STATUS_COLOR } from "../../theme";
 import { useTheme } from "../../hooks/useTheme";
+import { useMapStyle } from "../../hooks/useMapStyle";
 import { MainTabParamList } from "../../navigation/types";
 import { mapStyles as styles } from "./MapScreen.styles";
 import HiveMap from "../../components/HiveMap";
@@ -52,6 +53,7 @@ type Props = BottomTabScreenProps<MainTabParamList, "Map">;
 
 export function MapScreen({ navigation }: Props) {
   const theme = useTheme();
+  const { satellite } = useMapStyle();
   const [hives, setHives] = useState<Hive[]>([]);
   const [sensorMap, setSensorMap] = useState<Record<string, { temperatureC: number; humidityPercent: number }>>({});
   const [loading, setLoading] = useState(true);
@@ -141,6 +143,7 @@ export function MapScreen({ navigation }: Props) {
             mapHives={mapHives}
             region={region}
             statusColor={STATUS_COLOR}
+            satellite={satellite}
             onMarkerPress={(hiveId: string) =>
               navigation.navigate("Hives", {
                 screen: "HiveDetails",
