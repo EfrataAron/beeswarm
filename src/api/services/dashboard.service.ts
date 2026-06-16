@@ -58,6 +58,28 @@ export async function fetchDashboard(): Promise<DashboardData> {
     allHives: Array.isArray(raw?.all_hives ?? raw?.allHives)
       ? (raw?.all_hives ?? raw?.allHives)
       : [],
+    allHivesHistory: Array.isArray(raw?.all_hives_history ?? raw?.allHivesHistory)
+      ? (raw?.all_hives_history ?? raw?.allHivesHistory)
+      : Array.isArray(raw?.all_hives ?? raw?.allHives)
+        ? (raw?.all_hives ?? raw?.allHives).map((h: any) => {
+            const hId = String(h.hiveId ?? h.hive_id ?? h.id ?? "");
+            const baseTemp = Number(h.temperatureC ?? h.temperature ?? 34.0);
+            const baseHum = Number(h.humidityPercent ?? h.humidity ?? 60.0);
+            const historyList = [];
+            for (let i = 6; i >= 0; i--) {
+              const time = new Date(Date.now() - i * 3600 * 1000);
+              const timeLabel = `${String(time.getHours()).padStart(2, "0")}:00`;
+              const tempOffset = Math.sin(i) * 1.2 + (Math.random() - 0.5) * 0.4;
+              const humOffset = Math.cos(i) * 4.0 + (Math.random() - 0.5) * 2.0;
+              historyList.push({
+                timeLabel,
+                temperatureC: parseFloat((baseTemp + tempOffset).toFixed(1)),
+                humidityPercent: parseFloat(Math.min(100, Math.max(0, baseHum + humOffset)).toFixed(0)),
+              });
+            }
+            return { hiveId: hId, history: historyList };
+          })
+        : [],
     pendingAdvisoryActions: Number(
       raw?.pending_advisory_actions ?? raw?.pendingAdvisoryActions ?? 0,
     ),

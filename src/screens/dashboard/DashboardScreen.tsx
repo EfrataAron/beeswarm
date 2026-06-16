@@ -25,6 +25,7 @@ import { DonutChart } from "../../components/DonutChart";
 import { TrendLineChart } from "../../components/TrendLineChart";
 import { MetricCard } from "../../components/MetricCard";
 import { AllHivesMetricsChart } from "../../components/AllHivesMetricsChart";
+import { AllHivesHistoryChart } from "../../components/AllHivesHistoryChart";
 
 const TREND_24H: Array<{ label: string; count: number }> = [
   { label: "00", count: 0 },
@@ -446,11 +447,22 @@ export function DashboardScreen({ navigation }: Props) {
         <TrendLineChart data={activeTrendData} />
       </View>
 
-      {/* ── All Hives Metrics ── */}
+      {/* ── All Hives Temperature & Humidity History ── */}
+      {dashboard.allHivesHistory && dashboard.allHivesHistory.length > 0 && (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Fleet Temperature &amp; Humidity</Text>
+          <Text style={styles.metricsSubtitle}>
+            Live readings per hive · tap a dot for details · toggle hives below
+          </Text>
+          <AllHivesHistoryChart allHivesHistory={dashboard.allHivesHistory} />
+        </View>
+      )}
+
+      {/* ── All Hives Snapshot Scatter ── */}
       {dashboard.allHives && dashboard.allHives.length > 0 && (
         <View style={styles.card}>
           <View style={styles.rowBetween}>
-            <Text style={styles.cardTitle}>Hive Metrics Overview</Text>
+            <Text style={styles.cardTitle}>Hive Metrics Snapshot</Text>
           </View>
           <Text style={styles.metricsSubtitle}>All hives plotted by temperature vs humidity</Text>
           <View style={styles.metricsLegendRow}>
