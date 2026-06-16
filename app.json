@@ -5,6 +5,8 @@
     "scheme": "beeswarm",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/images/bee.png",
+
     "userInterfaceStyle": "light",
     "splash": {
       "backgroundColor": "#f5ffeb"
@@ -19,15 +21,27 @@
     "android": {
       "permissions": [
         "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "INTERNET",
         "ACCESS_NETWORK_STATE"
       ],
-      "usesCleartextTraffic": false
+      "usesCleartextTraffic": false,
+      "package": "com.anonymous.beeswarm",
+
+      "icon": "./assets/images/bee.png"
     },
     "ios": {
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": false
-        }
+        },
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "bundleIdentifier": "com.bsads.beeswarm"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "c536bf8f-d6bd-4683-8882-da074e13c9c2"
       }
     }
   }
