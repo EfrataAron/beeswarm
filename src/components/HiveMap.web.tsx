@@ -15,6 +15,7 @@ type Props = {
   statusColor: Record<HiveStatus, string>;
   onMarkerPress: (hiveId: string) => void;
   satellite?: boolean;
+  temperatureUnit?: "C" | "F";
 };
 
 const SAMPLE_HIVES: MapHive[] = [
@@ -128,10 +129,18 @@ function ensureMapStyles() {
   document.head.appendChild(style);
 }
 
+function formatMapTemp(celsius: number, unit: "C" | "F"): string {
+  if (unit === "F") {
+    return `${(celsius * 9 / 5 + 32).toFixed(1)}°F`;
+  }
+  return `${celsius.toFixed(1)}°C`;
+}
+
 function buildMarkerElement(
   hive: MapHive,
   color: string,
   onPress: (id: string) => void,
+  temperatureUnit: "C" | "F",
 ): HTMLElement {
   const hasSensor = hive.temperatureC != null && hive.humidityPercent != null;
   const tempHigh = (hive.temperatureC ?? 0) > 34.5;
@@ -169,7 +178,7 @@ function buildMarkerElement(
     const tVal = document.createElement("span");
     tVal.className = "hive-popup-val";
     tVal.style.color = tempHigh ? "#fb923c" : "#fdba74";
-    tVal.textContent = "🌡 " + (hive.temperatureC as number).toFixed(1) + "°C" + (tempHigh ? " ↑" : "");
+    tVal.textContent = "🌡 " + formatMapTemp(hive.temperatureC as number, temperatureUnit) + (tempHigh ? " ↑" : "");
     tempRow.appendChild(tDot); tempRow.appendChild(tVal);
     popup.appendChild(tempRow);
 
@@ -210,6 +219,7 @@ export default function HiveMap({
   statusColor,
   onMarkerPress,
   satellite = false,
+  temperatureUnit = "C",
 }: Props) {
   const mapElRef  = useRef<HTMLDivElement | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -272,7 +282,7 @@ export default function HiveMap({
 
     renderedHives.forEach((hive) => {
       const color = statusColor[hive.status] ?? "#FFB268";
-      const el = buildMarkerElement(hive, color, onMarkerPress);
+      const el = buildMarkerElement(hive, color, onMarkerPress, temperatureUnit);
       const marker = new ml.Marker({ element: el, anchor: "bottom" })
         .setLngLat([hive.longitude, hive.latitude])
         .addTo(map);
@@ -288,7 +298,7 @@ export default function HiveMap({
     } else {
       map.flyTo({ center: [region.longitude, region.latitude], zoom: 13 });
     }
-  }, [ready, renderedHives, region.longitude, region.latitude, statusColor, onMarkerPress]);
+  }, [ready, renderedHives, region.longitude, region.latitude, statusColor, onMarkerPress, temperatureUnit]);
 
   return (
     <div ref={mapElRef} style={{ width: "100%", height: "100%" }}>

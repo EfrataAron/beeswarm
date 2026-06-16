@@ -14,6 +14,7 @@ import { useTheme } from "../../hooks/useTheme";
 import { RootStackParamList } from "../../navigation/types";
 import { createSettingsStyles } from "./SettingsScreen.styles";
 import { PREF_SATELLITE_MAP, notifySatelliteChange } from "../../hooks/useMapStyle";
+import { PREF_TEMP_UNIT, notifyTempUnitChange } from "../../hooks/useTemperatureUnit";
 
 const PREF_PUSH = "@bsads/push_notifications";
 const PREF_CRITICAL = "@bsads/critical_alerts_only";
@@ -39,14 +40,19 @@ export function SettingsScreen({
   useEffect(() => {
     void (async () => {
       try {
-        const [push, critical, satellite] = await Promise.all([
+        const [push, critical, satellite, tempUnit] = await Promise.all([
           AsyncStorage.getItem(PREF_PUSH),
           AsyncStorage.getItem(PREF_CRITICAL),
           AsyncStorage.getItem(PREF_SATELLITE_MAP),
+          AsyncStorage.getItem(PREF_TEMP_UNIT),
         ]);
         if (push !== null) setPushNotificationsEnabled(push === "true");
         if (critical !== null) setCriticalAlertsOnly(critical === "true");
         if (satellite !== null) setSatelliteMapEnabled(satellite === "true");
+        if (tempUnit === "C" || tempUnit === "F") {
+          setTemperatureUnit(tempUnit);
+          notifyTempUnitChange(tempUnit);
+        }
       } catch {
         // use defaults if storage unavailable
       }
@@ -177,38 +183,29 @@ export function SettingsScreen({
         <View style={styles.settingsRowColumn}>
           <Text style={styles.settingsRowLabel}>Temperature Unit</Text>
           <View style={styles.segmentedControl}>
-            <Pressable
-              style={[
-                styles.segmentButton,
-                temperatureUnit === "C" && styles.segmentButtonActive,
-              ]}
-              onPress={() => setTemperatureUnit("C")}
-            >
-              <Text
+            {(["C", "F"] as const).map((u) => (
+              <Pressable
+                key={u}
                 style={[
-                  styles.segmentText,
-                  temperatureUnit === "C" && styles.segmentTextActive,
+                  styles.segmentButton,
+                  temperatureUnit === u && styles.segmentButtonActive,
                 ]}
+                onPress={async () => {
+                  setTemperatureUnit(u);
+                  notifyTempUnitChange(u);
+                  try { await AsyncStorage.setItem(PREF_TEMP_UNIT, u); } catch {}
+                }}
               >
-                Celsius
-              </Text>
-            </Pressable>
-            <Pressable
-              style={[
-                styles.segmentButton,
-                temperatureUnit === "F" && styles.segmentButtonActive,
-              ]}
-              onPress={() => setTemperatureUnit("F")}
-            >
-              <Text
-                style={[
-                  styles.segmentText,
-                  temperatureUnit === "F" && styles.segmentTextActive,
-                ]}
-              >
-                Fahrenheit
-              </Text>
-            </Pressable>
+                <Text
+                  style={[
+                    styles.segmentText,
+                    temperatureUnit === u && styles.segmentTextActive,
+                  ]}
+                >
+                  {u === "C" ? "Celsius" : "Fahrenheit"}
+                </Text>
+              </Pressable>
+            ))}
           </View>
         </View>
       </View>

@@ -302,6 +302,7 @@ import {
   formatRelativeTime,
 } from "../../../theme";
 import { useTheme } from "../../../hooks/useTheme";
+import { useTemperatureUnit } from "../../../hooks/useTemperatureUnit";
 import { HivesStackParamList, MainTabParamList } from "../../../navigation/types";
 import { createHiveDetailsStyles } from "./HiveDetailsScreen.styles";
 import { HiveMetricsLineChart } from "../../../components/HiveMetricsLineChart";
@@ -318,6 +319,7 @@ type Props = NativeStackScreenProps<HivesStackParamList, "HiveDetails"> & {
 export function HiveDetailsScreen({ route, navigation }: Props) {
   const { hiveId, lastAnalysisTime } = route.params;
   const theme = useTheme();
+  const { formatTemp, unit: tempUnit } = useTemperatureUnit();
   const styles = useMemo(() => createHiveDetailsStyles(theme), [theme]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -499,7 +501,7 @@ export function HiveDetailsScreen({ route, navigation }: Props) {
                 color={THEME.accent}
               />
               <Text style={styles.weatherValue}>
-                {detail.weather.temperature.toFixed(1)}°C
+                {formatTemp(detail.weather.temperature, 1)}
               </Text>
               <Text style={styles.weatherLabel}>Temperature</Text>
             </View>

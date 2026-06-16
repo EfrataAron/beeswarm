@@ -7,7 +7,9 @@ import {
 } from "react-native";
 import { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { useFocusEffect } from "@react-navigation/native";
-import { Hive, fetchHives, fetchDashboard } from "../../api";
+import { Hive, fetchHives, fetchDashboard, enrichHivesWithCoordinates } from "../../api";
+import { hasValidMapCoordinates } from "../../api/utils/normalizers";
+import { useTemperatureUnit } from "../../hooks/useTemperatureUnit";
 import { THEME, STATUS_COLOR } from "../../theme";
 import { useTheme } from "../../hooks/useTheme";
 import { useMapStyle } from "../../hooks/useMapStyle";
@@ -24,12 +26,7 @@ const DEFAULT_MAP_REGION = {
 };
 
 function hasMapCoordinates(hive: Hive): hive is Hive & { latitude: number; longitude: number } {
-  return (
-    typeof hive.latitude === "number" &&
-    Number.isFinite(hive.latitude) &&
-    typeof hive.longitude === "number" &&
-    Number.isFinite(hive.longitude)
-  );
+  return hasValidMapCoordinates(hive.latitude, hive.longitude);
 }
 
 function getMapRegion(hives: MapHive[]) {
@@ -54,6 +51,7 @@ type Props = BottomTabScreenProps<MainTabParamList, "Map">;
 export function MapScreen({ navigation }: Props) {
   const theme = useTheme();
   const { satellite } = useMapStyle();
+  const { unit: temperatureUnit } = useTemperatureUnit();
   const [hives, setHives] = useState<Hive[]>([]);
   const [sensorMap, setSensorMap] = useState<Record<string, { temperatureC: number; humidityPercent: number }>>({});
   const [loading, setLoading] = useState(true);
@@ -68,7 +66,8 @@ export function MapScreen({ navigation }: Props) {
         fetchHives(),
         fetchDashboard().catch(() => null),
       ]);
-      setHives(data);
+      const withCoords = await enrichHivesWithCoordinates(data);
+      setHives(withCoords);
 
       // Build a lookup: hiveId → latest temp/humidity
       if (dashboard?.allHives) {
@@ -144,6 +143,7 @@ export function MapScreen({ navigation }: Props) {
             region={region}
             statusColor={STATUS_COLOR}
             satellite={satellite}
+            temperatureUnit={temperatureUnit}
             onMarkerPress={(hiveId: string) =>
               navigation.navigate("Hives", {
                 screen: "HiveDetails",

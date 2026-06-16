@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useTheme } from "../hooks/useTheme";
+import { useTemperatureUnit, convertTemp } from "../hooks/useTemperatureUnit";
 
 type MetricPoint = {
   timeLabel: string;
@@ -54,6 +55,8 @@ export function HiveMetricsLineChart({
   perHiveSeries,
 }: Props) {
   const theme = useTheme();
+  const { unit: tempUnit, formatTemp } = useTemperatureUnit();
+  const displayTemp = (celsius: number) => convertTemp(celsius, tempUnit);
   const [range, setRange] = useState<TimeRange>("24h");
   const [chartWidth, setChartWidth] = useState(0);
   const [selectedPoint, setSelectedPoint] = useState<SelectedPoint | null>(null);
@@ -204,7 +207,7 @@ export function HiveMetricsLineChart({
                 width: 32, textAlign: "right", fontSize: 9,
                 color: theme.accent, fontWeight: "600",
               }}>
-                {(minT + (1 - pct) * (maxT - minT)).toFixed(0)}°
+                {displayTemp(minT + (1 - pct) * (maxT - minT)).toFixed(0)}°
               </Text>
             ))}
 
@@ -244,7 +247,7 @@ export function HiveMetricsLineChart({
               fontSize: 8, fontWeight: "700", color: "#22C55E",
               backgroundColor: theme.surface, paddingHorizontal: 3,
             }}>
-              {THRESHOLD_TEMP}°C
+              {formatTemp(THRESHOLD_TEMP, 1)}
             </Text>
 
             {/* Humidity threshold */}
@@ -357,7 +360,7 @@ export function HiveMetricsLineChart({
                 <Text style={{ fontSize: 14, fontWeight: "700",
                   color: selectedPoint.type === "Temperature" ? theme.accent : "#3B82F6" }}>
                   {selectedPoint.type === "Temperature"
-                    ? `${selectedPoint.value.toFixed(1)} °C avg`
+                    ? formatTemp(selectedPoint.value, 1) + " avg"
                     : `${selectedPoint.value.toFixed(0)} % avg`}
                 </Text>
                 <Text style={{ fontSize: 9, color: theme.textMuted, marginBottom: selectedPoint.hiveBreakdown ? 6 : 0 }}>
@@ -379,7 +382,7 @@ export function HiveMetricsLineChart({
                       color: selectedPoint.type === "Temperature" ? theme.accent : "#3B82F6",
                     }}>
                       {selectedPoint.type === "Temperature"
-                        ? `${hive.value.toFixed(1)}°`
+                        ? formatTemp(hive.value, 1)
                         : `${hive.value.toFixed(0)}%`}
                     </Text>
                   </View>
@@ -407,7 +410,7 @@ export function HiveMetricsLineChart({
                   <View key={lbl} style={{ alignItems: "center" }}>
                     <Text style={{ fontSize: 8, color: theme.textMuted }}>{lbl}</Text>
                     <Text style={{ fontSize: 12, fontWeight: "700", color: theme.accent }}>
-                      {vals[i].toFixed(1)}°
+                      {formatTemp(vals[i], 1)}
                     </Text>
                   </View>
                 );

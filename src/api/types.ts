@@ -69,6 +69,8 @@ export type HiveDetailData = {
   lastInferenceAt?: string | null;
   weather?: WeatherData;
   lastAnalysisTime?: string | null;
+  latitude?: number;
+  longitude?: number;
 };
 
 export type AlertItem = {

@@ -54,6 +54,7 @@ export {
   fetchHiveDetail,
   createHive,
   acknowledgeHiveAlert,
+  enrichHivesWithCoordinates,
 } from "./services/hive.service";
 
 // Export alert service

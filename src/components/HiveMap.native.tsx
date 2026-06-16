@@ -26,6 +26,7 @@ type Props = {
   statusColor: Record<HiveStatus, string>;
   onMarkerPress: (hiveId: string) => void;
   satellite?: boolean;
+  temperatureUnit?: "C" | "F";
 };
 
 const SAMPLE_HIVES: MapHive[] = [
@@ -60,8 +61,9 @@ function buildMapHtml(
   region: MapRegion,
   statusColor: Record<HiveStatus, string>,
   satellite: boolean,
+  temperatureUnit: "C" | "F",
 ) {
-  const payload = escapeForHtml(JSON.stringify({ hives, region, statusColor }));
+  const payload = escapeForHtml(JSON.stringify({ hives, region, statusColor, temperatureUnit }));
 
   // Street map: OpenStreetMap  |  Satellite: Esri World Imagery (free, no key)
   const tileUrl = satellite
@@ -194,7 +196,15 @@ function buildMapHtml(
       // Tap on map background closes popups
       map.on("click", closeAll);
 
-      payload.hives.forEach(function(hive) {
+      function formatTemp(celsius) {
+        if (payload.temperatureUnit === "F") {
+          return (celsius * 9 / 5 + 32).toFixed(1) + "°F";
+        }
+        return celsius.toFixed(1) + "°C";
+      }
+
+      function addMarkers() {
+        payload.hives.forEach(function(hive) {
         const color = payload.statusColor[hive.status] || "#FFB268";
         const hasSensor = hive.temperatureC != null && hive.humidityPercent != null;
         const tempHigh = hive.temperatureC > 34.5;
@@ -232,7 +242,7 @@ function buildMapHtml(
           const tVal = document.createElement("span");
           tVal.className = "popup-val";
           tVal.style.color = tempHigh ? "#fb923c" : "#fdba74";
-          tVal.textContent = "🌡 " + hive.temperatureC.toFixed(1) + "°C" + (tempHigh ? " ↑" : "");
+          tVal.textContent = "🌡 " + formatTemp(hive.temperatureC) + (tempHigh ? " ↑" : "");
           tempRow.appendChild(tDot); tempRow.appendChild(tVal);
           popup.appendChild(tempRow);
 
@@ -272,15 +282,28 @@ function buildMapHtml(
           postMsg({ type: "markerPress", hiveId: hive.id });
         });
 
+        // anchor: "bottom" places the bottom of the element at the coordinate.
+        // The popup floats ABOVE the pin, so we wrap pin+tail in a nested element
+        // and use that as the anchor target — keeping the tail tip on the coordinate.
         new maplibregl.Marker({ element: wrapper, anchor: "bottom" })
           .setLngLat([hive.longitude, hive.latitude])
           .addTo(map);
       });
 
-      if (payload.hives.length > 1) {
-        const bounds = new maplibregl.LngLatBounds();
-        payload.hives.forEach(function(h) { bounds.extend([h.longitude, h.latitude]); });
-        map.fitBounds(bounds, { padding: 60, maxZoom: 15 });
+        if (payload.hives.length > 1) {
+          const bounds = new maplibregl.LngLatBounds();
+          payload.hives.forEach(function(h) { bounds.extend([h.longitude, h.latitude]); });
+          map.fitBounds(bounds, { padding: 60, maxZoom: 15 });
+        } else if (payload.hives.length === 1) {
+          const h = payload.hives[0];
+          map.flyTo({ center: [h.longitude, h.latitude], zoom: 14 });
+        }
+      }
+
+      if (map.loaded()) {
+        addMarkers();
+      } else {
+        map.on("load", addMarkers);
       }
     </script>
   </body>
@@ -293,11 +316,15 @@ export default function HiveMap({
   statusColor,
   onMarkerPress,
   satellite = false,
+  temperatureUnit = "C",
 }: Props) {
   const renderedHives = mapHives.length > 0 ? mapHives : SAMPLE_HIVES;
+  const mapKey = renderedHives
+    .map((h) => `${h.id}:${h.latitude}:${h.longitude}`)
+    .join("|");
   const html = useMemo(
-    () => buildMapHtml(renderedHives, region, statusColor, satellite),
-    [renderedHives, region, statusColor, satellite],
+    () => buildMapHtml(renderedHives, region, statusColor, satellite, temperatureUnit),
+    [renderedHives, region, statusColor, satellite, temperatureUnit],
   );
 
   const handleMessage = (event: WebViewMessageEvent) => {
@@ -316,6 +343,7 @@ export default function HiveMap({
 
   return (
     <WebView
+      key={mapKey}
       originWhitelist={["*"]}
       source={{ html }}
       style={{ flex: 1 }}

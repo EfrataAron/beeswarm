@@ -127,6 +127,113 @@ export function toFiniteOrUndefined(value: unknown): number | undefined {
   return Number.isFinite(n) ? n : undefined;
 }
 
+/** Parse latitude/longitude from common API field shapes. */
+export function parseHiveCoordinates(item: Record<string, unknown>): {
+  latitude?: number;
+  longitude?: number;
+} {
+  const locationValue = item.location;
+  const nested =
+    (typeof locationValue === "object" && locationValue !== null
+      ? (locationValue as Record<string, unknown>)
+      : undefined) ??
+    (typeof item.coordinates === "object" &&
+    item.coordinates !== null &&
+    !Array.isArray(item.coordinates)
+      ? (item.coordinates as Record<string, unknown>)
+      : undefined) ??
+    (typeof item.geo === "object" && item.geo !== null
+      ? (item.geo as Record<string, unknown>)
+      : undefined) ??
+    (typeof item.gps === "object" && item.gps !== null
+      ? (item.gps as Record<string, unknown>)
+      : undefined);
+
+  let latitude = toFiniteOrUndefined(
+    item.latitude ??
+      item.lat ??
+      item.gps_latitude ??
+      item.hive_latitude ??
+      nested?.latitude ??
+      nested?.lat,
+  );
+  let longitude = toFiniteOrUndefined(
+    item.longitude ??
+      item.lng ??
+      item.lon ??
+      item.gps_longitude ??
+      item.hive_longitude ??
+      nested?.longitude ??
+      nested?.lng ??
+      nested?.lon,
+  );
+
+  const point = item.coordinates ?? item.coords ?? item.geo_point;
+  if (Array.isArray(point) && point.length >= 2) {
+    const a = Number(point[0]);
+    const b = Number(point[1]);
+    if (Number.isFinite(a) && Number.isFinite(b)) {
+      // GeoJSON uses [lng, lat]; some APIs use [lat, lng]
+      if (Math.abs(a) <= 90 && Math.abs(b) > 90) {
+        latitude = latitude ?? a;
+        longitude = longitude ?? b;
+      } else {
+        longitude = longitude ?? a;
+        latitude = latitude ?? b;
+      }
+    }
+  }
+
+  // Some backends embed "lat, lng" in the location label string
+  if (latitude == null || longitude == null) {
+    for (const candidate of [item.hive_location, item.location, item.address]) {
+      if (typeof candidate !== "string") continue;
+      const match = candidate.match(
+        /(-?\d{1,3}(?:\.\d+)?)\s*[,;\s]\s*(-?\d{1,3}(?:\.\d+)?)/,
+      );
+      if (!match) continue;
+      const a = Number(match[1]);
+      const b = Number(match[2]);
+      if (!Number.isFinite(a) || !Number.isFinite(b)) continue;
+      if (Math.abs(a) <= 90 && Math.abs(b) <= 180) {
+        latitude = latitude ?? a;
+        longitude = longitude ?? b;
+        break;
+      }
+      if (Math.abs(b) <= 90 && Math.abs(a) <= 180) {
+        latitude = latitude ?? b;
+        longitude = longitude ?? a;
+        break;
+      }
+    }
+  }
+
+  if (latitude != null && longitude != null && Math.abs(latitude) > 90 && Math.abs(longitude) <= 90) {
+    [latitude, longitude] = [longitude, latitude];
+  }
+
+  if (latitude === 0 && longitude === 0) {
+    return {};
+  }
+
+  return { latitude, longitude };
+}
+
+export function hasValidMapCoordinates(
+  latitude?: number,
+  longitude?: number,
+): latitude is number {
+  return (
+    typeof latitude === "number" &&
+    Number.isFinite(latitude) &&
+    typeof longitude === "number" &&
+    Number.isFinite(longitude) &&
+    Math.abs(latitude) <= 90 &&
+    Math.abs(longitude) <= 180 &&
+    !(latitude === 0 && longitude === 0)
+  );
+}
+
 export function validateServerUrl(
   url: string | null | undefined,
 ): string | null {

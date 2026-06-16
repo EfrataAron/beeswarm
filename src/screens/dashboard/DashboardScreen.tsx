@@ -28,6 +28,7 @@ import { AllHivesMetricsChart } from "../../components/AllHivesMetricsChart";
 import { HiveMetricsLineChart } from "../../components/HiveMetricsLineChart";
 import { HiveStatusTrendChart } from "../../components/HiveStatusTrendChart";
 import { averageFleetMetrics } from "../../api/utils/metricsHistory";
+import { useTemperatureUnit } from "../../hooks/useTemperatureUnit";
 
 type Props = BottomTabScreenProps<MainTabParamList, "Dashboard">;
 
@@ -140,6 +141,8 @@ export function DashboardScreen({ navigation }: Props) {
     () => averageFleetMetrics(dashboard?.allHivesHistory ?? []),
     [dashboard?.allHivesHistory],
   );
+
+  const { formatTemp, unit: tempUnit } = useTemperatureUnit();
 
   if (loading) {
     return (
@@ -482,7 +485,7 @@ export function DashboardScreen({ navigation }: Props) {
       {/* ── Key Metrics ── */}
       <Text style={styles.sectionTitle}>Key Metrics</Text>
       <View style={styles.gridTwo}>
-        <MetricCard title="Avg Temperature" value={displayTemperature.toFixed(1)} unit="°C" subtitle={weatherSubtitle} />
+        <MetricCard title="Avg Temperature" value={formatTemp(displayTemperature, 1).replace(`°${tempUnit}`, "")} unit={`°${tempUnit}`} subtitle={weatherSubtitle} />
         <MetricCard title="Avg Humidity" value={displayHumidity.toFixed(0)} unit="%" subtitle={weatherSubtitle} />
       </View>
 

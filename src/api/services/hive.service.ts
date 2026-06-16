@@ -5,7 +5,15 @@
 
 import { apiRequest } from "../client";
 import { Hive, HiveDetailData, WeatherData } from "../types";
-import { normalizeStatus, toFiniteOrUndefined } from "../utils/normalizers";
+import {
+  normalizeStatus,
+  parseHiveCoordinates,
+  hasValidMapCoordinates,
+} from "../utils/normalizers";
+import {
+  mergeCachedCoordinates,
+  saveHiveCoordinates,
+} from "../utils/hiveCoordinatesCache";
 import {
   buildHourlyMetricHistory,
   normalizeMetricPoint,
@@ -27,8 +35,11 @@ export async function fetchHives(search = ""): Promise<Hive[]> {
           ? raw.results
           : [];
 
-  return rows
-    .map((item: any, i: number) => ({
+  const hives = await mergeCachedCoordinates(
+    rows
+    .map((item: any, i: number) => {
+      const coords = parseHiveCoordinates(item);
+      return {
       id: String(item.hive_id ?? item.id ?? `Hive-${i + 1}`),
       name: String(
         item.hive_name ?? item.name ?? item.hive_id ?? `Hive ${i + 1}`,
@@ -41,16 +52,71 @@ export async function fetchHives(search = ""): Promise<Hive[]> {
       status: normalizeStatus(
         String(item.current_state ?? item.status ?? item.state ?? ""),
       ),
-      latitude: toFiniteOrUndefined(item.latitude ?? item.lat),
-      longitude: toFiniteOrUndefined(item.longitude ?? item.lng),
+      latitude: coords.latitude,
+      longitude: coords.longitude,
       stateSince:
         item.state_since ??
         item.stateSince ??
         item.state_entered_at ??
         undefined,
       lastInferenceAt: item.last_inference_at,
-    }))
-    .sort((a, b) => a.name.localeCompare(b.name));
+    };
+    })
+    .sort((a, b) => a.name.localeCompare(b.name)),
+  );
+
+  void Promise.all(
+    hives
+      .filter((h) => hasValidMapCoordinates(h.latitude, h.longitude))
+      .map((h) => saveHiveCoordinates(h.id, h.latitude!, h.longitude!)),
+  );
+
+  return hives;
+}
+
+/** Fill in coordinates from cache or hive detail when the list API omits them. */
+export async function enrichHivesWithCoordinates(hives: Hive[]): Promise<Hive[]> {
+  const withCache = await mergeCachedCoordinates(hives);
+  const missing = withCache.filter(
+    (h) => !hasValidMapCoordinates(h.latitude, h.longitude),
+  );
+  if (missing.length === 0) return withCache;
+
+  const detailCoords = await Promise.all(
+    missing.map(async (hive) => {
+      try {
+        const detail = await fetchHiveDetail(hive.id);
+        if (!hasValidMapCoordinates(detail.latitude, detail.longitude)) {
+          return null;
+        }
+        await saveHiveCoordinates(
+          hive.id,
+          detail.latitude!,
+          detail.longitude!,
+        );
+        return {
+          id: hive.id,
+          latitude: detail.latitude!,
+          longitude: detail.longitude!,
+        };
+      } catch {
+        return null;
+      }
+    }),
+  );
+
+  const byId = new Map(
+    detailCoords
+      .filter((row): row is { id: string; latitude: number; longitude: number } => row !== null)
+      .map((row) => [row.id, row]),
+  );
+
+  if (byId.size === 0) return withCache;
+
+  return withCache.map((hive) => {
+    const coords = byId.get(hive.id);
+    return coords ? { ...hive, ...coords } : hive;
+  });
 }
 
 export async function fetchHiveDetail(hiveId: string): Promise<HiveDetailData> {
@@ -89,6 +155,8 @@ export async function fetchHiveDetail(hiveId: string): Promise<HiveDetailData> {
       }
     : undefined;
 
+  const coords = parseHiveCoordinates(raw);
+
   return {
     id: String(raw.hive_id ?? raw.id ?? hiveId),
     name: String(raw.hive_name ?? raw.name ?? hiveId),
@@ -108,6 +176,8 @@ export async function fetchHiveDetail(hiveId: string): Promise<HiveDetailData> {
     lastInferenceAt: raw.last_inference_at,
     weather: weatherData,
     lastAnalysisTime: raw.last_analysis_time ?? raw.lastAnalysisTime ?? undefined,
+    latitude: coords.latitude,
+    longitude: coords.longitude,
   };
 }
 
@@ -125,7 +195,19 @@ export async function createHive(data: {
     body: JSON.stringify(data),
   });
 
-  return {
+  const coords = parseHiveCoordinates(raw);
+  const latitude =
+    coords.latitude ??
+    (hasValidMapCoordinates(data.latitude, data.longitude)
+      ? data.latitude
+      : undefined);
+  const longitude =
+    coords.longitude ??
+    (hasValidMapCoordinates(data.latitude, data.longitude)
+      ? data.longitude
+      : undefined);
+
+  const hive: Hive = {
     id: String(raw.hive_id ?? raw.id ?? raw.hive_name ?? ""),
     name: String(raw.hive_name ?? raw.name ?? raw.hive_id ?? "New Hive"),
     location: String(raw.hive_location ?? raw.location ?? ""),
@@ -136,10 +218,16 @@ export async function createHive(data: {
     status: normalizeStatus(
       String(raw.current_state ?? raw.status ?? "normal"),
     ),
-    latitude: toFiniteOrUndefined(raw.latitude ?? raw.lat),
-    longitude: toFiniteOrUndefined(raw.longitude ?? raw.lng),
+    latitude,
+    longitude,
     stateSince: raw.state_since ?? raw.stateSince ?? undefined,
   };
+
+  if (hasValidMapCoordinates(hive.latitude, hive.longitude)) {
+    await saveHiveCoordinates(hive.id, hive.latitude!, hive.longitude!);
+  }
+
+  return hive;
 }
 
 export async function acknowledgeHiveAlert(hiveId: string): Promise<void> {
