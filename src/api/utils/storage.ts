@@ -64,16 +64,9 @@ export async function loadApiBaseUrl(
     const candidate = stored ?? legacy;
     const normalized = normalizeUrl(candidate) ?? defaultUrl;
 
-    // Drop unreachable local dev URLs saved during emulator testing
-    const isLocalDev =
-      normalized.includes("localhost") ||
-      normalized.includes("127.0.0.1") ||
-      normalized.includes("10.0.2.2");
-    
-    if (isLocalDev) {
-      await AsyncStorage.setItem(API_BASE_URL_KEY, defaultUrl);
-      return defaultUrl;
-    }
+    // Drop unreachable local dev URLs saved during emulator testing — removed,
+    // local servers are now supported.
+    // if (isLocalDev) { ... }
 
     if (!stored && candidate) {
       await AsyncStorage.setItem(API_BASE_URL_KEY, normalized);

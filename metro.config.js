@@ -1,12 +1,16 @@
 const { getDefaultConfig } = require("expo/metro-config");
-const https = require("https");
+const http = require("http");
 
 const config = getDefaultConfig(__dirname);
 
-const RAILWAY_API = "bsads-api-production.up.railway.app";
+// ── Previously pointed at Railway — now proxying to local dev server ──────────
+// const RAILWAY_API = "bsads-api-production.up.railway.app";
 
-// Expo web (localhost:8081) cannot call Railway directly — browser CORS blocks it.
-// Proxy /api-proxy/* → Railway so API calls are same-origin during dev.
+const LOCAL_API_HOST = "localhost";
+const LOCAL_API_PORT = 8000;
+
+// Expo web (localhost:8081) cannot call the API directly — browser CORS blocks it.
+// Proxy /api-proxy/* → local server so API calls are same-origin during dev.
 config.server = {
   ...config.server,
   enhanceMiddleware: (middleware) => {
@@ -17,9 +21,10 @@ config.server = {
       }
 
       const targetPath = url.replace(/^\/api-proxy/, "") || "/";
-      const proxyReq = https.request(
+      const proxyReq = http.request(   // http (not https) for localhost
         {
-          hostname: RAILWAY_API,
+          hostname: LOCAL_API_HOST,
+          port: LOCAL_API_PORT,
           path: targetPath,
           method: req.method,
           headers: {
