@@ -1,13 +1,17 @@
 const { getDefaultConfig } = require("expo/metro-config");
-const http = require("http");
+//const http = require("http");
+const https = require("https");
 
 const config = getDefaultConfig(__dirname);
 
 // ── Previously pointed at Railway — now proxying to local dev server ──────────
 // const RAILWAY_API = "bsads-api-production.up.railway.app";
 
-const LOCAL_API_HOST = "localhost";
-const LOCAL_API_PORT = 8000;
+// const LOCAL_API_HOST = "localhost";
+// const LOCAL_API_PORT = 8000;
+
+const LOCAL_API_HOST = "196.43.168.57";
+const LOCAL_API_PORT = 8085;
 
 // Expo web (localhost:8081) cannot call the API directly — browser CORS blocks it.
 // Proxy /api-proxy/* → local server so API calls are same-origin during dev.
@@ -21,7 +25,7 @@ config.server = {
       }
 
       const targetPath = url.replace(/^\/api-proxy/, "") || "/";
-      const proxyReq = http.request(   // http (not https) for localhost
+      const proxyReq = https.request(   // https for production
         {
           hostname: LOCAL_API_HOST,
           port: LOCAL_API_PORT,

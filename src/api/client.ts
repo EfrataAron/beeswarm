@@ -18,10 +18,13 @@ function log(tag: string, ...args: unknown[]) {
 // Railway (production) — commented out while running locally:
 // export const BASE_URL = "https://bsads-api-production.up.railway.app";
 
-export const BASE_URL =
-  (typeof process !== "undefined" && process.env?.EXPO_PUBLIC_API_BASE_URL)
-    ? process.env.EXPO_PUBLIC_API_BASE_URL
-    : "http://localhost:8000";
+//server
+export const BASE_URL = "http://196.43.168.57:8085";
+ 
+// export const BASE_URL =
+//   (typeof process !== "undefined" && process.env?.EXPO_PUBLIC_API_BASE_URL)
+//     ? process.env.EXPO_PUBLIC_API_BASE_URL
+//     : "http://localhost:8000";
 
 // Web dev proxy prefix — routes /api-proxy/* through metro.config.js to avoid CORS.
 // Used automatically when running `expo start --web` in dev mode.
@@ -69,7 +72,7 @@ function isBsadsApiBaseUrl(url: string): boolean {
   }
   // Farmer recording servers and dev frontends return HTML, not JSON API responses.
   if (u.includes("ngrok")) return false;
-  if (u.includes(":8081")) return false; // Expo Metro bundler, not an API server
+  // if (u.includes(":8081")) return false; // Expo Metro bundler, not an API server
 
   // if (u.includes("railway.app")) return true; // Railway (production) — commented out
   if (u.includes("localhost") || u.includes("127.0.0.1") || u.includes("10.0.2.2"))
