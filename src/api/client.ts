@@ -144,19 +144,42 @@ function formatNetworkFailure(base: string, err: unknown): Error {
       `The BSADS API timed out. Wait 30 seconds and try again (Railway may be waking up).`,
     );
   }
+
+  // Check for actual SSL/TLS issues on HTTPS connections only
+  const isHttps = base.startsWith("https://");
   if (
-    lower.includes("certificate") ||
-    lower.includes("ssl") ||
-    lower.includes("cert")
+    isHttps &&
+    (lower.includes("certificate") ||
+      lower.includes("ssl") ||
+      lower.includes("tls") ||
+      lower.includes("cert"))
   ) {
     return new Error(
       "Secure connection failed. Set your phone date & time to automatic, then try again.",
     );
   }
 
+  // Network connectivity issues (connection refused, not found, etc.)
+  if (
+    lower.includes("network request failed") ||
+    lower.includes("connection refused") ||
+    lower.includes("econnrefused") ||
+    lower.includes("not found") ||
+    lower.includes("unreachable")
+  ) {
+    return new Error(
+      `Cannot connect to ${base}. Check that:\n` +
+        `1. The server is running\n` +
+        `2. Your phone is on the same network (if using local IP)\n` +
+        `3. The IP address and port are correct\n\n` +
+        `Test by opening ${base}/health in your phone's browser.`,
+    );
+  }
+
   return new Error(
     `Request to ${base} failed: ${msg}\n\n` +
-      "If /health works in your phone browser, close Expo Go completely, reopen it, scan the QR code again, then retry signup.",
+      `Try opening ${base}/health in your phone browser. If that works, ` +
+      `close Expo Go completely, reopen it, scan the QR code again, then retry.`,
   );
 }
 
