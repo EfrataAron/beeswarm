@@ -1,5 +1,5 @@
 const { getDefaultConfig } = require("expo/metro-config");
-//const http = require("http");
+const http = require("http");
 const https = require("https");
 
 const config = getDefaultConfig(__dirname);
@@ -12,6 +12,7 @@ const config = getDefaultConfig(__dirname);
 
 const LOCAL_API_HOST = "196.43.168.57";
 const LOCAL_API_PORT = 8085;
+const USE_HTTPS = false; // Set to true when using HTTPS server
 
 // Expo web (localhost:8081) cannot call the API directly — browser CORS blocks it.
 // Proxy /api-proxy/* → local server so API calls are same-origin during dev.
@@ -25,7 +26,8 @@ config.server = {
       }
 
       const targetPath = url.replace(/^\/api-proxy/, "") || "/";
-      const proxyReq = https.request(   // https for production
+      const protocol = USE_HTTPS ? https : http;
+      const proxyReq = protocol.request(
         {
           hostname: LOCAL_API_HOST,
           port: LOCAL_API_PORT,
