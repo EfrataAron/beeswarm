@@ -25,7 +25,8 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
   const [email,           setEmail]           = useState("");
   const [phone,           setPhone]           = useState("");
   const [apiKey,          setApiKey]          = useState("");
-  const [hiveServerUrl,   setHiveServerUrl]   = useState("");
+  const [hiveServerUrl, setHiveServerUrl] = useState("");
+  const [address, setAddress] = useState("");
   const [password,        setPassword]        = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword,    setShowPassword]    = useState(false);
@@ -71,8 +72,9 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
         email.trim(),
         phone.trim(),
         password,
-        apiKey.trim() || null,
-        hiveServerUrl.trim() || null,
+        address.trim(),
+        apiKey.trim(),
+        hiveServerUrl.trim(),
       );
 
       onAuthSuccess(beekeeper);
@@ -137,6 +139,15 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
         />
         {!!errors.phone && <Text style={styles.fieldError}>{errors.phone}</Text>}
 
+        {/* Address */}
+        <TextInput
+          placeholder="Address"
+          placeholderTextColor={THEME.placeholder}
+          style={styles.input}
+          value={address}
+          onChangeText={setAddress}
+        />
+        
         {/* Divider */}
         <View style={styles.sectionDivider} />
         <Text style={styles.sectionLabel}>API Configuration</Text>
