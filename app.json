@@ -21,19 +21,22 @@
     "android": {
       "permissions": [
         "INTERNET",
-        "ACCESS_NETWORK_STATE",
-        "INTERNET",
         "ACCESS_NETWORK_STATE"
       ],
-      "usesCleartextTraffic": false,
+      "usesCleartextTraffic": true,
       "package": "com.anonymous.beeswarm",
-
       "icon": "./assets/images/bee.png"
     },
     "ios": {
       "infoPlist": {
         "NSAppTransportSecurity": {
-          "NSAllowsArbitraryLoads": false
+          "NSAllowsArbitraryLoads": true,
+          "NSExceptionDomains": {
+            "196.43.168.57": {
+              "NSExceptionAllowsInsecureHTTPLoads": true,
+              "NSIncludesSubdomains": true
+            }
+          }
         },
         "ITSAppUsesNonExemptEncryption": false
       },
