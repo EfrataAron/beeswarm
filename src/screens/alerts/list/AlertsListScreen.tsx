@@ -161,45 +161,7 @@ const selectedDashboardAlert = useMemo(() => {
     setAlertsError(null);
     try {
       const data = await fetchAlerts();
-      let finalAlerts = data;
-      
-      // Add sample alerts if none are returned (for testing)
-      if (finalAlerts.length === 0) {
-        finalAlerts = [
-          {
-            id: "sample-alert-1",
-            hiveId: "hive-1",
-            hiveName: "Sunny Side Hive",
-            severity: "Warning" as AlertSeverity,
-            title: "Pre-swarm Activity Detected",
-            date: new Date().toLocaleString(),
-            summary: "Model detected pre-swarm behavior patterns. Monitor closely for swarm preparations.",
-            alertStatus: "pending"
-          },
-          {
-            id: "sample-alert-2",
-            hiveId: "hive-2",
-            hiveName: "Forest Hive",
-            severity: "Critical" as AlertSeverity,
-            title: "Swarm Alert!",
-            date: new Date(Date.now() - 3600000).toLocaleString(),
-            summary: "Swarm activity detected! Immediate action may be required.",
-            alertStatus: "pending"
-          },
-          {
-            id: "sample-alert-3",
-            hiveId: "hive-3",
-            hiveName: "Orchard Hive",
-            severity: "Info" as AlertSeverity,
-            title: "Hive Status Normal",
-            date: new Date(Date.now() - 7200000).toLocaleString(),
-            summary: "Hive is operating normally with no issues detected.",
-            alertStatus: "pending"
-          },
-        ];
-      }
-      
-      setAlerts(finalAlerts);
+      setAlerts(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load alerts");
     } finally {

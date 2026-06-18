@@ -169,25 +169,29 @@ export async function fetchDashboard(): Promise<DashboardData> {
     fetchHives().catch(() => [] as Awaited<ReturnType<typeof fetchHives>>),
   ]);
 
-  const counts = raw?.status_counts ?? raw?.statusCounts ?? {};
   const metrics = raw?.key_metrics ?? raw?.keyMetrics ?? {};
 
+  // Calculate statusCounts from actual hives, not just the raw API's count
+  const statusCounts: DashboardData["statusCounts"] = {
+    active: 0,
+    inactive_hive: 0,
+    swarming: 0,
+    Abscondment: 0,
+    external_noise: 0,
+    quacking_queens: 0,
+    pests: 0,
+    queenless: 0,
+    unknown: 0,
+  };
+
+  hivesForStatus.forEach(hive => {
+    statusCounts[hive.status]++;
+  });
+
   const result: DashboardData = {
-    totalHives: Number(raw?.total_hives ?? raw?.totalHives ?? 0),
-    activeHives: Number(raw?.active_hives ?? raw?.activeHives ?? 0),
-    statusCounts: {
-      active: Number(counts.normal ?? counts.active ?? counts.healthy ?? 0),
-      inactive_hive: Number(counts.inactive_hive ?? counts.inactive ?? 0),
-      swarming: Number(
-        counts.pre_swarm ?? counts.swarming ?? counts.swarm ?? counts.preSwarm ?? 0,
-      ),
-      Abscondment: Number(counts.abscondment ?? counts.Abscondment ?? 0),
-      external_noise: Number(counts.external_noise ?? counts.noise ?? 0),
-      quacking_queens: Number(counts.quacking_queens ?? counts.quacking ?? 0),
-      pests: Number(counts.pests ?? counts.pest ?? 0),
-      queenless: Number(counts.queenless ?? counts.no_queen ?? 0),
-      unknown: Number(counts.unknown ?? 0),
-    },
+    totalHives: hivesForStatus.length,
+    activeHives: statusCounts.active,
+    statusCounts,
     keyMetrics: {
       temperatureC: Number(metrics.temperature_c ?? metrics.temperatureC ?? 0),
       humidityPercent: Number(

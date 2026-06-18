@@ -72,16 +72,6 @@ export function AlertDetailsScreen({ route }: Props) {
   const loadDetail = useCallback(async () => {
     setLoading(true);
     setError(null);
-    // try {
-    //   const [data, adv] = await Promise.all([
-    //     fetchAlertDetail(alertId),
-    //     fetchAdvisory(alertId),
-    //   ]);
-    //   setDetail(data);
-    //   setAdvisory(adv);
-    // } catch (err) {
-    //   setError(err instanceof Error ? err.message : "Could not load alert details");
-
     try {
       const data = await fetchAlertDetail(alertId);
       setDetail(data);
