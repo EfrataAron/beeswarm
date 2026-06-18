@@ -29,29 +29,6 @@ type Props = {
   temperatureUnit?: "C" | "F";
 };
 
-const SAMPLE_HIVES: MapHive[] = [
-  {
-    id: "Sample Hive 1",
-    name: "Sample Hive 1",
-    location: "Apiary A",
-    status: "active",
-    latitude: 0.3476,
-    longitude: 32.5825,
-    temperatureC: 33.2,
-    humidityPercent: 58,
-  },
-  {
-    id: "Sample Hive 2",
-    name: "Sample Hive 2",
-    location: "Apiary B",
-    status: "swarming",
-    latitude: 0.3511,
-    longitude: 32.5883,
-    temperatureC: 36.1,
-    humidityPercent: 72,
-  },
-];
-
 function escapeForHtml(json: string) {
   return json.replace(/</g, "\\u003c");
 }
@@ -168,6 +145,7 @@ function buildMapHtml(
     <script>
       const payload = ${payload};
       const tiles  = ${tileConfig};
+      let hasFitBounds = false;
 
       const map = new maplibregl.Map({
         container: "map",
@@ -290,13 +268,16 @@ function buildMapHtml(
           .addTo(map);
       });
 
-        if (payload.hives.length > 1) {
-          const bounds = new maplibregl.LngLatBounds();
-          payload.hives.forEach(function(h) { bounds.extend([h.longitude, h.latitude]); });
-          map.fitBounds(bounds, { padding: 60, maxZoom: 15 });
-        } else if (payload.hives.length === 1) {
-          const h = payload.hives[0];
-          map.flyTo({ center: [h.longitude, h.latitude], zoom: 14 });
+        if (!hasFitBounds) {
+          hasFitBounds = true;
+          if (payload.hives.length > 1) {
+            const bounds = new maplibregl.LngLatBounds();
+            payload.hives.forEach(function(h) { bounds.extend([h.longitude, h.latitude]); });
+            map.fitBounds(bounds, { padding: 60, maxZoom: 15 });
+          } else if (payload.hives.length === 1) {
+            const h = payload.hives[0];
+            map.flyTo({ center: [h.longitude, h.latitude], zoom: 14 });
+          }
         }
       }
 
@@ -318,13 +299,12 @@ export default function HiveMap({
   satellite = false,
   temperatureUnit = "C",
 }: Props) {
-  const renderedHives = mapHives.length > 0 ? mapHives : SAMPLE_HIVES;
-  const mapKey = renderedHives
+  const mapKey = mapHives
     .map((h) => `${h.id}:${h.latitude}:${h.longitude}`)
     .join("|");
   const html = useMemo(
-    () => buildMapHtml(renderedHives, region, statusColor, satellite, temperatureUnit),
-    [renderedHives, region, statusColor, satellite, temperatureUnit],
+    () => buildMapHtml(mapHives, region, statusColor, satellite, temperatureUnit),
+    [mapHives, statusColor, satellite, temperatureUnit],
   );
 
   const handleMessage = (event: WebViewMessageEvent) => {

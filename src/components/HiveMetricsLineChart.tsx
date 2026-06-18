@@ -150,14 +150,14 @@ export function HiveMetricsLineChart({
 
       {/* Legend */}
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12, marginBottom: 8 }}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+        {/* <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
           <View style={{ width: 12, height: 3, backgroundColor: theme.accent, borderRadius: 2 }} />
           <Text style={{ fontSize: 11, color: theme.textMuted, fontWeight: "600" }}>Temp</Text>
         </View>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
           <View style={{ width: 12, height: 3, backgroundColor: "#3B82F6", borderRadius: 2 }} />
           <Text style={{ fontSize: 11, color: theme.textMuted, fontWeight: "600" }}>Humidity</Text>
-        </View>
+        </View> */}
         <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
           <View style={{ width: 12, height: 1.5, backgroundColor: "#22C55E" }} />
           <Text style={{ fontSize: 11, color: theme.textMuted, fontWeight: "600" }}>Temp threshold</Text>

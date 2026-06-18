@@ -18,29 +18,6 @@ type Props = {
   temperatureUnit?: "C" | "F";
 };
 
-const SAMPLE_HIVES: MapHive[] = [
-  {
-    id: "Sample Hive 1",
-    name: "Sample Hive 1",
-    location: "Apiary A",
-    status: "active",
-    latitude: 0.3476,
-    longitude: 32.5825,
-    temperatureC: 33.2,
-    humidityPercent: 58,
-  },
-  {
-    id: "Sample Hive 2",
-    name: "Sample Hive 2",
-    location: "Apiary B",
-    status: "swarming",
-    latitude: 0.3511,
-    longitude: 32.5883,
-    temperatureC: 36.1,
-    humidityPercent: 72,
-  },
-];
-
 function buildMapStyle(satellite: boolean) {
   const tileUrl = satellite
     ? "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
@@ -60,6 +37,16 @@ function buildMapStyle(satellite: boolean) {
 // Inject CSS once into the document head
 function ensureMapStyles() {
   if (typeof document === "undefined") return;
+  
+  // Inject maplibre-gl CSS first if not already present
+  if (!document.getElementById("maplibre-gl-css")) {
+    const link = document.createElement("link");
+    link.id = "maplibre-gl-css";
+    link.rel = "stylesheet";
+    link.href = "https://unpkg.com/maplibre-gl@5.22.0/dist/maplibre-gl.css";
+    document.head.appendChild(link);
+  }
+  
   if (document.getElementById("hivemap-web-styles")) return;
   const style = document.createElement("style");
   style.id = "hivemap-web-styles";
@@ -227,8 +214,7 @@ export default function HiveMap({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const markersRef = useRef<any[]>([]);
   const [ready, setReady] = useState(false);
-
-  const renderedHives = mapHives.length > 0 ? mapHives : SAMPLE_HIVES;
+  const hasFitBoundsRef = useRef(false);
 
   // Initialise the map once
   useEffect(() => {
@@ -249,6 +235,7 @@ export default function HiveMap({
 
     return () => {
       cancelled = true;
+      hasFitBoundsRef.current = false;
       markersRef.current.forEach((m) => m.remove());
       markersRef.current = [];
       mapRef.current?.remove();
@@ -270,7 +257,7 @@ export default function HiveMap({
     map.addLayer(style.layers[0], map.getLayer("base-tiles") ? undefined : undefined);
   }, [satellite, ready]);
 
-  // Refresh markers whenever hives / region / colors change
+  // Refresh markers whenever hives / colors change (NOT region!)
   useEffect(() => {
     if (!ready || !mapRef.current) return;
     // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-explicit-any
@@ -280,7 +267,8 @@ export default function HiveMap({
     markersRef.current.forEach((m) => m.remove());
     markersRef.current = [];
 
-    renderedHives.forEach((hive) => {
+    mapHives.forEach((hive) => {
+      console.log('Adding hive marker:', hive.id, 'lat:', hive.latitude, 'lng:', hive.longitude);
       const color = statusColor[hive.status] ?? "#FFB268";
       const el = buildMarkerElement(hive, color, onMarkerPress, temperatureUnit);
       const marker = new ml.Marker({ element: el, anchor: "bottom" })
@@ -289,16 +277,17 @@ export default function HiveMap({
       markersRef.current.push(marker);
     });
 
-    if (renderedHives.length > 1) {
-      const bounds = new ml.LngLatBounds();
-      renderedHives.forEach((h: MapHive) => bounds.extend([h.longitude, h.latitude]));
-      map.fitBounds(bounds, { padding: 60, maxZoom: 15 });
-    } else if (renderedHives.length === 1) {
-      map.flyTo({ center: [renderedHives[0].longitude, renderedHives[0].latitude], zoom: 14 });
-    } else {
-      map.flyTo({ center: [region.longitude, region.latitude], zoom: 13 });
+    if (!hasFitBoundsRef.current && mapHives.length > 0) {
+      hasFitBoundsRef.current = true;
+      if (mapHives.length > 1) {
+        const bounds = new ml.LngLatBounds();
+        mapHives.forEach((h: MapHive) => bounds.extend([h.longitude, h.latitude]));
+        map.fitBounds(bounds, { padding: 60, maxZoom: 15 });
+      } else if (mapHives.length === 1) {
+        map.flyTo({ center: [mapHives[0].longitude, mapHives[0].latitude], zoom: 14 });
+      }
     }
-  }, [ready, renderedHives, region.longitude, region.latitude, statusColor, onMarkerPress, temperatureUnit]);
+  }, [ready, mapHives, statusColor, onMarkerPress, temperatureUnit]);
 
   return (
     <div ref={mapElRef} style={{ width: "100%", height: "100%" }}>
