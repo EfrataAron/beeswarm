@@ -397,34 +397,6 @@ export function DashboardScreen({ navigation }: Props) {
         </View>
       </Pressable>
 
-      {/* ── All hives temp & humidity (same chart style as hive details) ── */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>All Hives — Temperature & Humidity</Text>
-        <Text style={styles.metricsSubtitle}>
-          Fleet average
-          {(dashboard.allHivesHistory?.length ?? 0) > 0
-            ? ` across ${dashboard.allHivesHistory!.length} hive${dashboard.allHivesHistory!.length === 1 ? "" : "s"}`
-            : ""}
-          {" · "}temp (orange) · humidity (blue) · tap a dot for hive names
-        </Text>
-        {fleetMetricSeries.length > 0 ? (
-          <HiveMetricsLineChart
-            
-            metricSeries={fleetMetricSeries}
-            hiveName="fleet"
-            perHiveSeries={dashboard.allHivesHistory?.map((h) => ({
-              hiveId: h.hiveId,
-              hiveName: h.hiveName ?? h.hiveId,
-              history: h.history,
-            }))}
-          />
-        ) : (
-          <Text style={[styles.metricsSubtitle, { textAlign: "center", paddingVertical: 24 }]}>
-            No hive sensor data yet. Create a hive to see fleet trends here.
-          </Text>
-        )}
-      </View>
-
       {/* ── Hive State Donut ── */}
       <Pressable style={[styles.card, { backgroundColor: theme.surface }]} onPress={() => navigation.navigate("Hives", { screen: "HiveList" })}>
         <View style={styles.rowBetween}>
@@ -447,6 +419,33 @@ export function DashboardScreen({ navigation }: Props) {
           </View>
         </View>
       </Pressable>
+
+        {/* ── All hives temp & humidity (same chart style as hive details) ── */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>All Hives — Temperature & Humidity</Text>
+        <Text style={styles.metricsSubtitle}>
+          Fleet average
+          {(dashboard.allHivesHistory?.length ?? 0) > 0
+            ? ` across ${dashboard.allHivesHistory!.length} hive${dashboard.allHivesHistory!.length === 1 ? "" : "s"}`
+            : ""}
+        </Text>
+        {fleetMetricSeries.length > 0 ? (
+          <HiveMetricsLineChart
+            
+            metricSeries={fleetMetricSeries}
+            hiveName="fleet"
+            perHiveSeries={dashboard.allHivesHistory?.map((h) => ({
+              hiveId: h.hiveId,
+              hiveName: h.hiveName ?? h.hiveId,
+              history: h.history,
+            }))}
+          />
+        ) : (
+          <Text style={[styles.metricsSubtitle, { textAlign: "center", paddingVertical: 24 }]}>
+            No hive sensor data yet. Create a hive to see fleet trends here.
+          </Text>
+        )}
+      </View>
 
       {/* ── Hive Status Trend ── */}
       <View style={[styles.card, { backgroundColor: theme.surface }]}>

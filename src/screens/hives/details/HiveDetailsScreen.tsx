@@ -189,7 +189,7 @@
 //               <Text style={styles.weatherLabel}>Humidity</Text>
 //             </View>
 //           </View>
-          
+
 //           <Text style={styles.weatherTimestamp}>
 //             Updated {formatRelativeTime(detail.weather.timestamp)}
 //           </Text>
@@ -277,6 +277,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Modal,
   Pressable,
   ScrollView,
   Text,
@@ -292,6 +293,7 @@ import {
   HiveDetailData,
   fetchHiveAlerts,
   fetchHiveDetail,
+  deleteHive,
 } from "../../../api";
 import {
   THEME,
@@ -325,6 +327,9 @@ export function HiveDetailsScreen({ route, navigation }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [detail, setDetail] = useState<HiveDetailData | null>(null);
   const [hiveAlerts, setHiveAlerts] = useState<AlertItem[]>([]);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const loadDetail = useCallback(async () => {
     setLoading(true);
@@ -350,6 +355,36 @@ export function HiveDetailsScreen({ route, navigation }: Props) {
   useEffect(() => {
     void loadDetail();
   }, [loadDetail]);
+
+  const handleDeletePress = useCallback(() => {
+    setShowDeleteModal(true);
+    setDeleteError(null);
+  }, []);
+
+  const handleCancelDelete = useCallback(() => {
+    setShowDeleteModal(false);
+    setDeleteError(null);
+  }, []);
+
+  const handleConfirmDelete = useCallback(async () => {
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await deleteHive(hiveId);
+      setShowDeleteModal(false);
+      // Navigate back to hive list with refresh
+      navigation.navigate("Hives", {
+        screen: "HiveList",
+        params: { refresh: Date.now() },
+      });
+    } catch (err) {
+      setDeleteError(
+        err instanceof Error ? err.message : "Could not delete hive. Please try again.",
+      );
+    } finally {
+      setDeleting(false);
+    }
+  }, [hiveId, navigation]);
 
   if (loading) {
     return (
@@ -406,6 +441,73 @@ export function HiveDetailsScreen({ route, navigation }: Props) {
   // console.log("lastAnalysisTime from route params is: ", lastAnalysisTime);
 
   return (
+    <>
+      {/* Delete Confirmation Modal */}
+      <Modal
+        visible={showDeleteModal}
+        transparent
+        animationType="fade"
+        onRequestClose={handleCancelDelete}
+      >
+        <View style={{ flex: 1, backgroundColor: "rgba(0, 0, 0, 0.5)", justifyContent: "center", alignItems: "center", padding: 20 }}>
+          <View style={{ backgroundColor: theme.surface, borderRadius: 16, width: "100%", maxWidth: 400, overflow: "hidden", elevation: 5, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3.84 }}>
+            <View style={{ alignItems: "center", paddingTop: 24, paddingHorizontal: 20, paddingBottom: 16 }}>
+              <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: "#FEE2E2", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+                <Ionicons name="warning" size={32} color="#DC2626" />
+              </View>
+              <Text style={{ fontSize: 20, fontWeight: "800", color: theme.primary }}>Delete Hive</Text>
+            </View>
+
+            <View style={{ paddingHorizontal: 20, paddingBottom: 20, gap: 12 }}>
+              <Text style={{ fontSize: 15, color: theme.textMuted, textAlign: "center", lineHeight: 22 }}>
+                Are you sure you want to delete{" "}
+                <Text style={{ fontWeight: "800", color: theme.primary }}>"{detail?.name}"</Text>?
+              </Text>
+              <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 8, backgroundColor: "#FEF2F2", borderLeftWidth: 0, borderLeftColor: "#DC2626", borderRadius: 8, padding: 12 }}>
+                <Ionicons name="alert-circle-outline" size={16} color="#B91C1C" />
+                <Text style={{ flex: 1, fontSize: 12, color: "#B91C1C", fontWeight: "600", lineHeight: 18 }}>
+                  This action cannot be undone. All hive data, including history and alerts, will be permanently removed.
+                </Text>
+              </View>
+
+              {deleteError && (
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#FEE2E2", borderRadius: 8, padding: 12 }}>
+                  <Ionicons name="close-circle" size={16} color="#DC2626" />
+                  <Text style={{ flex: 1, fontSize: 12, color: "#DC2626", fontWeight: "600" }}>{deleteError}</Text>
+                </View>
+              )}
+            </View>
+
+            <View style={{ flexDirection: "row", gap: 12, padding: 20, borderTopWidth: 1, borderTopColor: theme.line }}>
+              <Pressable
+                style={{ flex: 1, paddingVertical: 14, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: theme.surfaceSoft, borderWidth: 1, borderColor: theme.line }}
+                onPress={handleCancelDelete}
+                disabled={deleting}
+              >
+                <Text style={{ fontSize: 15, fontWeight: "700", color: theme.primary }}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={[
+                  { flex: 1, paddingVertical: 14, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: "#DC2626", flexDirection: "row", gap: 6 },
+                  deleting && { opacity: 0.5 },
+                ]}
+                onPress={handleConfirmDelete}
+                disabled={deleting}
+              >
+                {deleting ? (
+                  <ActivityIndicator size="small" color="#FFF" />
+                ) : (
+                  <>
+                    <Ionicons name="trash" size={18} color="#FFF" />
+                    <Text style={{ fontSize: 15, fontWeight: "800", color: "#FFFFFF" }}>Continue</Text>
+                  </>
+                )}
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
     <ScrollView
       style={{ flex: 1, backgroundColor: theme.page }}
       contentContainerStyle={styles.detailPage}
@@ -473,8 +575,17 @@ export function HiveDetailsScreen({ route, navigation }: Props) {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.detailAlertTitle}>
-              {statusCondition(detail.status)}
-            </Text>
+              <Text style={styles.detailAlertTitle}>
+                {lastAnalysisTime ? (
+                  <>
+                    {statusCondition(detail.status)}
+                  </>
+                ) : (
+                  <>
+                    No analysis data available
+                  </>
+                )}
+              </Text>            </Text>
             <Text style={styles.detailAlertSubtitle}>
               {detail.alertMessage}
             </Text>
@@ -613,6 +724,25 @@ export function HiveDetailsScreen({ route, navigation }: Props) {
           );
         })}
       </View>
+
+      {/* ── Delete Button ── */}
+      <View style={[styles.card, { backgroundColor: theme.surface }]}>
+        <Pressable
+          style={[
+            styles.deleteButton,
+            deleting && styles.deleteButtonDisabled,
+          ]}
+          onPress={handleDeletePress}
+          disabled={deleting}
+        >
+          <Ionicons name="trash-outline" size={20} color="#FFF" />
+          <Text style={styles.deleteButtonText}>Delete Hive</Text>
+        </Pressable>
+        <Text style={styles.deleteWarning}>
+          This action cannot be undone. All hive data will be permanently removed.
+        </Text>
+      </View>
     </ScrollView>
+    </>
   );
 }
