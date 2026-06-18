@@ -363,9 +363,9 @@ dashboardAlertSubMenuCloseBtn: {
     color: t.surface,
   },
   overviewTileLabel: {
-    fontSize: 9,
-    fontWeight: "700",
-    color: "rgba(255,255,255,0.8)",
+    fontSize: 10,
+    fontWeight: "800",
+    color: "rgb(255, 255, 255)",
     textAlign: "center",
   },
   // ── Donut ──

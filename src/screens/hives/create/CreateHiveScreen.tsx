@@ -542,7 +542,7 @@ export function CreateHiveScreen({ navigation, route, currentUser }: Props) {
               onPress={() => setCalendarVisible(true)}
             >
               <Ionicons name="calendar" size={16} color={THEME.accent} />
-              <Text style={styles.calendarButtonText}>Pick a date  </Text>
+              {/* <Text style={styles.calendarButtonText}>Pick a date  </Text> */}
               {installationDate ? (
                 <Text style={styles.calendarButtonValue}>{installationDate}</Text>
               ) : (

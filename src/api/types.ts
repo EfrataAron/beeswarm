@@ -16,7 +16,7 @@ export type AlertSeverity = "Critical" | "Warning" | "Info";
 
 export type BeekeeperProfile = {
   id: string;
-  name: string;
+  full_name: string;
   email: string | null;
   phone: string;
   address: string | null;

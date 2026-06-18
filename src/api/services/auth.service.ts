@@ -114,19 +114,21 @@ export async function changePassword(
 }
 
 export async function updateProfile(data: {
-  name: string;
+  full_name: string;
   email?: string;
   phone: string;
   address: string;
   api_key?: string;
   server_url?: string;
+  profile_photo_url?: string;
 }): Promise<BeekeeperProfile> {
   const raw = await apiRequest<any>("/auth/me", {
     method: "PUT",
     body: JSON.stringify({
-      full_name: data.name,
+      full_name: data.full_name,
       phone: data.phone,
       address: data.address,
+      profile_photo_url: data.profile_photo_url,
       ...(data.api_key?.trim() ? { api_key: data.api_key.trim() } : {}),
       ...(data.server_url?.trim()
         ? { server_url: data.server_url.trim() }
@@ -145,6 +147,7 @@ export async function updateProfile(data: {
     phone:   fromServer.phone   || data.phone,
     address: fromServer.address ?? data.address,
     api_key: fromServer.api_key ?? data.api_key ?? null,
+    profile_photo_url: fromServer.profile_photo_url ?? data.profile_photo_url ?? null,
   };
 
   await saveProfile(merged);

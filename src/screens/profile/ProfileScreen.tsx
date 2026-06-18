@@ -19,7 +19,9 @@ import {
 import { THEME } from "../../theme";
 import { useTheme } from "../../hooks/useTheme";
 import { createProfileStyles } from "./ProfileScreen.styles";
-
+import { Image } from "react-native";
+import * as ImagePicker from "expo-image-picker";
+  
 type Props = {
   onLogout: () => void;
   onOpenSettings: () => void;
@@ -33,7 +35,8 @@ export function ProfileScreen({
   currentUser,
   onProfileUpdate,
 }: Props) {
-  const [name, setName] = useState(currentUser?.name ?? "Beekeeper");
+  const [full_name, setFullName] = useState(currentUser?.full_name ?? "Beekeeper");
+  //const [full_name, setFullName] = useState("");
   const [email, setEmail] = useState(currentUser?.email ?? "");
   const [phone, setPhone] = useState(currentUser?.phone ?? "");
   const [address, setAddress] = useState(currentUser?.address ?? "");
@@ -42,10 +45,11 @@ export function ProfileScreen({
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(!currentUser);
-
+  const [profilePhoto, setProfilePhoto] = useState(currentUser?.profile_photo_url ?? "");
+  
   useEffect(() => {
     if (currentUser) {
-      setName(currentUser.name);
+      setFullName(currentUser.full_name);
       setEmail(currentUser.email ?? "");
       setPhone(currentUser.phone);
       setAddress(currentUser.address ?? "");
@@ -55,7 +59,7 @@ export function ProfileScreen({
     void (async () => {
       try {
         const profile = await fetchProfile();
-        setName(profile.name);
+        setFullName(profile.full_name || "");
         setEmail(profile.email ?? "");
         setPhone(profile.phone);
         setAddress(profile.address ?? "");
@@ -68,16 +72,18 @@ export function ProfileScreen({
       }
     })();
   }, [currentUser, onProfileUpdate]);
+  console.log("PROFILE FROM API:", currentUser?.full_name);
 
   const handleSave = async () => {
     setSaving(true);
     try {
       const updated = await updateProfile({
-        name,
+        full_name,
         email,
         phone,
         address,
         api_key: apiKey,
+        profile_photo_url: profilePhoto,
         // server_url omitted — Railway URL is the fixed backend
       });
       onProfileUpdate(updated);
@@ -94,14 +100,14 @@ export function ProfileScreen({
   const styles = useMemo(() => createProfileStyles(theme), [theme]);
 
   // ── Change Password modal state ──────────────────────────────────────────────
-  const [pwModalVisible,  setPwModalVisible]  = useState(false);
-  const [currentPw,       setCurrentPw]       = useState("");
-  const [newPw,           setNewPw]           = useState("");
-  const [confirmPw,       setConfirmPw]       = useState("");
-  const [pwError,         setPwError]         = useState("");
-  const [pwSaving,        setPwSaving]        = useState(false);
-  const [showCurrentPw,   setShowCurrentPw]   = useState(false);
-  const [showNewPw,       setShowNewPw]       = useState(false);
+  const [pwModalVisible, setPwModalVisible] = useState(false);
+  const [currentPw, setCurrentPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+  const [pwError, setPwError] = useState("");
+  const [pwSaving, setPwSaving] = useState(false);
+  const [showCurrentPw, setShowCurrentPw] = useState(false);
+  const [showNewPw, setShowNewPw] = useState(false);
 
   const openPasswordModal = () => {
     setCurrentPw(""); setNewPw(""); setConfirmPw(""); setPwError("");
@@ -109,11 +115,11 @@ export function ProfileScreen({
   };
 
   const handleChangePassword = async () => {
-    if (!currentPw)         { setPwError("Current password is required."); return; }
-    if (!newPw)             { setPwError("New password is required."); return; }
-    if (newPw.length < 8)   { setPwError("New password must be at least 8 characters."); return; }
-    if (newPw !== confirmPw){ setPwError("Passwords do not match."); return; }
-    if (newPw === currentPw){ setPwError("New password must differ from your current password."); return; }
+    if (!currentPw) { setPwError("Current password is required."); return; }
+    if (!newPw) { setPwError("New password is required."); return; }
+    if (newPw.length < 8) { setPwError("New password must be at least 8 characters."); return; }
+    if (newPw !== confirmPw) { setPwError("Passwords do not match."); return; }
+    if (newPw === currentPw) { setPwError("New password must differ from your current password."); return; }
     setPwError("");
     setPwSaving(true);
     try {
@@ -127,11 +133,18 @@ export function ProfileScreen({
     }
   };
 
-  const initials = name
+  // const initials = full_name
+  //   .trim()
+  //   .split(" ")
+  //   .slice(0, 2)
+  //   .map((w) => w[0]?.toUpperCase() ?? "")
+  //   .join("");
+
+    const initials = (full_name || "Beekeeper")
     .trim()
     .split(" ")
     .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase() ?? "")
+    .map((w) => w?.[0]?.toUpperCase() ?? "")
     .join("");
 
   if (loading) {
@@ -143,6 +156,19 @@ export function ProfileScreen({
     );
   }
 
+
+  // Allow user to pick a profile photo from their device
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      setProfilePhoto(result.assets[0].uri);
+    }
+  };
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: theme.page }}
@@ -150,24 +176,64 @@ export function ProfileScreen({
       showsVerticalScrollIndicator={false}
     >
       {/* Avatar + name */}
-      <View style={styles.profileHeroCard}>
+      {/* <View style={styles.profileHeroCard}>
         <View style={styles.profileAvatarCircle}>
           <Text style={styles.profileAvatarInitials}>{initials || "BK"}</Text>
+        </View> */}
+     
+      <View style={styles.profileHeroCard}>
+      <Pressable onPress={pickImage}>
+        <View style={styles.profileAvatarCircle}>
+          {profilePhoto ? (
+            <Image
+              source={{ uri: profilePhoto }}
+              style={{
+                width: 80,
+                height: 80,
+                borderRadius: 40,
+              }}
+            />
+          ) : (
+            <Text style={styles.profileAvatarInitials}>
+              {initials || "BK"}
+            </Text>
+          )}
         </View>
-        {editing ? (
-          <TextInput
-            id="profile-name"
-            style={styles.profileNameInput}
-            value={name}
-            onChangeText={setName}
-            placeholder="Full name"
-            placeholderTextColor={THEME.placeholder}
-          />
-        ) : (
-          <Text style={styles.profileHeroName}>{name}</Text>
+
+        <Text style={{ textAlign: "center", color: THEME.primary, marginTop: 4 }}>
+          Change Photo
+        </Text>
+      </Pressable>
+      
+      {/* {editing ? (
+        <TextInput
+          id="profile-name"
+          style={styles.profileNameInput}
+          value={full_name}
+          onChangeText={setFullName}
+          placeholder="Full name"
+          placeholderTextColor={THEME.placeholder}
+        />
+      ) : (
+        <Text style={styles.profileHeroName}>{full_name}</Text>
+      )}
+        {/* <Text style={styles.profileHeroRole}>Beekeeper</Text> */}
+        
+
+          {editing ? (
+        <TextInput
+          id="profile-name"
+          style={styles.profileNameInput}
+          value={full_name}
+          onChangeText={setFullName}
+          placeholder="Full name"
+          placeholderTextColor={THEME.placeholder}
+        />
+      ) : (
+            <Text style={styles.profileHeroName}>{full_name}</Text>
         )}
-        <Text style={styles.profileHeroRole}>Beekeeper</Text>
-      </View>
+        
+    </View>
 
       {/* Contact Info */}
       <View style={styles.profileSection}>
@@ -486,5 +552,5 @@ export function ProfileScreen({
          </View>
        </Modal>
      </ScrollView>
-   );
+  );
 }

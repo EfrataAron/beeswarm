@@ -146,7 +146,7 @@ export function AlertsListScreen({ navigation, route }: Props) {
       {filtered.length === 0 && (
         <View style={styles.inlineState}>
           <Ionicons name="checkmark-circle-outline" size={32} color="#16A34A" />
-          <Text style={styles.stateTextSmall}>No alerts in this category</Text>
+          <Text style={styles.stateTextSmall}>No alerts</Text>
         </View>
       )}
 

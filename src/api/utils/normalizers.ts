@@ -57,7 +57,7 @@ export function normalizeProfile(
 ): BeekeeperProfile {
   return {
     id: String(raw.user_id ?? raw.id ?? ""),
-    name: String(raw.full_name ?? raw.name ?? "Beekeeper"),
+    full_name: String(raw.full_name ?? raw.name ?? "Beekeeper"),
     email: raw.email != null ? String(raw.email) : null,
     phone: String(raw.phone ?? ""),
     address: raw.address != null ? String(raw.address) : null,

@@ -165,7 +165,8 @@ export function DashboardScreen({ navigation }: Props) {
     );
   }
 
-  const total = dashboard.totalHives || 1;
+  const total = dashboard.totalHives ?? 0;
+
   const donutSegments = [
     { pct: dashboard.statusCounts.active / total, color: "#22C55E", label: "Active", count: dashboard.statusCounts.active },
     { pct: dashboard.statusCounts.swarming / total, color: "#EF4444", label: "Swarming", count: dashboard.statusCounts.swarming },
@@ -372,25 +373,25 @@ export function DashboardScreen({ navigation }: Props) {
 
       {/* ── Overview row ── */}
       <Pressable style={styles.overviewCardRow} onPress={() => navigation.navigate("Hives", { screen: "HiveList" })}>
-        <View style={[styles.overviewTile, { backgroundColor: dashboard.silentHives.length > 0 ? "#152566" : "#22C55E" }]}>
-          <Ionicons name={dashboard.silentHives.length > 0 ? "wifi-outline" : "radio-outline"} size={20} color="#fff" />
+        <View style={[styles.overviewTile, { backgroundColor: dashboard.silentHives.length > 0 ? "#152566" : "#36f57c" }]}>
+          <Ionicons name={dashboard.silentHives.length > 0 ? "wifi-outline" : "radio-outline"} size={25} color="#fff" />
           <Text style={styles.overviewTileValue}>
             {dashboard.silentHives.length > 0 ? dashboard.silentHives.length : dashboard.totalHives}
           </Text>
           <Text style={styles.overviewTileLabel}>{dashboard.silentHives.length > 0 ? "Offline" : "All Online"}</Text>
         </View>
-        <View style={[styles.overviewTile, { backgroundColor: "#22C55E" }]}>
-          <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
+        <View style={[styles.overviewTile, { backgroundColor: "#5184f2" }]}>
+          <Ionicons name="checkmark-circle-outline" size={25} color="#fff" />
           <Text style={styles.overviewTileValue}>{dashboard.activeHives}</Text>
           <Text style={styles.overviewTileLabel}>Harmonious</Text>
         </View>
-        <View style={[styles.overviewTile, { backgroundColor: "#EF4444" }]}>
-          <Ionicons name="alert-circle-outline" size={20} color="#fff" />
+        <View style={[styles.overviewTile, { backgroundColor: "#f55858" }]}>
+          <Ionicons name="alert-circle-outline" size={25} color="#fff" />
           <Text style={styles.overviewTileValue}>{dashboard.pendingAlerts}</Text>
           <Text style={styles.overviewTileLabel}>Alerts</Text>
         </View>
-        <View style={[styles.overviewTile, { backgroundColor: "#D97706" }]}>
-          <Ionicons name="warning-outline" size={20} color="#fff" />
+        <View style={[styles.overviewTile, { backgroundColor: "#f3ac5a" }]}>
+          <Ionicons name="warning-outline" size={25} color="#fff" />
           <Text style={styles.overviewTileValue}>{dashboard.statusCounts.swarming}</Text>
           <Text style={styles.overviewTileLabel}>Swarming</Text>
         </View>
