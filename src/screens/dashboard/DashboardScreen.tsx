@@ -201,7 +201,7 @@ export function DashboardScreen({ navigation }: Props) {
         />
       }
     >
-      {/* ── Alerts card ── */}
+      {/* ── Alerts card ──
       <View style={[styles.dashboardAlertsCard, { backgroundColor: theme.surface }]}>
         <View style={styles.dashboardAlertsTopRow}>
           <View style={styles.dashboardAlertsTitleWrap}>
@@ -369,7 +369,7 @@ export function DashboardScreen({ navigation }: Props) {
             </Pressable>
           </View>
         )}
-      </View>
+      </View> */}
 
       {/* ── Overview row ── */}
       <Pressable style={styles.overviewCardRow} onPress={() => navigation.navigate("Hives", { screen: "HiveList" })}>

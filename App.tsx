@@ -219,6 +219,7 @@ function AlertsStackScreen({
           />
         )}
       </AlertsStack.Screen>
+    
       <AlertsStack.Screen
         name="AlertDetails"
         component={AlertDetailsScreen}
