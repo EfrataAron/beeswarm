@@ -10,7 +10,8 @@ export type HiveStatus =
   | "external_noise" 
   | "quacking_queens" 
   | "pests" 
-  | "queenless";
+  | "queenless"
+  | "unknown";
 
 export type AlertSeverity = "Critical" | "Warning" | "Info";
 

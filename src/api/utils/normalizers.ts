@@ -13,9 +13,9 @@ import {
 export function normalizeStatus(raw: string): HiveStatus {
   const s = raw.trim().toLowerCase();
   
-  // If empty or "unknown", treat as inactive (no sensor data)
+  // If empty or "unknown", treat as unknown (new hive, no sensor data yet)
   if (!s || s === "" || s === "unknown" || s === "null" || s === "undefined")
-    return "inactive_hive";
+    return "unknown";
   
   if (
     s === "healthy" ||
@@ -41,8 +41,8 @@ export function normalizeStatus(raw: string): HiveStatus {
   if (s === "pests" || s === "pest") return "pests";
   if (s === "queenless" || s === "no_queen") return "queenless";
   
-  // Default fallback for unknown statuses - treat as inactive (no sensor data)
-  return "inactive_hive";
+  // Default fallback for unknown statuses - treat as unknown
+  return "unknown";
 }
 
 export function normalizeSeverity(raw: string): AlertSeverity {

@@ -126,24 +126,24 @@ export async function fetchHiveDetail(hiveId: string): Promise<HiveDetailData> {
   let metricSeries = rawSeries.map((p: any, i: number) =>
     normalizeMetricPoint(p, i),
   );
-
-  if (metricSeries.length < 24) {
-    const weather = raw.weather ?? {};
-    const baseTemp = Number(
-      metricSeries.at(-1)?.temperatureC ??
-        weather.temperature ??
-        raw.temperature_c ??
-        34,
-    );
-    const baseHum = Number(
-      metricSeries.at(-1)?.humidityPercent ??
-        weather.humidity ??
-        raw.humidity_percent ??
-        60,
-    );
-    const seed = hiveId.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-    metricSeries = buildHourlyMetricHistory(baseTemp, baseHum, 24 * 30, seed);
-  }
+  // Don't generate fake history for new hives
+  // if (metricSeries.length < 24) {
+  //   const weather = raw.weather ?? {};
+  //   const baseTemp = Number(
+  //     metricSeries.at(-1)?.temperatureC ??
+  //       weather.temperature ??
+  //       raw.temperature_c ??
+  //       34,
+  //   );
+  //   const baseHum = Number(
+  //     metricSeries.at(-1)?.humidityPercent ??
+  //       weather.humidity ??
+  //       raw.humidity_percent ??
+  //       60,
+  //   );
+  //   const seed = hiveId.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+  //   metricSeries = buildHourlyMetricHistory(baseTemp, baseHum, 24 * 30, seed);
+  // }
 
   const weatherData: WeatherData | undefined = raw.weather
     ? {

@@ -23,7 +23,8 @@ const STATUS_META: Array<{ status: HiveStatus; label: string; color: string }> =
   { status: "pests",           label: "Pests",            color: "#EF4444" },
   { status: "external_noise",  label: "External Noise",   color: "#D97706" },
   { status: "Abscondment",     label: "Absconded",        color: "#6B7280" },
-  { status: "inactive_hive",   label: "Inactive",         color: "#94A3B8" },
+  { status: "inactive_hive",   label: "Inactive",         color: "#D97706" },
+  { status: "unknown",          label: "Unknown",           color: "#94A3B8" },
 ];
 
 export function HiveStatusChart({ statusCounts, totalHives }: Props) {

@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   ActivityIndicator,
   Pressable,
@@ -10,11 +11,8 @@ import {
 import { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import {
-  AlertItem,
-  AlertSeverity,
   AmbientWeather,
   DashboardData,
-  fetchAlerts,
   fetchAmbientWeather,
   fetchDashboard,
 } from "../../api";
@@ -29,6 +27,7 @@ import { HiveMetricsLineChart } from "../../components/HiveMetricsLineChart";
 import { HiveStatusTrendChart } from "../../components/HiveStatusTrendChart";
 import { averageFleetMetrics } from "../../api/utils/metricsHistory";
 import { useTemperatureUnit } from "../../hooks/useTemperatureUnit";
+import { usePolling } from "../../hooks/usePolling";
 
 type Props = BottomTabScreenProps<MainTabParamList, "Dashboard">;
 
@@ -39,22 +38,14 @@ export function DashboardScreen({ navigation }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [ambientWeather, setAmbientWeather] = useState<AmbientWeather | null>(null);
-  const [dashboardAlerts, setDashboardAlerts] = useState<AlertItem[]>([]);
-  const [alertsError, setAlertsError] = useState<string | null>(null);
-  const [openAlertMenu, setOpenAlertMenu] = useState<"severity" | "hive" | "latest" | null>(null);
-  const [severityFilter, setSeverityFilter] = useState<AlertSeverity | "All">("All");
-  const [hiveFilter, setHiveFilter] = useState<string>("All");
-  const [selectedAlertId, setSelectedAlertId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const loadDashboard = useCallback(async () => {
-    setLoading(true);
+  const [isPollingEnabled, setIsPollingEnabled] = useState(true);
+  const loadDashboard = useCallback(async (initial = false) => {
+    if (initial) setLoading(true);
     setError(null);
-    setAlertsError(null);
     try {
-      // Fire all three requests in parallel — this is the main performance win
-      const [data, alerts, weather] = await Promise.allSettled([
+      const [data, weather] = await Promise.allSettled([
         fetchDashboard(),
-        fetchAlerts(),
         fetchAmbientWeather(),
       ]);
 
@@ -64,78 +55,35 @@ export function DashboardScreen({ navigation }: Props) {
         throw data.reason;
       }
 
-      if (alerts.status === "fulfilled") {
-        setDashboardAlerts(alerts.value);
-      } else {
-        setDashboardAlerts([]);
-        setAlertsError(
-          alerts.reason instanceof Error
-            ? alerts.reason.message
-            : "Could not load dashboard alerts",
-        );
-      }
-
       setAmbientWeather(
         weather.status === "fulfilled" ? weather.value : null,
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load dashboard data");
     } finally {
-      setLoading(false);
+      if (initial) setLoading(false);
     }
   }, []);
 
-  useEffect(() => { void loadDashboard(); }, [loadDashboard]);
+  const { isPolling, lastUpdated, executePoll } = usePolling({
+    callback: loadDashboard,
+    interval: 30000, // 30 seconds
+    enabled: isPollingEnabled,
+  });
+
+  useFocusEffect(
+    useCallback(() => {
+      setIsPollingEnabled(true);
+      void loadDashboard(true);
+      return () => setIsPollingEnabled(false);
+    }, [])
+  );
 
   const onRefreshDashboard = useCallback(async () => {
     setRefreshing(true);
     await loadDashboard();
     setRefreshing(false);
   }, [loadDashboard]);
-
-  const severityCounts = useMemo(() => ({
-    Critical: dashboardAlerts.filter((a) => a.severity === "Critical").length,
-    Warning: dashboardAlerts.filter((a) => a.severity === "Warning").length,
-    Info: dashboardAlerts.filter((a) => a.severity === "Info").length,
-  }), [dashboardAlerts]);
-
-  const hiveOptions = useMemo(() => {
-    const counts = new Map<string, number>();
-    dashboardAlerts.forEach((alert) => {
-      counts.set(alert.hiveId, (counts.get(alert.hiveId) ?? 0) + 1);
-    });
-    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
-  }, [dashboardAlerts]);
-
-  const latestAlerts = useMemo(
-    () =>
-      [...dashboardAlerts]
-        .sort((a, b) => {
-          const aTime = Date.parse(a.date.replace(" ", "T"));
-          const bTime = Date.parse(b.date.replace(" ", "T"));
-          return (Number.isFinite(bTime) ? bTime : 0) - (Number.isFinite(aTime) ? aTime : 0);
-        })
-        .slice(0, 6),
-    [dashboardAlerts],
-  );
-
-  const filteredDashboardAlerts = useMemo(
-    () =>
-      dashboardAlerts.filter((alert) => {
-        const passesSeverity = severityFilter === "All" || alert.severity === severityFilter;
-        const passesHive = hiveFilter === "All" || alert.hiveName === hiveFilter;
-        return passesSeverity && passesHive;
-      }),
-    [dashboardAlerts, severityFilter, hiveFilter],
-  );
-
-  const selectedDashboardAlert = useMemo(() => {
-    if (filteredDashboardAlerts.length === 0) return null;
-    return (
-      filteredDashboardAlerts.find((alert) => alert.id === selectedAlertId) ??
-      filteredDashboardAlerts[0]
-    );
-  }, [filteredDashboardAlerts, selectedAlertId]);
 
   const fleetMetricSeries = useMemo(
     () => averageFleetMetrics(dashboard?.allHivesHistory ?? []),
@@ -176,17 +124,21 @@ export function DashboardScreen({ navigation }: Props) {
     { pct: dashboard.statusCounts.external_noise / total, color: "#D97706", label: "External Noise", count: dashboard.statusCounts.external_noise },
     { pct: dashboard.statusCounts.inactive_hive / total, color: "#94A3B8", label: "Inactive", count: dashboard.statusCounts.inactive_hive },
     { pct: dashboard.statusCounts.Abscondment / total, color: "#6B7280", label: "Absconded", count: dashboard.statusCounts.Abscondment },
+    { pct: dashboard.statusCounts.unknown / total, color: "#64748B", label: "Unknown", count: dashboard.statusCounts.unknown },
   ];
 
-  const dashboardSeverityColor: Record<AlertSeverity, string> = {
-    Critical: "#DC2626",
-    Warning: "#D97706",
-    Info: "#2563EB",
-  };
-
-  const displayTemperature = ambientWeather?.temperatureC ?? dashboard.keyMetrics.temperatureC;
-  const displayHumidity = ambientWeather?.humidityPercent ?? dashboard.keyMetrics.humidityPercent;
-  const weatherSubtitle = ambientWeather ? "Live weather (Open-Meteo)" : "Last 24 hours";
+  // Only use dashboard metrics if they are not 0 and not undefined
+  const useDashboardTemp = dashboard.keyMetrics.temperatureC !== undefined && dashboard.keyMetrics.temperatureC !== 0;
+  const useDashboardHumidity = dashboard.keyMetrics.humidityPercent !== undefined && dashboard.keyMetrics.humidityPercent !== 0;
+  const displayTemperature = ambientWeather?.temperatureC ?? (useDashboardTemp ? dashboard.keyMetrics.temperatureC : undefined);
+  const displayHumidity = ambientWeather?.humidityPercent ?? (useDashboardHumidity ? dashboard.keyMetrics.humidityPercent : undefined);
+  // If no ambient weather and no dashboard metrics, update subtitle
+  const weatherSubtitle = 
+    ambientWeather 
+      ? "Live weather (Open-Meteo)" 
+      : (useDashboardTemp || useDashboardHumidity) 
+        ? "Last 24 hours" 
+        : "No sensor data available yet";
 
   return (
     <ScrollView
@@ -201,176 +153,6 @@ export function DashboardScreen({ navigation }: Props) {
         />
       }
     >
-      {/* ── Alerts card ──
-      <View style={[styles.dashboardAlertsCard, { backgroundColor: theme.surface }]}>
-        <View style={styles.dashboardAlertsTopRow}>
-          <View style={styles.dashboardAlertsTitleWrap}>
-            <Text style={styles.dashboardAlertsTitle}>Alerts</Text>
-            <Text style={styles.dashboardAlertsSubTitle}>Dashboard quick view</Text>
-          </View>
-          <View style={styles.hiveAlertCountBadge}>
-            <Text style={styles.hiveAlertCountText}>{filteredDashboardAlerts.length} shown</Text>
-          </View>
-        </View>
-
-        <View style={styles.dashboardAlertMenuRow}>
-          {(["severity", "hive", "latest"] as const).map((menu) => {
-            const icons = { severity: "funnel-outline", hive: "cube-outline", latest: "time-outline" } as const;
-            const labels = { severity: "Severity", hive: "Hive", latest: "Latest" };
-            const active = openAlertMenu === menu;
-            return (
-              <Pressable
-                key={menu}
-                style={[styles.dashboardAlertMenuChip, active && styles.dashboardAlertMenuChipActive]}
-                onPress={() => setOpenAlertMenu((c) => (c === menu ? null : menu))}
-              >
-                <Ionicons name={icons[menu]} size={14} color={active ? "#FFFFFF" : THEME.primary} />
-                <Text style={[styles.dashboardAlertMenuChipText, active && styles.dashboardAlertMenuChipTextActive]}>
-                  {labels[menu]} 
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-
-        {openAlertMenu !== null && (
-          <View style={styles.dashboardAlertSubMenu}>
-            <View style={styles.dashboardAlertSubMenuHeader}>
-              <Text style={styles.dashboardAlertSubMenuTitle}>
-                {openAlertMenu === "severity" ? "Severity Categories" : openAlertMenu === "hive" ? "Hive Categories" : "Recent Alerts"}
-              </Text>
-              <Pressable style={styles.dashboardAlertSubMenuCloseBtn} onPress={() => setOpenAlertMenu(null)}>
-                <Ionicons name="close" size={16} color={THEME.textMuted} />
-              </Pressable>
-            </View>
-
-            {openAlertMenu === "severity" && (
-              <View style={styles.dashboardAlertSubMenuList}>
-                <Pressable
-                  style={[styles.dashboardAlertSubMenuItem, severityFilter === "All" && styles.dashboardAlertSubMenuItemActive]}
-                  onPress={() => setSeverityFilter("All")}
-                >
-                  <Text style={[styles.dashboardAlertSubMenuItemText, severityFilter === "All" && styles.dashboardAlertSubMenuItemTextActive]}>
-                    All ({dashboardAlerts.length})
-                  </Text>
-                </Pressable>
-                {(["Critical", "Warning", "Info"] as AlertSeverity[]).map((severity) => (
-                  <Pressable
-                    key={severity}
-                    style={[styles.dashboardAlertSubMenuItem, severityFilter === severity && styles.dashboardAlertSubMenuItemActive]}
-                    onPress={() => setSeverityFilter(severity)}
-                  >
-                    <View style={[styles.dashboardAlertSubMenuDot, { backgroundColor: dashboardSeverityColor[severity] }]} />
-                    <Text style={[styles.dashboardAlertSubMenuItemText, severityFilter === severity && styles.dashboardAlertSubMenuItemTextActive]}>
-                      {severity} ({severityCounts[severity]})
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-            )}
-
-            {openAlertMenu === "hive" && (
-              <View style={styles.dashboardAlertSubMenuList}>
-                <Pressable
-                  style={[styles.dashboardAlertSubMenuItem, hiveFilter === "All" && styles.dashboardAlertSubMenuItemActive]}
-                  onPress={() => setHiveFilter("All")}
-                >
-                  <Text style={[styles.dashboardAlertSubMenuItemText, hiveFilter === "All" && styles.dashboardAlertSubMenuItemTextActive]}>
-                    All hives
-                  </Text>
-                </Pressable>
-                {hiveOptions.map(([hiveName, count]) => (
-                  <Pressable
-                    key={hiveName}
-                    style={[styles.dashboardAlertSubMenuItem, hiveFilter === hiveName && styles.dashboardAlertSubMenuItemActive]}
-                    onPress={() => setHiveFilter(hiveName)}
-                  >
-                    <Text style={[styles.dashboardAlertSubMenuItemText, hiveFilter === hiveName && styles.dashboardAlertSubMenuItemTextActive]}>
-                      {hiveName} ({count})
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-            )}
-
-            {openAlertMenu === "latest" && (
-              <View style={styles.dashboardAlertSubMenuList}>
-                {latestAlerts.map((alert) => (
-                  <Pressable
-                    key={alert.id}
-                    style={styles.dashboardAlertSubMenuItem}
-                    onPress={() => { setSelectedAlertId(alert.id); setOpenAlertMenu(null); }}
-                  >
-                    <View style={[styles.dashboardAlertSubMenuDot, { backgroundColor: dashboardSeverityColor[alert.severity] }]} />
-                    <Text style={styles.dashboardAlertSubMenuItemText}>{alert.title}</Text>
-                  </Pressable>
-                ))}
-                {latestAlerts.length === 0 && (
-                  <Text style={styles.dashboardAlertSubMenuEmpty}>No recent alerts available</Text>
-                )}
-              </View>
-            )}
-          </View>
-        )}
-
-        {alertsError && <Text style={styles.dashboardAlertsInlineError}>{alertsError}</Text>}
-        
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dashboardAlertScroller}>
-          {filteredDashboardAlerts.map((alert) => {
-            const selected = selectedDashboardAlert?.id === alert.id;
-            return (
-              <Pressable
-                key={alert.id}
-                style={[styles.dashboardAlertCompactCard, selected && styles.dashboardAlertCompactCardActive]}
-                onPress={() => setSelectedAlertId(alert.id)}
-              >
-                <View style={styles.dashboardAlertCompactTopRow}>
-                  <View style={[styles.dashboardAlertCompactDot, { backgroundColor: dashboardSeverityColor[alert.severity] }]} />
-                  <Text style={styles.dashboardAlertCompactHive}>{alert.hiveName}</Text>
-                </View>
-                <Text style={styles.dashboardAlertCompactTitle} numberOfLines={1}>{alert.title}</Text>
-                <Text style={styles.dashboardAlertCompactDate}>{alert.date}</Text>
-              </Pressable>
-            );
-          })} 
-          {filteredDashboardAlerts.length === 0 && (
-            <View style={styles.dashboardAlertsEmptyState}>
-              <Ionicons name="checkmark-circle-outline" size={18} color="#16A34A" />
-              <Text style={styles.dashboardAlertsEmptyStateText}>No alerts match this filter</Text>
-            </View>
-          )}
-        </ScrollView>
-
-        {selectedDashboardAlert && (
-          <View style={styles.dashboardAlertDetailsCard}>
-            <View style={styles.rowBetween}>
-              <Text style={styles.dashboardAlertDetailsTitle}>{selectedDashboardAlert.title}</Text>
-              <View style={[styles.dashboardAlertDetailsSeverity, { backgroundColor: `${dashboardSeverityColor[selectedDashboardAlert.severity]}20` }]}>
-                <Text style={[styles.dashboardAlertDetailsSeverityText, { color: dashboardSeverityColor[selectedDashboardAlert.severity] }]}>
-                  {selectedDashboardAlert.severity}
-                </Text>
-              </View>
-            </View>
-            <Text style={styles.dashboardAlertDetailsMeta}>
-              {selectedDashboardAlert.hiveName} · {selectedDashboardAlert.date}
-            </Text>
-            <Text style={styles.dashboardAlertDetailsSummary}>{selectedDashboardAlert.summary}</Text>
-            <Pressable
-              style={styles.dashboardAlertDetailsLink}
-              onPress={() =>
-                navigation.navigate("Alerts", {
-                  screen: "AlertDetails",
-                  params: { alertId: selectedDashboardAlert.id },
-                })
-              }
-            >
-              <Text style={styles.dashboardAlertDetailsLinkText}>Open Full Details</Text>
-              <Ionicons name="chevron-forward" size={14} color={THEME.primary} />
-            </Pressable>
-          </View>
-        )}
-      </View> */}
-
       {/* ── Overview row ── */}
       <Pressable style={styles.overviewCardRow} onPress={() => navigation.navigate("Hives", { screen: "HiveList" })}>
         <View style={[styles.overviewTile, { backgroundColor: dashboard.silentHives.length > 0 ? "#152566" : "#36f57c" }]}>
@@ -488,8 +270,18 @@ export function DashboardScreen({ navigation }: Props) {
       {/* ── Key Metrics ── */}
       <Text style={styles.sectionTitle}>Key Metrics</Text>
       <View style={styles.gridTwo}>
-        <MetricCard title="Avg Temperature" value={formatTemp(displayTemperature, 1).replace(`°${tempUnit}`, "")} unit={`°${tempUnit}`} subtitle={weatherSubtitle} />
-        <MetricCard title="Avg Humidity" value={displayHumidity.toFixed(0)} unit="%" subtitle={weatherSubtitle} />
+        <MetricCard 
+          title="Avg Temperature" 
+          value={displayTemperature !== undefined ? formatTemp(displayTemperature, 1).replace(`°${tempUnit}`, "") : "—"} 
+          unit={displayTemperature !== undefined ? `°${tempUnit}` : ""} 
+          subtitle={weatherSubtitle} 
+        />
+        <MetricCard 
+          title="Avg Humidity" 
+          value={displayHumidity !== undefined ? displayHumidity.toFixed(0) : "—"} 
+          unit={displayHumidity !== undefined ? "%" : ""} 
+          subtitle={weatherSubtitle} 
+        />
       </View>
 
       <Text style={styles.sectionTitle}>System Monitoring</Text>

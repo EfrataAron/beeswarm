@@ -16,6 +16,7 @@ import {
 } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
+import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold } from "@expo-google-fonts/inter";
 import {
   BeekeeperProfile,
   fetchAlerts,
@@ -417,6 +418,28 @@ export default function App() {
   const [navigationState, setNavigationState] = useState<any>();
   const initialWebPath = useMemo(() => getInitialWebPath(), []);
 
+  // Load fonts
+  let [fontsLoaded] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    Inter_800ExtraBold,
+  });
+
+  // Load Google Fonts for web
+  useEffect(() => {
+    if (Platform.OS === "web") {
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap";
+      document.head.appendChild(link);
+      return () => {
+        document.head.removeChild(link);
+      };
+    }
+  }, []);
+
   const colors = darkModeEnabled ? APP_COLORS.dark : APP_COLORS.light;
 
   const navigationTheme = useMemo(
@@ -552,7 +575,7 @@ export default function App() {
     }
   };
 
-  if (bootstrapping) {
+  if (!fontsLoaded || bootstrapping) {
     return (
       <View
         style={{

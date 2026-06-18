@@ -63,6 +63,7 @@ export const welcomeStyles = StyleSheet.create({
   welcomeAppName: {
     fontSize: 32,
     fontWeight: "800",
+    fontFamily: THEME.fontFamily.extraBold,
     color: THEME.accent,
     letterSpacing: 4,
   },
@@ -70,6 +71,7 @@ export const welcomeStyles = StyleSheet.create({
     fontSize: 12,
     color: "rgba(255,178,104,0.7)",
     fontWeight: "600",
+    fontFamily: THEME.fontFamily.semiBold,
     letterSpacing: 0.5,
     marginTop: 4,
     textAlign: "center",
@@ -89,6 +91,7 @@ export const welcomeStyles = StyleSheet.create({
   welcomeHeadline: {
     fontSize: 26,
     fontWeight: "800",
+    fontFamily: THEME.fontFamily.extraBold,
     color: THEME.primary,
     textAlign: "center",
     lineHeight: 34,
@@ -97,6 +100,7 @@ export const welcomeStyles = StyleSheet.create({
   welcomeSubtitle: {
     fontSize: 13,
     color: THEME.textMuted,
+    fontFamily: THEME.fontFamily.regular,
     textAlign: "center",
     lineHeight: 20,
     marginBottom: 24,
@@ -115,6 +119,7 @@ export const welcomeStyles = StyleSheet.create({
   welcomePrimaryBtnText: {
     color: THEME.primary,
     fontWeight: "800",
+    fontFamily: THEME.fontFamily.extraBold,
     fontSize: 16,
   },
   pressed: {

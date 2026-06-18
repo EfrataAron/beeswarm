@@ -1,3 +1,4 @@
+import { Platform } from "react-native";
 import { HiveStatus, AlertSeverity } from "./api";
 
 const LIGHT_THEME = {
@@ -10,6 +11,13 @@ const LIGHT_THEME = {
   text: "#1F2A37",
   textMuted: "#667085",
   placeholder: "#98A2B3",
+  fontFamily: {
+    regular: Platform.OS === "web" ? "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif" : "Inter_400Regular",
+    medium: Platform.OS === "web" ? "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif" : "Inter_500Medium",
+    semiBold: Platform.OS === "web" ? "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif" : "Inter_600SemiBold",
+    bold: Platform.OS === "web" ? "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif" : "Inter_700Bold",
+    extraBold: Platform.OS === "web" ? "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif" : "Inter_800ExtraBold",
+  },
 };
 
 const DARK_THEME = {
@@ -22,6 +30,13 @@ const DARK_THEME = {
   text: "#E5E7EB",
   textMuted: "#94A3B8",
   placeholder: "#64748B",
+  fontFamily: {
+    regular: Platform.OS === "web" ? "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif" : "Inter_400Regular",
+    medium: Platform.OS === "web" ? "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif" : "Inter_500Medium",
+    semiBold: Platform.OS === "web" ? "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif" : "Inter_600SemiBold",
+    bold: Platform.OS === "web" ? "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif" : "Inter_700Bold",
+    extraBold: Platform.OS === "web" ? "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif" : "Inter_800ExtraBold",
+  },
 };
 
 export const THEME = { ...LIGHT_THEME };
@@ -39,7 +54,8 @@ export const STATUS_COLOR: Record<HiveStatus, string> = {
   external_noise: "#DC2446",
   quacking_queens: "#8B5CF6",
   pests: "#EF4444",
-  queenless: "#EC4899"
+  queenless: "#EC4899",
+  unknown: "#94A3B8"
 };
 
 export function displayStatus(status: HiveStatus): string {
@@ -51,7 +67,8 @@ export function displayStatus(status: HiveStatus): string {
   if (status === "quacking_queens") return "2 Queens!";
   if (status === "pests") return "Pest Infestation";
   if (status === "queenless") return "Queenless";
-  return "Empty";
+  if (status === "unknown") return "Unknown";
+  return "Unknown";
 }
 
 export function statusCondition(status: HiveStatus): string {
@@ -63,7 +80,8 @@ export function statusCondition(status: HiveStatus): string {
   if (status === "quacking_queens") return "Queen cells detected · Supercedure risk";
   if (status === "pests") return "Intruders detected inside the hive box";
   if (status === "queenless") return "No active laying queen found in brood nest";
-  return "Status unverified";
+  if (status === "unknown") return "New hive · Waiting for first analysis";
+  return "New hive · Waiting for first analysis";
 }
 
 

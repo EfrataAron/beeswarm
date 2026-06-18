@@ -415,17 +415,24 @@ export function HiveDetailsScreen({ route, navigation }: Props) {
   const metricSeries =
     detail.metricSeries.length > 0
       ? detail.metricSeries
-      : detail.metrics.map((value, index) => ({
-        timeLabel: `R${index + 1}`,
-        temperatureC: value,
-        humidityPercent: 60 + index,
-      }));
+      : (detail.metrics.length > 0
+        ? detail.metrics.map((value, index) => ({
+          timeLabel: `R${index + 1}`,
+          temperatureC: value,
+          humidityPercent: 60 + index,
+        }))
+        : []); // If no data at all, return empty array
 
   const temperatureValues = metricSeries.map((p) => p.temperatureC);
   const humidityValues = metricSeries.map((p) => p.humidityPercent);
   const latestTemperature =
-    temperatureValues[temperatureValues.length - 1] ?? 0;
-  const latestHumidity = humidityValues[humidityValues.length - 1] ?? 0;
+    temperatureValues.length > 0
+      ? temperatureValues[temperatureValues.length - 1]
+      : undefined;
+  const latestHumidity =
+    humidityValues.length > 0
+      ? humidityValues[humidityValues.length - 1]
+      : undefined;
 
   const severityColors: Record<AlertSeverity, string> = {
     Critical: "#DC2626",
@@ -637,11 +644,21 @@ export function HiveDetailsScreen({ route, navigation }: Props) {
           Temperature & Humidity Trends
         </Text>
 
-        <HiveMetricsLineChart
-          metricSeries={metricSeries}
-          // hiveId={detail.id}
-          hiveName={detail.name}
-        />
+        {metricSeries.length === 0 ? (
+          <View style={[styles.centerState, { paddingVertical: 40 }]}>
+            <Ionicons name="analytics-outline" size={40} color={THEME.textMuted} />
+            <Text style={styles.stateText}>No analysis history available yet</Text>
+            <Text style={styles.metricsSubtitle}>
+              Check back once we've collected the first set of readings
+            </Text>
+          </View>
+        ) : (
+          <HiveMetricsLineChart
+            metricSeries={metricSeries}
+            // hiveId={detail.id}
+            hiveName={detail.name}
+          />
+        )}
       </View>
 
       {/* ── Notifications ── */}

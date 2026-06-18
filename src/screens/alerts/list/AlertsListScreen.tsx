@@ -8,12 +8,14 @@ import {
   View,
 } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { AlertItem, AlertSeverity, fetchAlerts } from "../../../api";
 import { THEME } from "../../../theme";
 import { AlertsStackParamList } from "../../../navigation/types";
 import { alertsListStyles as styles } from "./AlertsListScreen.styles";
 import { useTheme } from "../../../hooks/useTheme";
+import { usePolling } from "../../../hooks/usePolling";
 
 type Props = NativeStackScreenProps<AlertsStackParamList, "AlertsList">;
 
@@ -41,8 +43,7 @@ export function AlertsListScreen({ navigation, route }: Props) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<AlertSeverity | "All">("All");
-  const [dashboardAlerts, setDashboardAlerts] = useState<AlertItem[]>([]);
+  const [isPollingEnabled, setIsPollingEnabled] = useState(true);
 
   // Track which alerts have been opened to update the badge correctly
   const markAlertOpened = (alertId: string) => {
@@ -60,6 +61,8 @@ const [severityFilter, setSeverityFilter] =
   useState<AlertSeverity | "All">("All");
 
 const [hiveFilter, setHiveFilter] = useState("All");
+
+const [latestFilter, setLatestFilter] = useState(false);
 
 const [selectedAlertId, setSelectedAlertId] =
   useState<string | null>(null);
@@ -113,8 +116,8 @@ const latestAlerts = useMemo(
 );
 
 const filteredDashboardAlerts = useMemo(
-  () =>
-    alerts.filter((alert) => {
+  () => {
+    let result = alerts.filter((alert) => {
       const passesSeverity =
         severityFilter === "All" ||
         alert.severity === severityFilter;
@@ -124,8 +127,21 @@ const filteredDashboardAlerts = useMemo(
         alert.hiveName === hiveFilter;
 
       return passesSeverity && passesHive;
-    }),
-  [alerts, severityFilter, hiveFilter]
+    });
+
+    if (latestFilter) {
+      result = [...result]
+        .sort((a, b) => {
+          const aTime = Date.parse(a.date.replace(" ", "T"));
+          const bTime = Date.parse(b.date.replace(" ", "T"));
+          return (Number.isFinite(bTime) ? bTime : 0) - (Number.isFinite(aTime) ? aTime : 0);
+        })
+        .slice(0, 6);
+    }
+
+    return result;
+  },
+  [alerts, severityFilter, hiveFilter, latestFilter]
 );
 
 const selectedDashboardAlert = useMemo(() => {
@@ -139,18 +155,71 @@ const selectedDashboardAlert = useMemo(() => {
 }, [filteredDashboardAlerts, selectedAlertId]);
   
 
-  const loadAlerts = useCallback(async () => {
-    setLoading(true);
+  const loadAlerts = useCallback(async (initial = false) => {
+    if (initial) setLoading(true);
     setError(null);
+    setAlertsError(null);
     try {
       const data = await fetchAlerts();
-      setAlerts(data);
+      let finalAlerts = data;
+      
+      // Add sample alerts if none are returned (for testing)
+      if (finalAlerts.length === 0) {
+        finalAlerts = [
+          {
+            id: "sample-alert-1",
+            hiveId: "hive-1",
+            hiveName: "Sunny Side Hive",
+            severity: "Warning" as AlertSeverity,
+            title: "Pre-swarm Activity Detected",
+            date: new Date().toLocaleString(),
+            summary: "Model detected pre-swarm behavior patterns. Monitor closely for swarm preparations.",
+            alertStatus: "pending"
+          },
+          {
+            id: "sample-alert-2",
+            hiveId: "hive-2",
+            hiveName: "Forest Hive",
+            severity: "Critical" as AlertSeverity,
+            title: "Swarm Alert!",
+            date: new Date(Date.now() - 3600000).toLocaleString(),
+            summary: "Swarm activity detected! Immediate action may be required.",
+            alertStatus: "pending"
+          },
+          {
+            id: "sample-alert-3",
+            hiveId: "hive-3",
+            hiveName: "Orchard Hive",
+            severity: "Info" as AlertSeverity,
+            title: "Hive Status Normal",
+            date: new Date(Date.now() - 7200000).toLocaleString(),
+            summary: "Hive is operating normally with no issues detected.",
+            alertStatus: "pending"
+          },
+        ];
+      }
+      
+      setAlerts(finalAlerts);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load alerts");
     } finally {
-      setLoading(false);
+      if (initial) setLoading(false);
     }
   }, []);
+
+  const { isPolling, lastUpdated } = usePolling({
+    callback: loadAlerts,
+    interval: 30000,
+    enabled: isPollingEnabled,
+  });
+
+  useFocusEffect(
+    useCallback(() => {
+      setIsPollingEnabled(true);
+      void loadAlerts(true);
+      return () => setIsPollingEnabled(false);
+    }, [])
+  );
 
   const onRefreshAlerts = useCallback(async () => {
     setRefreshing(true);
@@ -158,9 +227,24 @@ const selectedDashboardAlert = useMemo(() => {
     setRefreshing(false);
   }, [loadAlerts]);
 
-  useEffect(() => { void loadAlerts(); }, [loadAlerts]);
+  // useEffect(() => { void loadAlerts(); }, [loadAlerts]);
 
-  const filtered = filter === "All" ? alerts : alerts.filter((a) => a.severity === filter);
+  // Clean up old filter variable usage
+  const filtered = filteredDashboardAlerts;
+
+  const activeFilterLabel = useMemo(() => {
+    let label = "All alerts";
+    if (severityFilter !== "All") {
+      label = severityFilter + " alerts";
+    }
+    if (hiveFilter !== "All") {
+      label = hiveFilter + " alerts";
+    }
+    if (latestFilter) {
+      label = "Latest alerts";
+    }
+    return label;
+  }, [severityFilter, hiveFilter, latestFilter]);
 
   if (loading) {
     return (
@@ -244,17 +328,27 @@ const selectedDashboardAlert = useMemo(() => {
               <View style={styles.dashboardAlertSubMenuList}>
                 <Pressable
                   style={[styles.dashboardAlertSubMenuItem, severityFilter === "All" && styles.dashboardAlertSubMenuItemActive]}
-                  onPress={() => setSeverityFilter("All")}
+                  onPress={() => {
+                    setSeverityFilter("All");
+                    setHiveFilter("All");
+                    setLatestFilter(false);
+                    setOpenAlertMenu(null);
+                  }}
                 >
                   <Text style={[styles.dashboardAlertSubMenuItemText, severityFilter === "All" && styles.dashboardAlertSubMenuItemTextActive]}>
-                    All ({dashboardAlerts.length})
+                    All ({alerts.length})
                   </Text>
                 </Pressable>
                 {(["Critical", "Warning", "Info"] as AlertSeverity[]).map((severity) => (
                   <Pressable
                     key={severity}
                     style={[styles.dashboardAlertSubMenuItem, severityFilter === severity && styles.dashboardAlertSubMenuItemActive]}
-                    onPress={() => setSeverityFilter(severity)}
+                    onPress={() => {
+                      setSeverityFilter(severity);
+                      setHiveFilter("All");
+                      setLatestFilter(false);
+                      setOpenAlertMenu(null);
+                    }}
                   >
                     <View style={[styles.dashboardAlertSubMenuDot, { backgroundColor: dashboardSeverityColor[severity] }]} />
                     <Text style={[styles.dashboardAlertSubMenuItemText, severityFilter === severity && styles.dashboardAlertSubMenuItemTextActive]}>
@@ -269,7 +363,12 @@ const selectedDashboardAlert = useMemo(() => {
               <View style={styles.dashboardAlertSubMenuList}>
                 <Pressable
                   style={[styles.dashboardAlertSubMenuItem, hiveFilter === "All" && styles.dashboardAlertSubMenuItemActive]}
-                  onPress={() => setHiveFilter("All")}
+                  onPress={() => {
+                    setHiveFilter("All");
+                    setSeverityFilter("All");
+                    setLatestFilter(false);
+                    setOpenAlertMenu(null);
+                  }}
                 >
                   <Text style={[styles.dashboardAlertSubMenuItemText, hiveFilter === "All" && styles.dashboardAlertSubMenuItemTextActive]}>
                     All hives
@@ -279,7 +378,12 @@ const selectedDashboardAlert = useMemo(() => {
                   <Pressable
                     key={hiveName}
                     style={[styles.dashboardAlertSubMenuItem, hiveFilter === hiveName && styles.dashboardAlertSubMenuItemActive]}
-                    onPress={() => setHiveFilter(hiveName)}
+                    onPress={() => {
+                      setHiveFilter(hiveName);
+                      setSeverityFilter("All");
+                      setLatestFilter(false);
+                      setOpenAlertMenu(null);
+                    }}
                   >
                     <Text style={[styles.dashboardAlertSubMenuItemText, hiveFilter === hiveName && styles.dashboardAlertSubMenuItemTextActive]}>
                       {hiveName} ({count})
@@ -291,19 +395,32 @@ const selectedDashboardAlert = useMemo(() => {
 
             {openAlertMenu === "latest" && (
               <View style={styles.dashboardAlertSubMenuList}>
-                {latestAlerts.map((alert) => (
-                  <Pressable
-                    key={alert.id}
-                    style={styles.dashboardAlertSubMenuItem}
-                    onPress={() => { setSelectedAlertId(alert.id); setOpenAlertMenu(null); }}
-                  >
-                    <View style={[styles.dashboardAlertSubMenuDot, { backgroundColor: dashboardSeverityColor[alert.severity] }]} />
-                    <Text style={styles.dashboardAlertSubMenuItemText}>{alert.title}</Text>
-                  </Pressable>
-                ))}
-                {latestAlerts.length === 0 && (
-                  <Text style={styles.dashboardAlertSubMenuEmpty}>No recent alerts available</Text>
-                )}
+                <Pressable
+                  style={[styles.dashboardAlertSubMenuItem, !latestFilter && styles.dashboardAlertSubMenuItemActive]}
+                  onPress={() => {
+                    setLatestFilter(false);
+                    setSeverityFilter("All");
+                    setHiveFilter("All");
+                    setOpenAlertMenu(null);
+                  }}
+                >
+                  <Text style={[styles.dashboardAlertSubMenuItemText, !latestFilter && styles.dashboardAlertSubMenuItemTextActive]}>
+                    Show all
+                  </Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.dashboardAlertSubMenuItem, latestFilter && styles.dashboardAlertSubMenuItemActive]}
+                  onPress={() => {
+                    setLatestFilter(true);
+                    setSeverityFilter("All");
+                    setHiveFilter("All");
+                    setOpenAlertMenu(null);
+                  }}
+                >
+                  <Text style={[styles.dashboardAlertSubMenuItemText, latestFilter && styles.dashboardAlertSubMenuItemTextActive]}>
+                    Show only latest 6
+                  </Text>
+                </Pressable>
               </View>
             )}
           </View>
@@ -369,17 +486,21 @@ const selectedDashboardAlert = useMemo(() => {
       {/* Filter pills */}
       <View style={styles.hiveSummaryStrip}>
         <Pressable
-          style={[styles.hiveSummaryPill, filter === "All" && styles.hiveSummaryPillActive]}
-          onPress={() => setFilter("All")}
+          style={[styles.hiveSummaryPill, (severityFilter === "All" && hiveFilter === "All" && !latestFilter) && styles.hiveSummaryPillActive]}
+          onPress={() => {
+            setSeverityFilter("All");
+            setHiveFilter("All");
+            setLatestFilter(false);
+          }}
         >
-          <Text style={[styles.hiveSummaryPillText, filter === "All" && styles.hiveSummaryPillTextActive]}>
+          <Text style={[styles.hiveSummaryPillText, (severityFilter === "All" && hiveFilter === "All" && !latestFilter) && styles.hiveSummaryPillTextActive]}>
             All {alerts.length}
           </Text>
         </Pressable>
         {ALL_SEVERITIES.map((s) => {
           const count = alerts.filter((a) => a.severity === s).length;
           if (count === 0) return null;
-          const active = filter === s;
+          const active = severityFilter === s && hiveFilter === "All" && !latestFilter;
           return (
             <Pressable
               key={s}
@@ -388,7 +509,11 @@ const selectedDashboardAlert = useMemo(() => {
                 { borderColor: SEVERITY_COLOR[s] },
                 active && { backgroundColor: SEVERITY_BG[s] },
               ]}
-              onPress={() => setFilter(active ? "All" : s)}
+              onPress={() => {
+                setSeverityFilter(active ? "All" : s);
+                setHiveFilter("All");
+                setLatestFilter(false);
+              }}
             >
               <View style={[styles.hiveSummaryDot, { backgroundColor: SEVERITY_COLOR[s] }]} />
               <Text style={[styles.hiveSummaryPillText, { color: SEVERITY_COLOR[s] }]}>
@@ -397,10 +522,46 @@ const selectedDashboardAlert = useMemo(() => {
             </Pressable>
           );
         })}
+        <Pressable
+          style={[
+            styles.hiveSummaryPill,
+            { borderColor: THEME.primary },
+            hiveFilter !== "All" && !latestFilter && { backgroundColor: THEME.surfaceSoft },
+          ]}
+          onPress={() => {
+            setOpenAlertMenu(openAlertMenu === "hive" ? null : "hive");
+            setSeverityFilter("All");
+            setLatestFilter(false);
+          }}
+        >
+          <Ionicons name="cube-outline" size={14} color={THEME.primary} />
+          <Text style={[styles.hiveSummaryPillText, { color: THEME.primary }]}>
+            Hive
+          </Text>
+        </Pressable>
+        <Pressable
+          style={[
+            styles.hiveSummaryPill,
+            { borderColor: THEME.primary },
+            latestFilter && { backgroundColor: THEME.surfaceSoft },
+          ]}
+          onPress={() => {
+            setLatestFilter(!latestFilter);
+            setSeverityFilter("All");
+            setHiveFilter("All");
+            setOpenAlertMenu(null);
+          }}
+        >
+          <Ionicons name="time-outline" size={14} color={THEME.primary} />
+          <Text style={[styles.hiveSummaryPillText, { color: THEME.primary }]}>
+            Latest
+          </Text>
+        </Pressable>
+
       </View>
 
       <Text style={styles.hiveListCount}>
-        {filtered.length} {filter === "All" ? "alerts" : filter.toLowerCase() + " alerts"}
+        {filtered.length} {activeFilterLabel}
       </Text>
 
       {filtered.length === 0 && (

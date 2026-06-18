@@ -52,12 +52,7 @@ export async function fetchFleetMetricsFromHives(): Promise<{
     const history =
       detail.metricSeries.length > 0
         ? detail.metricSeries
-        : buildHourlyMetricHistory(
-            34,
-            60,
-            24 * 30,
-            hiveId.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0) + i,
-          );
+        : []; // Don't generate fake history for new hives
 
     allHivesHistory.push({ hiveId, hiveName: detail.name, history });
 
@@ -65,8 +60,8 @@ export async function fetchFleetMetricsFromHives(): Promise<{
     allHives.push({
       hiveId,
       hiveName: detail.name,
-      temperatureC: last?.temperatureC ?? 0,
-      humidityPercent: last?.humidityPercent ?? 0,
+      temperatureC: last?.temperatureC,
+      humidityPercent: last?.humidityPercent,
       status: hive?.status,
     });
   });
@@ -191,6 +186,7 @@ export async function fetchDashboard(): Promise<DashboardData> {
       quacking_queens: Number(counts.quacking_queens ?? counts.quacking ?? 0),
       pests: Number(counts.pests ?? counts.pest ?? 0),
       queenless: Number(counts.queenless ?? counts.no_queen ?? 0),
+      unknown: Number(counts.unknown ?? 0),
     },
     keyMetrics: {
       temperatureC: Number(metrics.temperature_c ?? metrics.temperatureC ?? 0),
@@ -253,27 +249,20 @@ export async function fetchDashboard(): Promise<DashboardData> {
       const hiveId = detail.id;
       const hive = hivesForStatus[i];
       const history =
-        detail.metricSeries.length > 0
-          ? detail.metricSeries
-          : buildHourlyMetricHistory(
-              34,
-              60,
-              24 * 30,
-              hiveId
-                .split("")
-                .reduce((acc, ch) => acc + ch.charCodeAt(0), 0) + i,
-            );
+      detail.metricSeries.length > 0
+        ? detail.metricSeries
+        : []; // Don't generate fake history for new hives
 
       allHivesHistory.push({ hiveId, hiveName: detail.name, history });
 
-      const last = history[history.length - 1];
-      allHives.push({
-        hiveId,
-        hiveName: detail.name,
-        temperatureC: last?.temperatureC ?? 0,
-        humidityPercent: last?.humidityPercent ?? 0,
-        status: hive?.status,
-      });
+    const last = history[history.length - 1];
+    allHives.push({
+      hiveId,
+      hiveName: detail.name,
+      temperatureC: last?.temperatureC,
+      humidityPercent: last?.humidityPercent,
+      status: hive?.status,
+    });
     });
 
     if (allHivesHistory.length > 0) {

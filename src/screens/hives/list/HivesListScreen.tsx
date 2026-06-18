@@ -9,6 +9,7 @@ import {
   View,
 } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { Hive, HiveStatus, fetchHives } from "../../../api";
 import {
@@ -20,6 +21,7 @@ import {
 } from "../../../theme";
 import { HivesStackParamList } from "../../../navigation/types";
 import { hivesListStyles as styles } from "./HivesListScreen.styles";
+import { usePolling } from "../../../hooks/usePolling";
 
 type Props = NativeStackScreenProps<HivesStackParamList, "HiveList">;
 
@@ -32,6 +34,7 @@ const STATUS_BG: Record<HiveStatus, string> = {
   quacking_queens: "#F5F3FF",
   pests: "#FEF2F2",
   queenless: "#FDF2F8",
+  unknown: "#F3F4F6",
 };
 const ALL_STATUSES: HiveStatus[] = [
   "active",
@@ -42,6 +45,7 @@ const ALL_STATUSES: HiveStatus[] = [
   "quacking_queens",
   "pests",
   "queenless",
+  "unknown",
 ];
 
 export function HivesListScreen({ navigation, route }: Props) {
@@ -52,9 +56,10 @@ export function HivesListScreen({ navigation, route }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<HiveStatus | "All">("All");
   const [viewMode, setViewMode] = useState<"list" | "tile">("list");
+  const [isPollingEnabled, setIsPollingEnabled] = useState(true);
 
-  const loadHives = useCallback(async (search: string) => {
-    setLoading(true);
+  const loadHives = useCallback(async (search: string, initial = false) => {
+    if (initial) setLoading(true);
     setError(null);
     try {
       const data = await fetchHives(search);
@@ -62,9 +67,23 @@ export function HivesListScreen({ navigation, route }: Props) {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load hives");
     } finally {
-      setLoading(false);
+      if (initial) setLoading(false);
     }
   }, []);
+
+  const { isPolling, lastUpdated } = usePolling({
+    callback: () => loadHives(searchText),
+    interval: 30000,
+    enabled: isPollingEnabled,
+  });
+
+  useFocusEffect(
+    useCallback(() => {
+      setIsPollingEnabled(true);
+      void loadHives(searchText, true);
+      return () => setIsPollingEnabled(false);
+    }, [searchText])
+  );
 
   const onRefreshHives = useCallback(async () => {
     setRefreshing(true);
@@ -75,7 +94,7 @@ export function HivesListScreen({ navigation, route }: Props) {
   // Reload hives when returning from CreateHive screen
   useEffect(() => {
     if (route.params?.refresh) {
-      void loadHives(searchText);
+      void loadHives(searchText, true);
     }
   }, [route.params?.refresh, loadHives, searchText]);
 
@@ -131,6 +150,7 @@ export function HivesListScreen({ navigation, route }: Props) {
               </Pressable>
             );
           })}
+
         </View>
       )}
 

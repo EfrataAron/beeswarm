@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -17,6 +17,7 @@ import { MainTabParamList } from "../../navigation/types";
 import { mapStyles as styles } from "./MapScreen.styles";
 import HiveMap from "../../components/HiveMap";
 import type { MapHive } from "../../components/HiveMap.native";
+import { usePolling } from "../../hooks/usePolling";
 
 const DEFAULT_MAP_REGION = {
   latitude: 0.3476,
@@ -56,9 +57,10 @@ export function MapScreen({ navigation }: Props) {
   const [sensorMap, setSensorMap] = useState<Record<string, { temperatureC: number; humidityPercent: number }>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isPollingEnabled, setIsPollingEnabled] = useState(true);
 
-  const loadHives = useCallback(async () => {
-    setLoading(true);
+  const loadHives = useCallback(async (initial = false) => {
+    if (initial) setLoading(true);
     setError(null);
     try {
       // Fetch hives and sensor snapshot in parallel
@@ -80,15 +82,23 @@ export function MapScreen({ navigation }: Props) {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load hive map data");
     } finally {
-      setLoading(false);
+      if (initial) setLoading(false);
     }
   }, []);
+
+  const { isPolling, lastUpdated } = usePolling({
+    callback: loadHives,
+    interval: 30000, // 30 seconds
+    enabled: isPollingEnabled,
+  });
 
   // Reload whenever this tab comes into focus — catches hives created elsewhere
   useFocusEffect(
     useCallback(() => {
-      void loadHives();
-    }, [loadHives]),
+      setIsPollingEnabled(true);
+      void loadHives(true);
+      return () => setIsPollingEnabled(false);
+    }, [])
   );
 
   const mapHives = useMemo(
@@ -110,8 +120,8 @@ export function MapScreen({ navigation }: Props) {
           <View>
             <Text style={styles.headerTitle}>Live Hive Map</Text>
             <Text style={styles.headerSubtitle}>
-              {mapHives.length} {mapHives.length === 1 ? 'hive' : 'hives'} mapped
-            </Text>
+                {mapHives.length} {mapHives.length === 1 ? 'hive' : 'hives'} mapped
+              </Text>
           </View>
           <Pressable style={styles.refreshButton} onPress={() => void loadHives()}>
             <Text style={styles.refreshButtonText}>⟳</Text>
