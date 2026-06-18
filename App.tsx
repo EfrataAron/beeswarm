@@ -1,7 +1,7 @@
 // gesture-handler MUST be the very first import in the entry file
 import "react-native-gesture-handler";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, AppState, Platform, View } from "react-native";
+import { ActivityIndicator, AppState, Platform, View, Pressable } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { StatusBar as ExpoStatusBar } from "expo-status-bar";
 import Toast from "react-native-toast-message";
@@ -45,6 +45,7 @@ import { DashboardScreen } from "./src/screens/dashboard/DashboardScreen";
 import { HivesListScreen } from "./src/screens/hives/list/HivesListScreen";
 import { HiveDetailsScreen } from "./src/screens/hives/details/HiveDetailsScreen";
 import { CreateHiveScreen } from "./src/screens/hives/create/CreateHiveScreen";
+import { EditHiveScreen } from "./src/screens/hives/edit/EditHiveScreen";
 import { AlertsListScreen } from "./src/screens/alerts/list/AlertsListScreen";
 import { AlertDetailsScreen } from "./src/screens/alerts/details/AlertDetailsScreen";
 import { MapScreen } from "./src/screens/map/MapScreen";
@@ -174,7 +175,23 @@ function HivesStackScreen({
       <HivesStack.Screen
         name="HiveDetails"
         component={HiveDetailsScreen}
-        options={{ title: "Hive Details" }}
+        options={({ route, navigation }) => ({
+          title: "Hive Details",
+          headerRight: () => (
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <Pressable
+                onPress={() => navigation.navigate("EditHive", { hiveId: route.params.hiveId })}
+                style={{ padding: 8 }}
+              >
+                <Ionicons name="pencil" size={20} color={THEME.primary} />
+              </Pressable>
+              <HeaderOverflowMenu
+                onOpenSettings={onOpenSettings}
+                onLogout={onLogout}
+              />
+            </View>
+          ),
+        })}
       />
       <HivesStack.Screen
         name="CreateHive"
@@ -182,6 +199,11 @@ function HivesStackScreen({
       >
         {(props) => <CreateHiveScreen {...props} currentUser={currentUser} />}
       </HivesStack.Screen>
+      <HivesStack.Screen
+        name="EditHive"
+        component={EditHiveScreen}
+        options={{ title: "Edit Hive" }}
+      />
     </HivesStack.Navigator>
   );
 }

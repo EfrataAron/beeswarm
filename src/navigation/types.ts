@@ -20,6 +20,7 @@ export type HivesStackParamList = {
   HiveList: { refresh?: number } | undefined;
   HiveDetails: { hiveId: string, lastAnalysisTime?: string | null };
   CreateHive: undefined;
+  EditHive: { hiveId: string };
 };
 
 export type AlertsStackParamList = {

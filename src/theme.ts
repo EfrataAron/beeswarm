@@ -1,6 +1,8 @@
 import { Platform } from "react-native";
 import { HiveStatus, AlertSeverity } from "./api";
 
+export type Theme = typeof LIGHT_THEME;
+
 const LIGHT_THEME = {
   primary: "#001E37",
   accent: "#FFB268",

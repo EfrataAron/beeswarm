@@ -55,6 +55,7 @@ export {
   createHive,
   acknowledgeHiveAlert,
   deleteHive,
+  updateHive,
   enrichHivesWithCoordinates,
 } from "./services/hive.service";
 

@@ -10,10 +10,8 @@
  */
 
 import { useEffect, useState } from "react";
-import { THEME, applyThemeMode } from "../theme";
+import { THEME, applyThemeMode, Theme } from "../theme";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
-type ThemeSnapshot = typeof THEME;
 
 // Subscribers notified after every applyThemeMode call
 const subscribers = new Set<() => void>();
@@ -32,7 +30,7 @@ export function notifyThemeChange() {
   subscribers.forEach(fn => fn());
 }
 
-export function useTheme(): ThemeSnapshot {
+export function useTheme(): Theme {
   const [, forceUpdate] = useState(0);
 
   useEffect(() => {

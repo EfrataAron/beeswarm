@@ -161,6 +161,8 @@ export async function fetchHiveDetail(hiveId: string): Promise<HiveDetailData> {
     id: String(raw.hive_id ?? raw.id ?? hiveId),
     name: String(raw.hive_name ?? raw.name ?? hiveId),
     location: String(raw.hive_location ?? raw.location ?? raw.site ?? ""),
+    type: String(raw.hive_type ?? raw.type ?? ""),
+    installationDate: String(raw.installation_date ?? raw.installationDate ?? ""),
     status: normalizeStatus(
       String(raw.current_state ?? raw.status ?? raw.state ?? "normal"),
     ),
@@ -234,6 +236,51 @@ export async function acknowledgeHiveAlert(hiveId: string): Promise<void> {
   await apiRequest<void>(`/hives/${encodeURIComponent(hiveId)}/acknowledge`, {
     method: "POST",
   });
+}
+
+export async function updateHive(hiveId: string, data: {
+  hive_name?: string;
+  hive_location?: string;
+  hive_type?: string;
+  latitude?: number;
+  longitude?: number;
+}): Promise<Hive> {
+  const raw = await apiRequest<any>(`/hives/${encodeURIComponent(hiveId)}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+
+  const coords = parseHiveCoordinates(raw);
+  const latitude =
+    coords.latitude ??
+    (hasValidMapCoordinates(data.latitude, data.longitude)
+      ? data.latitude
+      : undefined);
+  const longitude =
+    coords.longitude ??
+    (hasValidMapCoordinates(data.latitude, data.longitude)
+      ? data.longitude
+      : undefined);
+
+  const hive: Hive = {
+    id: String(raw.hive_id ?? raw.id ?? hiveId),
+    name: String(raw.hive_name ?? raw.name ?? data.hive_name ?? ""),
+    location: String(raw.hive_location ?? raw.location ?? data.hive_location ?? ""),
+    type: String(raw.hive_type ?? raw.type ?? data.hive_type ?? ""),
+    installationDate: String(raw.installation_date ?? raw.installationDate ?? ""),
+    status: normalizeStatus(
+      String(raw.current_state ?? raw.status ?? "normal"),
+    ),
+    latitude,
+    longitude,
+    stateSince: raw.state_since ?? raw.stateSince ?? undefined,
+  };
+
+  if (hasValidMapCoordinates(hive.latitude, hive.longitude)) {
+    await saveHiveCoordinates(hive.id, hive.latitude!, hive.longitude!);
+  }
+
+  return hive;
 }
 
 export async function deleteHive(hiveId: string): Promise<void> {

@@ -72,6 +72,8 @@ export type HiveDetailData = {
   lastAnalysisTime?: string | null;
   latitude?: number;
   longitude?: number;
+  type?: string;
+  installationDate?: string;
 };
 
 export type AlertItem = {
