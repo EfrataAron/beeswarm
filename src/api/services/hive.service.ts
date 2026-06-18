@@ -235,3 +235,9 @@ export async function acknowledgeHiveAlert(hiveId: string): Promise<void> {
     method: "POST",
   });
 }
+
+export async function deleteHive(hiveId: string): Promise<void> {
+  await apiRequest<void>(`/hives/${encodeURIComponent(hiveId)}`, {
+    method: "DELETE",
+  });
+}
