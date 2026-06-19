@@ -116,9 +116,9 @@ export function DashboardScreen({ navigation }: Props) {
   const total = dashboard.totalHives ?? 0;
 
   const donutSegments = [
-    { pct: dashboard.statusCounts.active / total, color: "#22C55E", label: "Active", count: dashboard.statusCounts.active },
+    { pct: dashboard.statusCounts.active / total, color: "#22C55E", label: "Harmonious", count: dashboard.statusCounts.active },
     { pct: dashboard.statusCounts.swarming / total, color: "#EF4444", label: "Swarming", count: dashboard.statusCounts.swarming },
-    { pct: dashboard.statusCounts.quacking_queens / total, color: "#8B5CF6", label: "Quacking Queens", count: dashboard.statusCounts.quacking_queens },
+    { pct: dashboard.statusCounts.quacking_queens / total, color: "#8B5CF6", label: "Multiple Queens", count: dashboard.statusCounts.quacking_queens },
     { pct: dashboard.statusCounts.pests / total, color: "#DC2626", label: "Pests", count: dashboard.statusCounts.pests },
     { pct: dashboard.statusCounts.queenless / total, color: "#EC4899", label: "Queenless", count: dashboard.statusCounts.queenless },
     { pct: dashboard.statusCounts.external_noise / total, color: "#D97706", label: "External Noise", count: dashboard.statusCounts.external_noise },

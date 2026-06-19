@@ -20,7 +20,7 @@ const STATUS_META: Array<{ status: HiveStatus; label: string; color: string }> =
   { status: "active",          label: "Harmonious",     color: "#16A34A" },
   { status: "swarming",        label: "Swarming",        color: "#DC2626" },
   { status: "queenless",       label: "Queenless",       color: "#EC4899" },
-  { status: "quacking_queens", label: "Quacking Queens", color: "#8B5CF6" },
+  { status: "quacking_queens", label: "Multiple Queens", color: "#8B5CF6" },
   { status: "pests",           label: "Pests",           color: "#EF4444" },
   { status: "external_noise",  label: "External Noise",  color: "#D97706" },
   { status: "Abscondment",     label: "Absconded",       color: "#6B7280" },
