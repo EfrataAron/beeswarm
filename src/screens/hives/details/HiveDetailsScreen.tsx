@@ -296,7 +296,6 @@ import {
   deleteHive,
 } from "../../../api";
 import {
-  THEME,
   STATUS_COLOR,
   displayStatus,
   statusCondition,
@@ -389,7 +388,7 @@ export function HiveDetailsScreen({ route, navigation }: Props) {
   if (loading) {
     return (
       <View style={styles.centerState}>
-        <ActivityIndicator size="large" color={THEME.accent} />
+        <ActivityIndicator size="large" color={theme.accent} />
         <Text style={styles.stateText}>Loading hive details...</Text>
       </View>
     );
@@ -577,7 +576,7 @@ export function HiveDetailsScreen({ route, navigation }: Props) {
                   : "warning-outline"
               }
               size={18}
-              color={detail.status === "active" ? "#16A34A" : THEME.accent}
+              color={detail.status === "active" ? "#16A34A" : theme.accent}
             />
           </View>
           <View style={{ flex: 1 }}>
@@ -604,7 +603,7 @@ export function HiveDetailsScreen({ route, navigation }: Props) {
       {detail.weather && (
         <View style={[styles.card, { backgroundColor: theme.surface }]}>
           <View style={styles.weatherHeader}>
-            <Ionicons name="cloud-outline" size={18} color={THEME.primary} />
+            <Ionicons name="cloud-outline" size={18} color={theme.primary} />
             <Text style={styles.cardTitle}>Latest Weather Readings</Text>
           </View>
           <Text style={styles.weatherSubtitle}>
@@ -612,18 +611,18 @@ export function HiveDetailsScreen({ route, navigation }: Props) {
           </Text>
 
           <View style={styles.weatherDataRow}>
-            <View style={[styles.weatherCard, { backgroundColor: "#FFF5EA" }]}>
+            <View style={[styles.weatherCard, { backgroundColor: theme.surfaceSoft }]}>
               <Ionicons
                 name="thermometer-outline"
                 size={24}
-                color={THEME.accent}
+                color={theme.accent}
               />
               <Text style={styles.weatherValue}>
                 {formatTemp(detail.weather.temperature, 1)}
               </Text>
               <Text style={styles.weatherLabel}>Temperature</Text>
             </View>
-            <View style={[styles.weatherCard, { backgroundColor: "#E8F4F8" }]}>
+            <View style={[styles.weatherCard, { backgroundColor: theme.surfaceSoft }]}>
               <Ionicons name="water-outline" size={24} color="#0891B2" />
               <Text style={styles.weatherValue}>
                 {detail.weather.humidity.toFixed(0)}%
@@ -646,7 +645,7 @@ export function HiveDetailsScreen({ route, navigation }: Props) {
 
         {metricSeries.length === 0 ? (
           <View style={[styles.centerState, { paddingVertical: 40 }]}>
-            <Ionicons name="analytics-outline" size={40} color={THEME.textMuted} />
+            <Ionicons name="analytics-outline" size={40} color={theme.textMuted} />
             <Text style={styles.stateText}>No analysis history available yet</Text>
             <Text style={styles.metricsSubtitle}>
               Check back once we've collected the first set of readings
@@ -736,7 +735,7 @@ export function HiveDetailsScreen({ route, navigation }: Props) {
               </View>
 
               {/* Chevron */}
-              <Ionicons name="chevron-forward" size={18} color={THEME.textMuted} />
+              <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
             </Pressable>
           );
         })}

@@ -1,7 +1,7 @@
 import { StyleSheet } from "react-native";
-import { THEME } from "../../../theme";
+import { Theme } from "../../../theme";
 
-export const alertsListStyles = StyleSheet.create({
+export const createAlertsListStyles = (theme: Theme) => StyleSheet.create({
   centerState: {
     flex: 1,
     alignItems: "center",
@@ -10,14 +10,14 @@ export const alertsListStyles = StyleSheet.create({
     padding: 24,
   },
   stateText: {
-    color: THEME.textMuted,
+    color: theme.textMuted,
     fontWeight: "600",
     fontSize: 14,
   },
   errorTitle: {
     fontSize: 16,
     fontWeight: "800",
-    color: THEME.primary,
+    color: theme.primary,
   },
   errorBody: {
     color: "#B91C1C",
@@ -27,7 +27,7 @@ export const alertsListStyles = StyleSheet.create({
   },
   primaryButtonSmall: {
     marginTop: 12,
-    backgroundColor: THEME.accent,
+    backgroundColor: theme.accent,
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 16,
@@ -36,7 +36,7 @@ export const alertsListStyles = StyleSheet.create({
     alignSelf: "center",
   },
   primaryButtonText: {
-    color: THEME.primary,
+    color: theme.primary,
     fontWeight: "800",
     fontSize: 15,
   },
@@ -57,20 +57,20 @@ export const alertsListStyles = StyleSheet.create({
     alignSelf: "flex-start",
     gap: 5,
     borderWidth: 1,
-    borderColor: THEME.line,
+    borderColor: theme.line,
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: theme.surface,
   },
   hiveSummaryPillActive: {
-    backgroundColor: THEME.primary,
-    borderColor: THEME.primary,
+    backgroundColor: theme.primary,
+    borderColor: theme.primary,
   },
   hiveSummaryPillText: {
     fontSize: 11,
     fontWeight: "700",
-    color: THEME.textMuted,
+    color: theme.textMuted,
   },
   hiveSummaryPillTextActive: {
     color: "#FFFFFF",
@@ -83,7 +83,7 @@ export const alertsListStyles = StyleSheet.create({
   hiveListCount: {
     fontSize: 12,
     fontWeight: "600",
-    color: THEME.textMuted,
+    color: theme.textMuted,
     marginBottom: 10,
   },
   inlineState: {
@@ -95,14 +95,14 @@ export const alertsListStyles = StyleSheet.create({
   },
   stateTextSmall: {
     fontSize: 13,
-    color: THEME.textMuted,
+    color: theme.textMuted,
     fontWeight: "600",
   },
   alertCard: {
     flexDirection: "row",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: theme.surface,
     borderWidth: 1,
-    borderColor: THEME.line,
+    borderColor: theme.line,
     borderRadius: 14,
     marginBottom: 10,
     overflow: "hidden",
@@ -119,22 +119,22 @@ export const alertsListStyles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: THEME.surfaceSoft,
+    backgroundColor: theme.surfaceSoft,
   },
   alertCardTitle: {
     fontSize: 14,
     fontWeight: "800",
-    color: THEME.primary,
+    color: theme.primary,
     marginBottom: 3,
   },
   alertCardMeta: { flexDirection: "row", alignItems: "center", gap: 4 },
   alertCardMetaText: {
     fontSize: 11,
-    color: THEME.textMuted,
+    color: theme.textMuted,
     fontWeight: "500",
   },
-  alertCardMetaDot: { color: THEME.textMuted, fontSize: 11 },
-  alertCardSummary: { fontSize: 12, color: THEME.textMuted, lineHeight: 17 },
+  alertCardMetaDot: { color: theme.textMuted, fontSize: 11 },
+  alertCardSummary: { fontSize: 12, color: theme.textMuted, lineHeight: 17 },
   pressedRow: {
     opacity: 0.85,
   },
@@ -146,9 +146,9 @@ export const alertsListStyles = StyleSheet.create({
 
 // ── Dashboard alert card ──
 dashboardAlertsCard: {
-  backgroundColor: "#FFFFFF",
+  backgroundColor: theme.surface,
   borderWidth: 1,
-  borderColor: THEME.line,
+  borderColor: theme.line,
   borderRadius: 14,
   padding: 14,
   marginBottom: 14,
@@ -168,29 +168,29 @@ dashboardAlertsTitleWrap: {
 dashboardAlertsTitle: {
   fontSize: 15,
   fontWeight: "800",
-  color: THEME.primary,
+  color: theme.primary,
 },
 
 dashboardAlertsSubTitle: {
   fontSize: 11,
-  color: THEME.textMuted,
+  color: theme.textMuted,
   fontWeight: "600",
   marginTop: 2,
 },
 
 hiveAlertCountBadge: {
-  backgroundColor: THEME.surfaceSoft,
+  backgroundColor: theme.surfaceSoft,
   borderRadius: 999,
   paddingHorizontal: 10,
   paddingVertical: 3,
   borderWidth: 1,
-  borderColor: THEME.line,
+  borderColor: theme.line,
 },
 
 hiveAlertCountText: {
   fontSize: 11,
   fontWeight: "700",
-  color: THEME.textMuted,
+  color: theme.textMuted,
 },
 
 dashboardAlertMenuRow: {
@@ -204,22 +204,22 @@ dashboardAlertMenuChip: {
   alignItems: "center",
   gap: 5,
   borderWidth: 1,
-  borderColor: THEME.line,
+  borderColor: theme.line,
   borderRadius: 999,
   paddingHorizontal: 10,
   paddingVertical: 6,
-  backgroundColor: "#FFFFFF",
+  backgroundColor: theme.surface,
 },
 
 dashboardAlertMenuChipActive: {
-  backgroundColor: THEME.primary,
-  borderColor: THEME.primary,
+  backgroundColor: theme.primary,
+  borderColor: theme.primary,
 },
 
 dashboardAlertMenuChipText: {
   fontSize: 12,
   fontWeight: "700",
-  color: THEME.primary,
+  color: theme.primary,
 },
 
 dashboardAlertMenuChipTextActive: {
@@ -228,9 +228,9 @@ dashboardAlertMenuChipTextActive: {
 
 dashboardAlertSubMenu: {
   borderWidth: 1,
-  borderColor: THEME.line,
+  borderColor: theme.line,
   borderRadius: 12,
-  backgroundColor: "#FFFFFF",
+  backgroundColor: theme.surface,
   padding: 10,
   marginBottom: 8,
   gap: 8,
@@ -245,7 +245,7 @@ dashboardAlertSubMenuHeader: {
 dashboardAlertSubMenuTitle: {
   fontSize: 12,
   fontWeight: "800",
-  color: THEME.primary,
+  color: theme.primary,
 },
 
 dashboardAlertSubMenuCloseBtn: {
@@ -253,9 +253,9 @@ dashboardAlertSubMenuCloseBtn: {
   borderRadius: 999,
   alignItems: "center",
   justifyContent: "center",
-  backgroundColor: "#FFFFFF",
+  backgroundColor: theme.surface,
   borderWidth: 1,
-  borderColor: THEME.line,
+  borderColor: theme.line,
 },
 
 dashboardAlertSubMenuDot: {
@@ -275,32 +275,32 @@ dashboardAlertSubMenuItem: {
   alignItems: "center",
   gap: 6,
   borderWidth: 1,
-  borderColor: THEME.line,
+  borderColor: theme.line,
   borderRadius: 999,
-  backgroundColor: "#FFFFFF",
+  backgroundColor: theme.surface,
   paddingHorizontal: 10,
   paddingVertical: 7,
 },
 
 dashboardAlertSubMenuItemActive: {
-  borderColor: THEME.primary,
-  backgroundColor: THEME.surfaceSoft,
+  borderColor: theme.primary,
+  backgroundColor: theme.surfaceSoft,
 },
 
 dashboardAlertSubMenuItemText: {
   fontSize: 11,
   fontWeight: "700",
-  color: THEME.primary,
+  color: theme.primary,
   maxWidth: 160,
 },
 
 dashboardAlertSubMenuItemTextActive: {
-  color: THEME.primary,
+  color: theme.primary,
 },
 
 dashboardAlertSubMenuEmpty: {
   fontSize: 11,
-  color: THEME.textMuted,
+  color: theme.textMuted,
   fontWeight: "600",
 },
 
@@ -320,16 +320,16 @@ dashboardAlertScroller: {
 dashboardAlertCompactCard: {
   width: 165,
   borderWidth: 1,
-  borderColor: THEME.line,
+  borderColor: theme.line,
   borderRadius: 12,
-  backgroundColor: "#FFFFFF",
+  backgroundColor: theme.surface,
   padding: 10,
   gap: 5,
 },
 
 dashboardAlertCompactCardActive: {
-  borderColor: THEME.primary,
-  backgroundColor: THEME.surfaceSoft,
+  borderColor: theme.primary,
+  backgroundColor: theme.surfaceSoft,
 },
 
 dashboardAlertCompactTopRow: {
@@ -347,18 +347,18 @@ dashboardAlertCompactDot: {
 dashboardAlertCompactHive: {
   fontSize: 10,
   fontWeight: "700",
-  color: THEME.textMuted,
+  color: theme.textMuted,
 },
 
 dashboardAlertCompactTitle: {
   fontSize: 12,
   fontWeight: "800",
-  color: THEME.primary,
+  color: theme.primary,
 },
 
 dashboardAlertCompactDate: {
   fontSize: 10,
-  color: THEME.textMuted,
+  color: theme.textMuted,
   fontWeight: "600",
 },
 
@@ -368,7 +368,7 @@ dashboardAlertsEmptyState: {
   gap: 6,
   borderWidth: 1,
   borderColor: "#BBF7D0",
-  backgroundColor: "#F0FDF4",
+  backgroundColor: theme.isDark ? "#064E3B" : "#F0FDF4",
   borderRadius: 10,
   paddingHorizontal: 10,
   paddingVertical: 8,
@@ -376,16 +376,16 @@ dashboardAlertsEmptyState: {
 
 dashboardAlertsEmptyStateText: {
   fontSize: 11,
-  color: "#166534",
+  color: theme.isDark ? "#22C55E" : "#166534",
   fontWeight: "700",
 },
 
 dashboardAlertDetailsCard: {
   marginTop: 10,
   borderWidth: 1,
-  borderColor: THEME.line,
+  borderColor: theme.line,
   borderRadius: 12,
-  backgroundColor: "#FFFFFF",
+  backgroundColor: theme.surface,
   padding: 12,
   gap: 5,
 },
@@ -395,7 +395,7 @@ dashboardAlertDetailsTitle: {
   marginRight: 8,
   fontSize: 14,
   fontWeight: "800",
-  color: THEME.primary,
+  color: theme.primary,
 },
 
 dashboardAlertDetailsSeverity: {
@@ -412,13 +412,13 @@ dashboardAlertDetailsSeverityText: {
 dashboardAlertDetailsMeta: {
   fontSize: 11,
   fontWeight: "600",
-  color: THEME.textMuted,
+  color: theme.textMuted,
 },
 
 dashboardAlertDetailsSummary: {
   fontSize: 12,
   lineHeight: 18,
-  color: THEME.textMuted,
+  color: theme.textMuted,
 },
 
 dashboardAlertDetailsLink: {
@@ -428,9 +428,9 @@ dashboardAlertDetailsLink: {
   alignItems: "center",
   gap: 2,
   borderWidth: 1,
-  borderColor: THEME.line,
+  borderColor: theme.line,
   borderRadius: 999,
-  backgroundColor: THEME.surfaceSoft,
+  backgroundColor: theme.surfaceSoft,
   paddingHorizontal: 10,
   paddingVertical: 7,
 },
@@ -438,7 +438,7 @@ dashboardAlertDetailsLink: {
 dashboardAlertDetailsLinkText: {
   fontSize: 11,
   fontWeight: "800",
-  color: THEME.primary,
+  color: theme.primary,
 },
 
   

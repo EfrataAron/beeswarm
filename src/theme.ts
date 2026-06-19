@@ -4,6 +4,7 @@ import { HiveStatus, AlertSeverity } from "./api";
 export type Theme = typeof LIGHT_THEME;
 
 const LIGHT_THEME = {
+  isDark: false,
   primary: "#001E37",
   accent: "#FFB268",
   page: "#F8F9FB",
@@ -23,7 +24,8 @@ const LIGHT_THEME = {
 };
 
 const DARK_THEME = {
-  primary: "#E5E7EB",
+  isDark: true,
+  primary: "#60A5FA", // Light blue for better dark mode readability
   accent: "#FFB268",
   page: "#0B1220",
   surface: "#111827",

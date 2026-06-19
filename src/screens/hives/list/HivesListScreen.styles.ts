@@ -1,7 +1,7 @@
 import { StyleSheet } from "react-native";
-import { THEME } from "../../../theme";
+import { Theme } from "../../../theme";
 
-export const hivesListStyles = StyleSheet.create({
+export const createHivesListStyles = (theme: Theme) => StyleSheet.create({
   appPage: {
     paddingHorizontal: 14,
     paddingTop: 14,
@@ -16,7 +16,7 @@ export const hivesListStyles = StyleSheet.create({
   },
   stateTextSmall: {
     fontSize: 13,
-    color: THEME.textMuted,
+    color: theme.textMuted,
     fontWeight: "600",
   },
   errorBox: {
@@ -35,7 +35,7 @@ export const hivesListStyles = StyleSheet.create({
   },
   primaryButtonSmall: {
     marginTop: 4,
-    backgroundColor: THEME.accent,
+    backgroundColor: theme.accent,
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 16,
@@ -44,7 +44,7 @@ export const hivesListStyles = StyleSheet.create({
     alignSelf: "center",
   },
   primaryButtonText: {
-    color: THEME.primary,
+    color: theme.primary,
     fontWeight: "800",
     fontSize: 15,
   },
@@ -60,20 +60,20 @@ export const hivesListStyles = StyleSheet.create({
     alignSelf: "flex-start",
     gap: 5,
     borderWidth: 1,
-    borderColor: THEME.line,
+    borderColor: theme.line,
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: theme.surface,
   },
   hiveSummaryPillActive: {
-    backgroundColor: THEME.primary,
-    borderColor: THEME.primary,
+    backgroundColor: theme.primary,
+    borderColor: theme.primary,
   },
   hiveSummaryPillText: {
     fontSize: 11,
     fontWeight: "700",
-    color: THEME.textMuted,
+    color: theme.textMuted,
   },
   hiveSummaryPillTextActive: {
     color: "#FFFFFF",
@@ -92,9 +92,9 @@ export const hivesListStyles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: theme.surface,
     borderWidth: 1,
-    borderColor: THEME.line,
+    borderColor: theme.line,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 4,
@@ -102,15 +102,15 @@ export const hivesListStyles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    color: THEME.text,
+    color: theme.text,
     paddingVertical: 10,
     fontSize: 14,
   },
   viewToggle: {
     flexDirection: "row",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: theme.surface,
     borderWidth: 1,
-    borderColor: THEME.line,
+    borderColor: theme.line,
     borderRadius: 10,
     overflow: "hidden",
   },
@@ -118,12 +118,12 @@ export const hivesListStyles = StyleSheet.create({
     padding: 9,
   },
   viewToggleBtnActive: {
-    backgroundColor: THEME.surfaceSoft,
+    backgroundColor: theme.surfaceSoft,
   },
   hiveListCount: {
     fontSize: 12,
     fontWeight: "600",
-    color: THEME.textMuted,
+    color: theme.textMuted,
     marginBottom: 10,
   },
   // Tile view
@@ -134,9 +134,9 @@ export const hivesListStyles = StyleSheet.create({
   },
   hiveTileCard: {
     width: "47.5%",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: theme.surface,
     borderWidth: 1,
-    borderColor: THEME.line,
+    borderColor: theme.line,
     borderRadius: 16,
     padding: 16,
     alignItems: "center",
@@ -152,7 +152,7 @@ export const hivesListStyles = StyleSheet.create({
   hiveTileName: {
     fontSize: 13,
     fontWeight: "800",
-    color: THEME.primary,
+    color: theme.text,
     textAlign: "center",
   },
   hiveStatusBadge: {
@@ -174,7 +174,7 @@ export const hivesListStyles = StyleSheet.create({
   },
   hiveRowFlatBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: THEME.line,
+    borderBottomColor: theme.line,
   },
   hiveRowDot: {
     width: 10,
@@ -195,7 +195,7 @@ export const hivesListStyles = StyleSheet.create({
   hiveName: {
     fontSize: 15,
     fontWeight: "800",
-    color: THEME.primary,
+    color: theme.text,
   },
   hiveRowStateBadge: {
     paddingHorizontal: 7,
@@ -208,13 +208,13 @@ export const hivesListStyles = StyleSheet.create({
   },
   hiveRowCondition: {
     fontSize: 12,
-    color: THEME.textMuted,
+    color: theme.textMuted,
     fontWeight: "500",
     marginTop: 3,
   },
   hiveRowLastInference: {
     fontSize: 11,
-    color: THEME.textMuted,
+    color: theme.textMuted,
     fontWeight: "500",
     fontStyle: "italic",
     marginTop: 2,
@@ -225,7 +225,7 @@ export const hivesListStyles = StyleSheet.create({
   },
   hiveRowDuration: {
     fontSize: 11,
-    color: THEME.textMuted,
+    color: theme.textMuted,
     fontWeight: "500",
   },
   hiveRowMoreBtn: {
@@ -243,7 +243,7 @@ export const hivesListStyles = StyleSheet.create({
     opacity: 0.85,
   },
   createHiveButton: {
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.primary,
     borderRadius: 10,
     paddingVertical: 12,
     paddingHorizontal: 20,

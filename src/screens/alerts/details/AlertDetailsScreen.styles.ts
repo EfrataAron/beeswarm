@@ -1,7 +1,7 @@
 import { StyleSheet } from "react-native";
-import { THEME } from "../../../theme";
+import { Theme } from "../../../theme";
 
-export const alertDetailsStyles = StyleSheet.create({
+export const createAlertDetailsStyles = (theme: Theme) => StyleSheet.create({
   centerState: {
     flex: 1,
     alignItems: "center",
@@ -10,14 +10,14 @@ export const alertDetailsStyles = StyleSheet.create({
     padding: 24,
   },
   stateText: {
-    color: THEME.textMuted,
+    color: theme.textMuted,
     fontWeight: "600",
     fontSize: 14,
   },
   errorTitle: {
     fontSize: 16,
     fontWeight: "800",
-    color: THEME.primary,
+    color: theme.primary,
   },
   errorBody: {
     color: "#B91C1C",
@@ -27,7 +27,7 @@ export const alertDetailsStyles = StyleSheet.create({
   },
   primaryButtonSmall: {
     marginTop: 12,
-    backgroundColor: THEME.accent,
+    backgroundColor: theme.accent,
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 16,
@@ -36,7 +36,7 @@ export const alertDetailsStyles = StyleSheet.create({
     alignSelf: "center",
   },
   primaryButtonText: {
-    color: THEME.primary,
+    color: theme.primary,
     fontWeight: "800",
     fontSize: 15,
   },
@@ -46,7 +46,7 @@ export const alertDetailsStyles = StyleSheet.create({
     paddingBottom: 32,
   },
   detailHeroCard: {
-    backgroundColor: THEME.primary,
+    backgroundColor: theme.primary,
     borderRadius: 16,
     padding: 18,
     marginBottom: 14,
@@ -83,13 +83,13 @@ export const alertDetailsStyles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
     marginTop: 12,
-    backgroundColor: "#F0FDF4",
+    backgroundColor: theme.isDark ? "#064E3B" : "#F0FDF4",
     borderRadius: 8,
     padding: 8,
   },
   alertClosedText: {
     fontSize: 12,
-    color: "#16A34A",
+    color: theme.isDark ? "#22C55E" : "#16A34A",
     fontWeight: "600",
     flex: 1,
   },
@@ -103,9 +103,9 @@ export const alertDetailsStyles = StyleSheet.create({
     fontSize: 12,
   },
   card: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: theme.surface,
     borderWidth: 1,
-    borderColor: THEME.line,
+    borderColor: theme.line,
     borderRadius: 14,
     padding: 14,
     marginBottom: 14,
@@ -113,7 +113,7 @@ export const alertDetailsStyles = StyleSheet.create({
   cardTitle: {
     fontSize: 15,
     fontWeight: "800",
-    color: THEME.primary,
+    color: theme.primary,
     marginBottom: 2,
   },
   infoRow: {
@@ -122,10 +122,10 @@ export const alertDetailsStyles = StyleSheet.create({
     justifyContent: "space-between",
     paddingVertical: 10,
     borderTopWidth: 1,
-    borderTopColor: THEME.line,
+    borderTopColor: theme.line,
   },
   infoLabel: {
-    color: "#667085",
+    color: theme.textMuted,
     fontWeight: "700",
   },
   infoValue: {
@@ -133,7 +133,7 @@ export const alertDetailsStyles = StyleSheet.create({
   },
   detailLongText: {
     fontSize: 13,
-    color: THEME.text,
+    color: theme.text,
     lineHeight: 20,
   },
   advisoryHeader: {
@@ -158,14 +158,14 @@ export const alertDetailsStyles = StyleSheet.create({
   },
   advisorySummary: {
     fontSize: 13,
-    color: THEME.textMuted,
+    color: theme.textMuted,
     lineHeight: 19,
     marginBottom: 14,
   },
   advisoryActionsTitle: {
     fontSize: 12,
     fontWeight: "700",
-    color: THEME.text,
+    color: theme.text,
     marginBottom: 10,
   },
   advisoryActionRow: {
@@ -174,11 +174,11 @@ export const alertDetailsStyles = StyleSheet.create({
     gap: 10,
     paddingVertical: 10,
     borderTopWidth: 1,
-    borderTopColor: THEME.line,
+    borderTopColor: theme.line,
   },
   advisoryActionText: {
     fontSize: 13,
-    color: THEME.text,
+    color: theme.text,
     lineHeight: 18,
   },
   advisoryPriorityDot: {
@@ -200,7 +200,7 @@ export const alertDetailsStyles = StyleSheet.create({
   },
   advisoryNoteText: {
     fontSize: 12,
-    color: "#6B7280",
+    color: theme.textMuted,
     lineHeight: 16,
     flex: 1,
   },
@@ -208,7 +208,7 @@ export const alertDetailsStyles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: THEME.accent,
+    backgroundColor: theme.accent,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 2,
@@ -226,7 +226,7 @@ export const alertDetailsStyles = StyleSheet.create({
   },
   audioSubtext: {
     fontSize: 12,
-    color: THEME.textMuted,
+    color: theme.textMuted,
     marginBottom: 5,
   },
   audioControls: {
@@ -236,7 +236,7 @@ export const alertDetailsStyles = StyleSheet.create({
     marginTop: 12,
   },
   audioButton: {
-    backgroundColor: THEME.accent,
+    backgroundColor: theme.accent,
     borderRadius: 10,
     paddingVertical: 12,
     paddingHorizontal: 20,
@@ -250,14 +250,14 @@ export const alertDetailsStyles = StyleSheet.create({
     backgroundColor: "#D97706",
   },
   audioButtonText: {
-    color: THEME.surface,
+    color: theme.surface,
     fontWeight: "700",
     fontSize: 14,
   },
   audioButtonSecondary: {
     backgroundColor: "transparent",
     borderWidth: 2,
-    borderColor: THEME.accent,
+    borderColor: theme.accent,
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 20,
@@ -266,7 +266,7 @@ export const alertDetailsStyles = StyleSheet.create({
     gap: 8,
   },
   audioButtonSecondaryText: {
-    color: THEME.accent,
+    color: theme.accent,
     fontWeight: "700",
     fontSize: 14,
   },

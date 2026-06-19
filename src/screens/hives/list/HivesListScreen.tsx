@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState, useMemo } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -13,29 +13,18 @@ import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { Hive, HiveStatus, fetchHives } from "../../../api";
 import {
-  THEME,
   STATUS_COLOR,
   displayStatus,
   formatStateDuration,
   formatRelativeTime,
 } from "../../../theme";
 import { HivesStackParamList } from "../../../navigation/types";
-import { hivesListStyles as styles } from "./HivesListScreen.styles";
+import { createHivesListStyles } from "./HivesListScreen.styles";
+import { useTheme } from "../../../hooks/useTheme";
 import { usePolling } from "../../../hooks/usePolling";
 
 type Props = NativeStackScreenProps<HivesStackParamList, "HiveList">;
 
-const STATUS_BG: Record<HiveStatus, string> = {
-  active: "#F0FDF4",
-  inactive_hive: "#F9FAFB",
-  swarming: "#FEF2F2",
-  Abscondment: "#F9FAFB",
-  external_noise: "#FEF2F2",
-  quacking_queens: "#F5F3FF",
-  pests: "#FEF2F2",
-  queenless: "#FDF2F8",
-  unknown: "#F3F4F6",
-};
 const ALL_STATUSES: HiveStatus[] = [
   "active",
   "inactive_hive",
@@ -49,6 +38,22 @@ const ALL_STATUSES: HiveStatus[] = [
 ];
 
 export function HivesListScreen({ navigation, route }: Props) {
+  const theme = useTheme();
+  const styles = useMemo(() => createHivesListStyles(theme), [theme]);
+  
+  // Dark mode compatible status backgrounds
+  const STATUS_BG = useMemo(() => ({
+    active: theme.isDark ? "#064E3B" : "#F0FDF4",
+    inactive_hive: theme.isDark ? "#374151" : "#F9FAFB",
+    swarming: theme.isDark ? "#450A0A" : "#FEF2F2",
+    Abscondment: theme.isDark ? "#374151" : "#F9FAFB",
+    external_noise: theme.isDark ? "#450A0A" : "#FEF2F2",
+    quacking_queens: theme.isDark ? "#3B0764" : "#F5F3FF",
+    pests: theme.isDark ? "#450A0A" : "#FEF2F2",
+    queenless: theme.isDark ? "#500724" : "#FDF2F8",
+    unknown: theme.isDark ? "#4B5563" : "#F3F4F6",
+  }), [theme]);
+
   const [hives, setHives] = useState<Hive[]>([]);
   const [searchText, setSearchText] = useState("");
   const [loading, setLoading] = useState(true);
@@ -107,14 +112,14 @@ export function HivesListScreen({ navigation, route }: Props) {
 
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: THEME.page }}
+      style={{ flex: 1, backgroundColor: theme.page }}
       contentContainerStyle={[styles.appPage, { flexGrow: 1 }]}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
           onRefresh={() => void onRefreshHives()}
-          colors={[THEME.accent]}
-          tintColor={THEME.accent}
+          colors={[theme.accent]}
+          tintColor={theme.accent}
         />
       }
     >
@@ -166,17 +171,17 @@ export function HivesListScreen({ navigation, route }: Props) {
       {/* Search + view toggle */}
       <View style={styles.hiveToolbarRow}>
         <View style={styles.searchBarWrap}>
-          <Ionicons name="search-outline" size={16} color={THEME.textMuted} />
+          <Ionicons name="search-outline" size={16} color={theme.textMuted} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search hives…"
-            placeholderTextColor={THEME.placeholder}
+            placeholderTextColor={theme.placeholder}
             value={searchText}
             onChangeText={setSearchText}
           />
           {searchText.length > 0 && (
             <Pressable onPress={() => setSearchText("")}>
-              <Ionicons name="close-circle" size={16} color={THEME.textMuted} />
+              <Ionicons name="close-circle" size={16} color={theme.textMuted} />
             </Pressable>
           )}
         </View>
@@ -185,13 +190,13 @@ export function HivesListScreen({ navigation, route }: Props) {
             style={[styles.viewToggleBtn, viewMode === "list" && styles.viewToggleBtnActive]}
             onPress={() => setViewMode("list")}
           >
-            <Ionicons name="list-outline" size={18} color={viewMode === "list" ? THEME.primary : THEME.textMuted} />
+            <Ionicons name="list-outline" size={18} color={viewMode === "list" ? theme.primary : theme.textMuted} />
           </Pressable>
           <Pressable
             style={[styles.viewToggleBtn, viewMode === "tile" && styles.viewToggleBtnActive]}
             onPress={() => setViewMode("tile")}
           >
-            <Ionicons name="grid-outline" size={18} color={viewMode === "tile" ? THEME.primary : THEME.textMuted} />
+            <Ionicons name="grid-outline" size={18} color={viewMode === "tile" ? theme.primary : theme.textMuted} />
           </Pressable>
         </View>
       </View>
@@ -204,7 +209,7 @@ export function HivesListScreen({ navigation, route }: Props) {
 
       {loading && (
         <View style={styles.inlineState}>
-          <ActivityIndicator color={THEME.accent} />
+          <ActivityIndicator color={theme.accent} />
           <Text style={styles.stateTextSmall}>Loading hives...</Text>
         </View>
       )}
@@ -256,7 +261,6 @@ export function HivesListScreen({ navigation, route }: Props) {
         filtered.map((hive, idx) => {
           const duration = formatStateDuration(hive.stateSince);
           const label = displayStatus(hive.status);
-          console.log(hive.status)
 
           return (
             <Pressable
@@ -295,7 +299,7 @@ export function HivesListScreen({ navigation, route }: Props) {
                   <Ionicons
                     name="chevron-forward"
                     size={20}
-                    color="#2563EB"
+                    color={theme.primary}
                   />
                 </View>
               </View>

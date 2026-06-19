@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -14,176 +14,19 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import { createHive, BeekeeperProfile } from "../../../api";
-import { THEME } from "../../../theme";
 import { HivesStackParamList } from "../../../navigation/types";
-// import { createHiveStyles as styles } from "./CreateHiveScreen.styles";
-import { StyleSheet } from "react-native";
+import { createHiveStyles } from "./CreateHiveScreen.styles";
+import { useTheme } from "../../../hooks/useTheme";
 import { CalendarPicker } from "../../../components/CalendarPicker";
-const styles = StyleSheet.create({
-  container: { padding: 16, paddingBottom: 40 },
-  card: { backgroundColor: "#FFFFFF", borderRadius: 12, padding: 20 },
-  cardTitle: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: THEME.primary,
-    marginBottom: 6,
-  },
-  cardSubtitle: { fontSize: 14, color: THEME.textMuted, marginBottom: 24 },
-  formGroup: { marginBottom: 20 },
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: THEME.text,
-    marginBottom: 8,
-  },
-  required: { color: "#EF4444" },
-  input: {
-    backgroundColor: THEME.page,
-    borderWidth: 1,
-    borderColor: THEME.line,
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: THEME.text,
-  },
-  
-  inputError: { borderColor: "#EF4444" },
-  errorText: { color: "#EF4444", fontSize: 12, marginTop: 4 },
-  submitButton: {
-    backgroundColor: THEME.primary,
-    borderRadius: 10,
-    paddingVertical: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    marginTop: 8,
-  },
-  submitButtonDisabled: { opacity: 0.6 },
-  submitButtonText: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
-  cancelButton: {
-    backgroundColor: "transparent",
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 12,
-  },
-  cancelButtonText: { color: THEME.textMuted, fontSize: 15, fontWeight: "600" },
-  dateButtonRow: { flexDirection: "row", gap: 10, marginBottom: 10 },
-  dateButton: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    backgroundColor: THEME.surfaceSoft,
-    borderWidth: 1,
-    borderColor: THEME.line,
-    borderRadius: 8,
-    paddingVertical: 10,
-  },
-  dateButtonText: { color: THEME.primary, fontSize: 14, fontWeight: "600" },
-  calendarButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    backgroundColor: THEME.surfaceSoft,
-    borderWidth: 1,
-    borderColor: THEME.line,
-    borderRadius: 8,
-    paddingVertical: 11,
-    marginBottom: 10,
-  },
-  calendarButtonText: { color: THEME.primary, fontSize: 14, fontWeight: "600" },
-  calendarButtonValue: { color: THEME.accent, fontSize: 14, fontWeight: "700" },
-  // Success Modal
-  successModalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  successModalBox: {
-    width: 300,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 18,
-    padding: 28,
-    alignItems: "center" as const,
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 10,
-  },
-  successModalIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: "#DCFCE7",
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-    marginBottom: 16,
-  },
-  successModalTitle: {
-    fontSize: 18,
-    fontWeight: "800" as const,
-    color: THEME.primary,
-    textAlign: "center" as const,
-    marginBottom: 8,
-  },
-  successModalBody: {
-    fontSize: 14,
-    color: THEME.textMuted,
-    textAlign: "center" as const,
-    lineHeight: 20,
-    marginBottom: 22,
-  },
-  successModalBtn: {
-    backgroundColor: THEME.accent,
-    borderRadius: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 40,
-  },
-  successModalBtnText: {
-    color: THEME.primary,
-    fontWeight: "800" as const,
-    fontSize: 15,
-  },
-  locationButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    backgroundColor: THEME.accent,
-    borderRadius: 8,
-    paddingVertical: 12,
-    marginBottom: 12,
-  },
-  locationButtonText: {
-    color: THEME.primary,
-    fontSize: 15,
-    fontWeight: "700",
-  },
-  locationButtonDisabled: {
-    opacity: 0.6,
-  },
-  coordinatesRow: {
-    flexDirection: "row",
-    gap: 10,
-  },
-  coordinateInput: {
-    flex: 1,
-  },
-});
 
 type Props = NativeStackScreenProps<HivesStackParamList, "CreateHive"> & {
   currentUser: BeekeeperProfile | null;
 };
 
 export function CreateHiveScreen({ navigation, route, currentUser }: Props) {
+  const theme = useTheme();
+  const styles = useMemo(() => createHiveStyles(theme), [theme]);
+
   // Debug logging
   const [hiveName, setHiveName] = useState("");
   const [hiveLocation, setHiveLocation] = useState("");
@@ -409,7 +252,7 @@ export function CreateHiveScreen({ navigation, route, currentUser }: Props) {
   return (
     <>
     <ScrollView
-      style={{ flex: 1, backgroundColor: THEME.page }}
+      style={{ flex: 1, backgroundColor: theme.page }}
       contentContainerStyle={styles.container}
     >
       {!currentUser ? (
@@ -439,7 +282,7 @@ export function CreateHiveScreen({ navigation, route, currentUser }: Props) {
             <TextInput
               style={[styles.input, errors.hiveName && styles.inputError]}
               placeholder="e.g., Hive 02"
-              placeholderTextColor={THEME.placeholder}
+              placeholderTextColor={theme.placeholder}
               value={hiveName}
               onChangeText={(text) => {
                 setHiveName(text);
@@ -460,7 +303,7 @@ export function CreateHiveScreen({ navigation, route, currentUser }: Props) {
               <TextInput
                 style={[styles.input, errors.hiveLocation && styles.inputError]}
                 placeholder="e.g., Makerere Western Gate, Kampala"
-                placeholderTextColor={THEME.placeholder}
+                placeholderTextColor={theme.placeholder}
                 value={hiveLocation}
                 onChangeText={(text) => {
                   setHiveLocation(text);
@@ -477,7 +320,7 @@ export function CreateHiveScreen({ navigation, route, currentUser }: Props) {
               {geocoding && (
                 <ActivityIndicator
                   size="small"
-                  color={THEME.accent}
+                  color={theme.accent}
                   style={{ position: "absolute", right: 12, top: 13 }}
                 />
               )}
@@ -499,8 +342,8 @@ export function CreateHiveScreen({ navigation, route, currentUser }: Props) {
             </Text>
             <TextInput
               style={[styles.input, errors.hiveType && styles.inputError]}
-              placeholder="e.g., Langlongth"
-              placeholderTextColor={THEME.placeholder}
+              placeholder="e.g., Langstroth"
+              placeholderTextColor={theme.placeholder}
               value={hiveType}
               onChangeText={(text) => {
                 setHiveType(text);
@@ -523,7 +366,7 @@ export function CreateHiveScreen({ navigation, route, currentUser }: Props) {
                 <Ionicons
                   name="today-outline"
                   size={16}
-                  color={THEME.primary}
+                  color={theme.primary}
                 />
                 <Text style={styles.dateButtonText}>Today</Text>
               </Pressable>
@@ -531,7 +374,7 @@ export function CreateHiveScreen({ navigation, route, currentUser }: Props) {
                 <Ionicons
                   name="calendar-outline"
                   size={16}
-                  color={THEME.primary}
+                  color={theme.primary}
                 />
                 <Text style={styles.dateButtonText}>Tomorrow</Text>
               </Pressable>
@@ -541,12 +384,12 @@ export function CreateHiveScreen({ navigation, route, currentUser }: Props) {
               style={[styles.calendarButton, errors.installationDate ? { borderColor: "#EF4444" } : {}]}
               onPress={() => setCalendarVisible(true)}
             >
-              <Ionicons name="calendar" size={16} color={THEME.accent} />
+              <Ionicons name="calendar" size={16} color={theme.accent} />
               {/* <Text style={styles.calendarButtonText}>Pick a date  </Text> */}
               {installationDate ? (
                 <Text style={styles.calendarButtonValue}>{installationDate}</Text>
               ) : (
-                <Text style={{ color: THEME.placeholder, fontSize: 14 }}>YYYY-MM-DD</Text>
+                <Text style={{ color: theme.placeholder, fontSize: 14 }}>YYYY-MM-DD</Text>
               )}
             </Pressable>
             {errors.installationDate && (
@@ -568,13 +411,13 @@ export function CreateHiveScreen({ navigation, route, currentUser }: Props) {
               disabled={loadingLocation}
             >
               {loadingLocation ? (
-                <ActivityIndicator color={THEME.primary} />
+                <ActivityIndicator color={theme.primary} />
               ) : (
                 <>
                   <Ionicons
                     name="location-outline"
                     size={20}
-                    color={THEME.primary}
+                    color={theme.primary}
                   />
                   <Text style={styles.locationButtonText}>
                     Use My Current Location
@@ -590,7 +433,7 @@ export function CreateHiveScreen({ navigation, route, currentUser }: Props) {
                 <TextInput
                   style={[styles.input, errors.latitude && styles.inputError]}
                   placeholder="0.0000"
-                  placeholderTextColor={THEME.placeholder}
+                  placeholderTextColor={theme.placeholder}
                   keyboardType="numeric"
                   value={latitude}
                   onChangeText={(text) => {
@@ -608,7 +451,7 @@ export function CreateHiveScreen({ navigation, route, currentUser }: Props) {
                 <TextInput
                   style={[styles.input, errors.longitude && styles.inputError]}
                   placeholder="0.0000"
-                  placeholderTextColor={THEME.placeholder}
+                  placeholderTextColor={theme.placeholder}
                   keyboardType="numeric"
                   value={longitude}
                   onChangeText={(text) => {

@@ -56,7 +56,8 @@ const APP_COLORS = {
   light: {
     page: THEME.page,
     surface: "#FFFFFF",
-    text: THEME.primary,
+    text: THEME.text,
+    primary: THEME.primary,
     muted: "#8A97A8",
     border: THEME.line,
     statusBar: "dark" as const,
@@ -64,7 +65,8 @@ const APP_COLORS = {
   dark: {
     page: "#0B1220",
     surface: "#111827",
-    text: THEME.primary,
+    text: "#F3F4F6",
+    primary: "#60A5FA",
     muted: "#94A3B8",
     border: "#1F2937",
     statusBar: "light" as const,
@@ -148,16 +150,19 @@ function HivesStackScreen({
   onOpenSettings,
   onLogout,
   currentUser,
+  isDarkMode,
 }: {
   onOpenSettings: () => void;
   onLogout: () => void;
   currentUser: BeekeeperProfile | null;
+  isDarkMode: boolean;
 }) {
+  const colors = isDarkMode ? APP_COLORS.dark : APP_COLORS.light;
   return (
     <HivesStack.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: "#FFFFFF" },
-        headerTintColor: THEME.primary,
+        headerStyle: { backgroundColor: colors.surface },
+        headerTintColor: colors.text,
         headerTitleStyle: { fontWeight: "800" },
         headerRight: () => (
           <HeaderOverflowMenu
@@ -183,7 +188,7 @@ function HivesStackScreen({
                 onPress={() => navigation.navigate("EditHive", { hiveId: route.params.hiveId })}
                 style={{ padding: 8 }}
               >
-                <Ionicons name="pencil" size={20} color={THEME.primary} />
+                <Ionicons name="pencil" size={20} color={colors.primary} />
               </Pressable>
               <HeaderOverflowMenu
                 onOpenSettings={onOpenSettings}
@@ -212,16 +217,19 @@ function AlertsStackScreen({
   onOpenSettings,
   onLogout,
   onAlertOpened,
+  isDarkMode,
 }: {
   onOpenSettings: () => void;
   onLogout: () => void;
   onAlertOpened: () => void;
+  isDarkMode: boolean;
 }) {
+  const colors = isDarkMode ? APP_COLORS.dark : APP_COLORS.light;
   return (
     <AlertsStack.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: "#FFFFFF" },
-        headerTintColor: THEME.primary,
+        headerStyle: { backgroundColor: colors.surface },
+        headerTintColor: colors.text,
         headerTitleStyle: { fontWeight: "800" },
         headerRight: () => (
           <HeaderOverflowMenu
@@ -314,7 +322,7 @@ function MainTabsScreen({
           paddingBottom: Platform.OS === "ios" ? 20 : 10,
           paddingTop: 8,
         },
-        tabBarActiveTintColor: THEME.accent,
+        tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.muted,
         headerRight: () => (
           <HeaderOverflowMenu
@@ -359,6 +367,7 @@ function MainTabsScreen({
             onOpenSettings={openSettingsPage}
             onLogout={onLogout}
             currentUser={currentUser}
+            isDarkMode={isDarkMode}
           />
         )}
       </Tab.Screen>
@@ -382,6 +391,7 @@ function MainTabsScreen({
             onOpenSettings={openSettingsPage}
             onLogout={onLogout}
             onAlertOpened={handleAlertOpened}
+            isDarkMode={isDarkMode}
           />
         )}
       </Tab.Screen>
@@ -471,7 +481,7 @@ export default function App() {
             ...DarkTheme,
             colors: {
               ...DarkTheme.colors,
-              primary: THEME.accent,
+              primary: colors.primary,
               background: colors.page,
               card: colors.surface,
               text: colors.text,
@@ -482,7 +492,7 @@ export default function App() {
             ...DefaultTheme,
             colors: {
               ...DefaultTheme.colors,
-              primary: THEME.accent,
+              primary: colors.primary,
               background: colors.page,
               card: colors.surface,
               text: colors.text,

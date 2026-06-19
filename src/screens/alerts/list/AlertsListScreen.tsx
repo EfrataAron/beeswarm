@@ -11,9 +11,8 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { AlertItem, AlertSeverity, fetchAlerts } from "../../../api";
-import { THEME } from "../../../theme";
 import { AlertsStackParamList } from "../../../navigation/types";
-import { alertsListStyles as styles } from "./AlertsListScreen.styles";
+import { createAlertsListStyles } from "./AlertsListScreen.styles";
 import { useTheme } from "../../../hooks/useTheme";
 import { usePolling } from "../../../hooks/usePolling";
 
@@ -24,11 +23,6 @@ const SEVERITY_COLOR: Record<AlertSeverity, string> = {
   Warning: "#D97706",
   Info: "#2563EB",
 };
-const SEVERITY_BG: Record<AlertSeverity, string> = {
-  Critical: "#FEF2F2",
-  Warning: "#FFFBEB",
-  Info: "#EFF6FF",
-};
 const SEVERITY_ICON: Record<AlertSeverity, keyof typeof Ionicons.glyphMap> = {
   Critical: "alert-circle",
   Warning: "warning",
@@ -38,6 +32,15 @@ const ALL_SEVERITIES: AlertSeverity[] = ["Critical", "Warning", "Info"];
 
 export function AlertsListScreen({ navigation, route }: Props) {
   const theme = useTheme();
+  const styles = useMemo(() => createAlertsListStyles(theme), [theme]);
+
+  // Dark mode compatible severity backgrounds
+  const SEVERITY_BG: Record<AlertSeverity, string> = useMemo(() => ({
+    Critical: theme.isDark ? "#450A0A" : "#FEF2F2",
+    Warning: theme.isDark ? "#442500" : "#FFFBEB",
+    Info: theme.isDark ? "#072A5E" : "#EFF6FF",
+  }), [theme]);
+
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
   const [openedIds, setOpenedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -211,7 +214,7 @@ const selectedDashboardAlert = useMemo(() => {
   if (loading) {
     return (
       <View style={styles.centerState}>
-        <ActivityIndicator size="large" color={THEME.accent} />
+        <ActivityIndicator size="large" color={theme.accent} />
         <Text style={styles.stateText}>Loading alerts...</Text>
       </View>
     );
@@ -231,14 +234,14 @@ const selectedDashboardAlert = useMemo(() => {
 
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: THEME.page }}
+      style={{ flex: 1, backgroundColor: theme.page }}
       contentContainerStyle={[styles.appPage, { flexGrow: 1 }]}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
           onRefresh={() => void onRefreshAlerts()}
-          colors={[THEME.accent]}
-          tintColor={THEME.accent}
+          colors={[theme.accent]}
+          tintColor={theme.accent}
         />
       }
     >
@@ -266,7 +269,7 @@ const selectedDashboardAlert = useMemo(() => {
                 style={[styles.dashboardAlertMenuChip, active && styles.dashboardAlertMenuChipActive]}
                 onPress={() => setOpenAlertMenu((c) => (c === menu ? null : menu))}
               >
-                <Ionicons name={icons[menu]} size={14} color={active ? "#FFFFFF" : THEME.primary} />
+                <Ionicons name={icons[menu]} size={14} color={active ? "#FFFFFF" : theme.primary} />
                 <Text style={[styles.dashboardAlertMenuChipText, active && styles.dashboardAlertMenuChipTextActive]}>
                   {labels[menu]} 
                 </Text>
@@ -282,7 +285,7 @@ const selectedDashboardAlert = useMemo(() => {
                 {openAlertMenu === "severity" ? "Severity Categories" : openAlertMenu === "hive" ? "Hive Categories" : "Recent Alerts"}
               </Text>
               <Pressable style={styles.dashboardAlertSubMenuCloseBtn} onPress={() => setOpenAlertMenu(null)}>
-                <Ionicons name="close" size={16} color={THEME.textMuted} />
+                <Ionicons name="close" size={16} color={theme.textMuted} />
               </Pressable>
             </View>
 
@@ -487,8 +490,8 @@ const selectedDashboardAlert = useMemo(() => {
         <Pressable
           style={[
             styles.hiveSummaryPill,
-            { borderColor: THEME.primary },
-            hiveFilter !== "All" && !latestFilter && { backgroundColor: THEME.surfaceSoft },
+            { borderColor: theme.primary },
+            hiveFilter !== "All" && !latestFilter && { backgroundColor: theme.surfaceSoft },
           ]}
           onPress={() => {
             setOpenAlertMenu(openAlertMenu === "hive" ? null : "hive");
@@ -496,16 +499,16 @@ const selectedDashboardAlert = useMemo(() => {
             setLatestFilter(false);
           }}
         >
-          <Ionicons name="cube-outline" size={14} color={THEME.primary} />
-          <Text style={[styles.hiveSummaryPillText, { color: THEME.primary }]}>
+          <Ionicons name="cube-outline" size={14} color={theme.primary} />
+          <Text style={[styles.hiveSummaryPillText, { color: theme.primary }]}>
             Hive
           </Text>
         </Pressable>
         <Pressable
           style={[
             styles.hiveSummaryPill,
-            { borderColor: THEME.primary },
-            latestFilter && { backgroundColor: THEME.surfaceSoft },
+            { borderColor: theme.primary },
+            latestFilter && { backgroundColor: theme.surfaceSoft },
           ]}
           onPress={() => {
             setLatestFilter(!latestFilter);
@@ -514,8 +517,8 @@ const selectedDashboardAlert = useMemo(() => {
             setOpenAlertMenu(null);
           }}
         >
-          <Ionicons name="time-outline" size={14} color={THEME.primary} />
-          <Text style={[styles.hiveSummaryPillText, { color: THEME.primary }]}>
+          <Ionicons name="time-outline" size={14} color={theme.primary} />
+          <Text style={[styles.hiveSummaryPillText, { color: theme.primary }]}>
             Latest
           </Text>
         </Pressable>
@@ -554,15 +557,15 @@ const selectedDashboardAlert = useMemo(() => {
               <View style={{ flex: 1 }}>
                 <Text style={styles.alertCardTitle}>{alert.title}</Text>
                 <View style={styles.alertCardMeta}>
-                  <Ionicons name="cube-outline" size={11} color={THEME.textMuted} />
-                  <Text style={styles.alertCardMetaText}>{alert.hiveName}</Text>
-                  <Text style={styles.alertCardMetaDot}>·</Text>
-                  <Text style={styles.alertCardMetaText}>{alert.date}</Text>
-                </View>
+                <Ionicons name="cube-outline" size={11} color={theme.textMuted} />
+                <Text style={styles.alertCardMetaText}>{alert.hiveName}</Text>
+                <Text style={styles.alertCardMetaDot}>·</Text>
+                <Text style={styles.alertCardMetaText}>{alert.date}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={16} color={THEME.placeholder} />
             </View>
-            <Text style={styles.alertCardSummary} numberOfLines={2}>{alert.summary}</Text>
+            <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
+          </View>
+          <Text style={styles.alertCardSummary} numberOfLines={2}>{alert.summary}</Text>
           </View>
         </Pressable>
       ))}

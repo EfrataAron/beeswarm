@@ -19,27 +19,28 @@ import {
   acknowledgeAlert,
 } from "../../../api";
 import { getServerUrl } from "../../../api";
-import { THEME, formatAbsoluteTime, formatRelativeTime } from "../../../theme";
+import { formatAbsoluteTime, formatRelativeTime } from "../../../theme";
 import { useTheme } from "../../../hooks/useTheme";
 import { AlertsStackParamList } from "../../../navigation/types";
-import { alertDetailsStyles as styles } from "./AlertDetailsScreen.styles";
+import { createAlertDetailsStyles } from "./AlertDetailsScreen.styles";
+import { useMemo } from "react";
 
 type Props = NativeStackScreenProps<AlertsStackParamList, "AlertDetails">;
 
-function severityColor(severity: AlertSeverity): string {
-  if (severity === "Critical") return THEME.primary;
-  return THEME.accent;
+function severityColor(severity: AlertSeverity, theme: any): string {
+  if (severity === "Critical") return theme.primary;
+  return theme.accent;
 }
 
-function SeverityPill({ severity }: { severity: AlertSeverity }) {
+function SeverityPill({ severity, theme, styles }: { severity: AlertSeverity; theme: any; styles: any }) {
   return (
-    <View style={[styles.severityPill, { backgroundColor: `${severityColor(severity)}20` }]}>
-      <Text style={[styles.severityPillText, { color: severityColor(severity) }]}>{severity}</Text>
+    <View style={[styles.severityPill, { backgroundColor: `${severityColor(severity, theme)}20` }]}>
+      <Text style={[styles.severityPillText, { color: severityColor(severity, theme) }]}>{severity}</Text>
     </View>
   );
 }
 
-function InfoRow({ label, value, valueColor = "#1F2A37" }: { label: string; value: string; valueColor?: string }) {
+function InfoRow({ label, value, valueColor, styles }: { label: string; value: string; valueColor?: string; styles: any }) {
   return (
     <View style={styles.infoRow}>
       <Text style={styles.infoLabel}>{label}</Text>
@@ -50,6 +51,7 @@ function InfoRow({ label, value, valueColor = "#1F2A37" }: { label: string; valu
 
 export function AlertDetailsScreen({ route }: Props) {
   const theme = useTheme();
+  const styles = useMemo(() => createAlertDetailsStyles(theme), [theme]);
   const { alertId } = route.params;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -172,7 +174,7 @@ export function AlertDetailsScreen({ route }: Props) {
   if (loading) {
     return (
       <View style={styles.centerState}>
-        <ActivityIndicator size="large" color={THEME.accent} />
+        <ActivityIndicator size="large" color={theme.accent} />
         <Text style={styles.stateText}>Loading alert details...</Text>
       </View>
     );
@@ -192,14 +194,14 @@ export function AlertDetailsScreen({ route }: Props) {
 
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: THEME.page }}
+      style={{ flex: 1, backgroundColor: theme.page }}
       contentContainerStyle={styles.detailPage}
     >
       {/* ── Hero ── */}
       <View style={[styles.detailHeroCard, detail.acknowledged && { opacity: 0.7 }]}>
         <View style={styles.detailHeroTopRow}>
           <View style={styles.detailHiveIconWrap}>
-            <Ionicons name="alert-circle-outline" size={26} color={THEME.accent} />
+            <Ionicons name="alert-circle-outline" size={26} color={theme.accent} />
           </View>
           <View style={styles.detailHeroTextWrap}>
             <Text style={styles.detailHiveName}>{detail.title}</Text>
@@ -208,11 +210,11 @@ export function AlertDetailsScreen({ route }: Props) {
               {formatAbsoluteTime(detail.time)}
             </Text>
           </View>
-          <SeverityPill severity={detail.severity} />
+          <SeverityPill severity={detail.severity} theme={theme} styles={styles} />
         </View>
         {detail.acknowledged && (
           <View style={styles.alertClosedBanner}>
-            <Ionicons name="checkmark-circle" size={14} color="#16A34A" />
+            <Ionicons name="checkmark-circle" size={14} color={theme.isDark ? "#22C55E" : "#16A34A"} />
             <Text style={styles.alertClosedText}>This alert has been acknowledged and closed</Text>
           </View>
         )}
@@ -221,22 +223,22 @@ export function AlertDetailsScreen({ route }: Props) {
       {/* ── Alert Info ── */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Alert Information</Text>
-        <InfoRow label="Severity" value={detail.severity} valueColor={severityColor(detail.severity)} />
-        <InfoRow label="Hive" value={detail.hiveName} />
-        <InfoRow label="Time" value={formatAbsoluteTime(detail.time)} />
-        <InfoRow label="Status" value={detail.acknowledged ? "Closed" : "Open"} valueColor={detail.acknowledged ? "#16A34A" : "#D97706"} />
+        <InfoRow label="Severity" value={detail.severity} valueColor={severityColor(detail.severity, theme)} styles={styles} />
+        <InfoRow label="Hive" value={detail.hiveName} styles={styles} />
+        <InfoRow label="Time" value={formatAbsoluteTime(detail.time)} styles={styles} />
+        <InfoRow label="Status" value={detail.acknowledged ? "Closed" : "Open"} valueColor={detail.acknowledged ? "#16A34A" : "#D97706"} styles={styles} />
       </View>
 
-      <View style={[styles.card, { backgroundColor: theme.surface }]}>
+      <View style={styles.card}>
         <Text style={styles.cardTitle}>Details</Text>
         <Text style={styles.detailLongText}>{detail.details}</Text>
       </View>
 
       {/* ── Audio Recording ── */}
       {detail.audioRecording && (
-        <View style={[styles.card, { backgroundColor: theme.surface }]}>
+        <View style={styles.card}>
           <View style={styles.audioHeader}>
-            <Ionicons name="volume-high-outline" size={20} color={THEME.accent} />
+            <Ionicons name="volume-high-outline" size={20} color={theme.accent} />
             <Text style={styles.cardTitle}>Audio Recording</Text>
           </View>
           <Text style={styles.audioSubtext}>
@@ -277,7 +279,7 @@ export function AlertDetailsScreen({ route }: Props) {
                 style={styles.audioButtonSecondary}
                 onPress={stopAudio}
               >
-                <Ionicons name="stop" size={20} color={THEME.accent} />
+                <Ionicons name="stop" size={20} color={theme.accent} />
                 <Text style={styles.audioButtonSecondaryText}>Stop</Text>
               </Pressable>
             )}
@@ -290,10 +292,10 @@ export function AlertDetailsScreen({ route }: Props) {
         <View style={styles.card}>
           <View style={styles.advisoryHeader}>
             <View style={styles.advisoryTitleRow}>
-              <Ionicons name="bulb-outline" size={18} color={THEME.accent} />
+              <Ionicons name="bulb-outline" size={18} color={theme.accent} />
               <Text style={styles.cardTitle}>Recommended Actions</Text>
             </View>
-            <View style={[styles.advisoryTypeBadge, { backgroundColor: advisory.type === "Reactive" ? "#FEF2F2" : "#F0FDF4" }]}>
+            <View style={[styles.advisoryTypeBadge, { backgroundColor: theme.isDark ? (advisory.type === "Reactive" ? "#450A0A" : "#064E3B") : (advisory.type === "Reactive" ? "#FEF2F2" : "#F0FDF4") }]}>
               <Text style={[styles.advisoryTypeText, { color: advisory.type === "Reactive" ? "#DC2626" : "#16A34A" }]}>
                 {advisory.type}
               </Text>
