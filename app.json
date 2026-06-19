@@ -16,12 +16,20 @@
     ],
     "plugins": [
       "expo-asset",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/bee.png",
+          "sounds": []
+        }
+      ]
     ],
     "android": {
       "permissions": [
         "INTERNET",
-        "ACCESS_NETWORK_STATE"
+        "ACCESS_NETWORK_STATE",
+        "POST_NOTIFICATIONS"
       ],
       "usesCleartextTraffic": true,
       "package": "com.anonymous.beeswarm",

@@ -79,6 +79,12 @@ export {
   fetchAmbientWeather,
 } from "./services/weather.service";
 
+// Export notification service
+export {
+  registerPushToken,
+  sendTestNotification,
+} from "./services/notification.service";
+
 // Export utility functions (for advanced use cases)
 export {
   validateServerUrl,

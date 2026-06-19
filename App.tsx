@@ -9,6 +9,7 @@ import {
   DarkTheme,
   DefaultTheme,
   NavigationContainer,
+  useNavigation,
 } from "@react-navigation/native";
 import {
   createNativeStackNavigator,
@@ -26,6 +27,8 @@ import {
 } from "./src/api";
 import { HeaderOverflowMenu } from "./src/components/HeaderOverflowMenu";
 import { applyThemeMode, THEME } from "./src/theme";
+import { useNotifications } from "./src/hooks/useNotifications";
+import * as Notifications from "expo-notifications";
 
 // Navigation types
 import {
@@ -34,6 +37,37 @@ import {
   HivesStackParamList,
   AlertsStackParamList,
 } from "./src/navigation/types";
+
+function NotificationHandler() {
+  const responseListener = useRef<Notifications.Subscription>();
+  const navigation = useNavigation();
+
+  useEffect(() => {
+    responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
+      const data = response.notification.request.content.data as any;
+      
+      if (data.type === 'alert' && data.alertId) {
+        (navigation as any).navigate('Alerts', {
+          screen: 'AlertDetails',
+          params: { alertId: data.alertId }
+        });
+      } else if (data.hiveId) {
+        (navigation as any).navigate('Hives', {
+          screen: 'HiveDetails',
+          params: { hiveId: data.hiveId }
+        });
+      }
+    });
+
+    return () => {
+      if (responseListener.current) {
+        Notifications.removeNotificationSubscription(responseListener.current);
+      }
+    };
+  }, [navigation]);
+
+  return null;
+}
 
 // Screens
 import { WelcomeScreen } from "./src/screens/welcome/WelcomeScreen";
@@ -449,6 +483,9 @@ export default function App() {
   const [darkModeEnabled, setDarkModeEnabled] = useState(false);
   const [navigationState, setNavigationState] = useState<any>();
   const initialWebPath = useMemo(() => getInitialWebPath(), []);
+  
+  // Notifications
+  const { expoPushToken } = useNotifications();
 
   // Load fonts
   let [fontsLoaded] = useFonts({
@@ -636,6 +673,7 @@ export default function App() {
         }}
       >
         <ExpoStatusBar style={colors.statusBar} />
+        <NotificationHandler />
         <RootStack.Navigator
           initialRouteName={
             isAuthenticated
