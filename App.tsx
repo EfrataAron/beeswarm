@@ -100,7 +100,7 @@ const APP_COLORS = {
     page: "#0B1220",
     surface: "#111827",
     text: "#F3F4F6",
-    primary: "#60A5FA",
+    primary: "#FFB268",
     muted: "#94A3B8",
     border: "#1F2937",
     statusBar: "light" as const,
@@ -357,7 +357,7 @@ function MainTabsScreen({
           paddingTop: 8,
         },
         tabBarActiveTintColor: "#FFB268",
-        tabBarInactiveTintColor: colors.muted,
+        tabBarInactiveTintColor: "#FFB268",
         headerRight: () => (
           <HeaderOverflowMenu
             onOpenSettings={openSettingsPage}

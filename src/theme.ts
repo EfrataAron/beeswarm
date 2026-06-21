@@ -25,8 +25,8 @@ const LIGHT_THEME = {
 
 const DARK_THEME = {
   isDark: true,
-  primary: "#60A5FA", // Light blue for better dark mode readability
-  accent: "#FFB268",
+  primary: "#FFB268",
+  accent: "#1264c9ff",
   page: "#0B1220",
   surface: "#111827",
   surfaceSoft: "#1F2937",
