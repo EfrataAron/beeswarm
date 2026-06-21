@@ -41,8 +41,16 @@ export function DashboardScreen({ navigation }: Props) {
   const [refreshing, setRefreshing] = useState(false);
   const [isPollingEnabled, setIsPollingEnabled] = useState(true);
   const loadDashboard = useCallback(async (initial = false) => {
-    if (initial) setLoading(true);
+    // First, try to get cached data
+    const cachedDashboard = await import("../../api/utils/offlineCache").then(mod => mod.getCachedData<any>("dashboard"));
+    if (cachedDashboard) {
+      setDashboard(cachedDashboard);
+      if (initial) setLoading(false);
+    } else if (initial) {
+      setLoading(true);
+    }
     setError(null);
+
     try {
       const [data, weather] = await Promise.allSettled([
         fetchDashboard(),
@@ -51,15 +59,19 @@ export function DashboardScreen({ navigation }: Props) {
 
       if (data.status === "fulfilled") {
         setDashboard(data.value);
-      } else {
-        throw data.reason;
       }
 
       setAmbientWeather(
         weather.status === "fulfilled" ? weather.value : null,
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load dashboard data");
+      // Only set error if we don't have any dashboard data yet
+      setDashboard(currentDashboard => {
+        if (!currentDashboard) {
+          setError(err instanceof Error ? err.message : "Could not load dashboard data");
+        }
+        return currentDashboard;
+      });
     } finally {
       if (initial) setLoading(false);
     }

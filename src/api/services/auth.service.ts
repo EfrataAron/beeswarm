@@ -90,10 +90,19 @@ export async function logout(): Promise<void> {
 }
 
 export async function fetchProfile(): Promise<BeekeeperProfile> {
-  const raw = await apiRequest<any>("/auth/me");
-  const profile = normalizeProfile(raw);
-  await saveProfile(profile);
-  return profile;
+  try {
+    const raw = await apiRequest<any>("/auth/me");
+    const profile = normalizeProfile(raw);
+    await saveProfile(profile);
+    return profile;
+  } catch (error) {
+    // If fetch fails, try to get the saved profile from storage
+    const { profile } = await loadAuthSession();
+    if (profile) {
+      return profile;
+    }
+    throw error;
+  }
 }
 
 /**

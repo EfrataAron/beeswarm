@@ -25,7 +25,10 @@ import {
   logout,
   setUnauthorizedHandler,
 } from "./src/api";
+import { processQueue } from "./src/api/utils/offlineQueue";
+import * as Network from "expo-network";
 import { HeaderOverflowMenu } from "./src/components/HeaderOverflowMenu";
+import { OfflineBanner } from "./src/components/OfflineBanner";
 import { applyThemeMode, THEME } from "./src/theme";
 import { useNotifications } from "./src/hooks/useNotifications";
 import * as Notifications from "expo-notifications";
@@ -600,6 +603,22 @@ export default function App() {
     });
   }, []);
 
+  // Process offline queue when network comes back online and on app start
+  useEffect(() => {
+    // Process queue on app start
+    void processQueue();
+
+    // Listen for network changes
+    const subscription = Network.addNetworkStateListener(async (state) => {
+      if (state.isConnected) {
+        console.log("[App] Network connected — processing offline queue");
+        await processQueue();
+      }
+    });
+
+    return () => subscription.remove();
+  }, []);
+
   // ── 30-minute idle session timeout ────────────────────────────────────────
   const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -661,6 +680,7 @@ export default function App() {
 
   return (
     <>
+      <OfflineBanner />
       <NavigationContainer 
         theme={navigationTheme} 
         linking={linking}

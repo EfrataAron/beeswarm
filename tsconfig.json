@@ -5,7 +5,8 @@
     "strict": true,
     "noEmit": true,
     "skipLibCheck": true,
-    "moduleResolution": "bundler"
+    "moduleResolution": "bundler",
+    "module": "esnext"
   },
   "include": ["**/*.ts", "**/*.tsx"]
 }

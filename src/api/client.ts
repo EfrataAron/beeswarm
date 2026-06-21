@@ -4,6 +4,8 @@
 
 import { Platform } from "react-native";
 import { loadApiBaseUrl, saveApiBaseUrl } from "./utils/storage";
+import { addToQueue, processQueue } from "./utils/offlineQueue";
+import * as Network from "expo-network";
 
 // Set to false to disable request/response logging
 const API_DEBUG = true;
@@ -203,12 +205,28 @@ type ApiInit = {
   query?: Record<string, string>;
   baseUrl?: string;
   headers?: Record<string, string>;
+  tempHiveId?: string;
 };
 
 export async function apiRequest<T>(path: string, init?: ApiInit): Promise<T> {
   const method = (init?.method ?? "GET").toUpperCase();
   const url = buildRequestUrl(path, init?.query, init?.baseUrl);
   const base = init?.baseUrl ?? _serverUrl ?? BASE_URL;
+
+  // Check if request is a write operation
+  const isWriteOperation = ["POST", "PUT", "PATCH", "DELETE"].includes(method);
+
+  // Check network status first
+  const networkStatus = await Network.getNetworkStateAsync();
+  const isOffline = !networkStatus.isConnected;
+
+  // If offline and it's a write operation, add to queue
+  if (isOffline && isWriteOperation) {
+    log(`✓ Offline mode — queuing ${method} ${path}`);
+    await addToQueue(path, init, init?.tempHiveId);
+    // Return undefined for write operations when offline (since we can't get a real response)
+    return undefined as T;
+  }
 
   try {
     log(`→ ${method} ${url}`, _authToken ? "(authenticated)" : "(no token)");
@@ -274,6 +292,22 @@ export async function apiRequest<T>(path: string, init?: ApiInit): Promise<T> {
       throw new Error(`Invalid JSON from ${path}: ${text.slice(0, 100)}`);
     }
   } catch (err) {
+    // Check if this is a network error and if it's a write operation
+    const isNetworkError =
+      err instanceof Error &&
+      (err.message.includes("network request failed") ||
+        err.message.includes("connection refused") ||
+        err.message.includes("econnrefused") ||
+        err.message.includes("not found") ||
+        err.message.includes("unreachable") ||
+        err.message.includes("timed out"));
+
+    if (isNetworkError && isWriteOperation) {
+      log(`✓ Network error — queuing ${method} ${path}`);
+      await addToQueue(path, init, init?.tempHiveId);
+      return undefined as T;
+    }
+
     if (
       err instanceof Error &&
       !err.message.startsWith("Request failed") &&

@@ -12,6 +12,7 @@ import {
   normalizeMetricPoint,
   MetricPoint,
 } from "../utils/metricsHistory";
+import { cacheData, getCachedData } from "../utils/offlineCache";
 
 type HiveSnapshot = {
   hiveId: string;
@@ -163,191 +164,203 @@ function buildTrendFromHistory(
 }
 
 export async function fetchDashboard(): Promise<DashboardData> {
-  // Fire the dashboard endpoint and hive list in parallel to save a round-trip
-  const [raw, hivesForStatus] = await Promise.all([
-    apiRequest<any>("/dashboard"),
-    fetchHives().catch(() => [] as Awaited<ReturnType<typeof fetchHives>>),
-  ]);
-
-  const metrics = raw?.key_metrics ?? raw?.keyMetrics ?? {};
-
-  // Calculate statusCounts from actual hives, not just the raw API's count
-  const statusCounts: DashboardData["statusCounts"] = {
-    active: 0,
-    inactive_hive: 0,
-    swarming: 0,
-    Abscondment: 0,
-    external_noise: 0,
-    quacking_queens: 0,
-    pests: 0,
-    queenless: 0,
-    unknown: 0,
-  };
-
-  hivesForStatus.forEach(hive => {
-    statusCounts[hive.status]++;
-  });
-
-  const result: DashboardData = {
-    totalHives: hivesForStatus.length,
-    activeHives: statusCounts.active,
-    statusCounts,
-    keyMetrics: {
-      temperatureC: Number(metrics.temperature_c ?? metrics.temperatureC ?? 0),
-      humidityPercent: Number(
-        metrics.humidity_percent ?? metrics.humidityPercent ?? 0,
-      ),
-      populationKBees: Number(
-        metrics.population_k_bees ?? metrics.populationKBees ?? 0,
-      ),
-      nectarFlowKgPerDay: Number(
-        metrics.nectar_flow_kg_per_day ?? metrics.nectarFlowKgPerDay ?? 0,
-      ),
-    },
-    pendingAlerts: Number(raw?.pending_alerts ?? raw?.pendingAlerts ?? 0),
-    acknowledgedAlerts: Number(
-      raw?.acknowledged_alerts ?? raw?.acknowledgedAlerts ?? 0,
-    ),
-    // Normalise API trend data — attach empty statusBreakdown for now
-    preSwarmTrend: Array.isArray(raw?.pre_swarm_trend ?? raw?.preSwarmTrend)
-      ? (raw?.pre_swarm_trend ?? raw?.preSwarmTrend).map((d: any) => ({
-          day: String(d.day ?? d.date ?? d.label ?? ""),
-          count: Number(d.count ?? d.value ?? 0),
-          statusBreakdown: d.status_breakdown ?? d.statusBreakdown ?? undefined,
-        }))
-      : [],
-    recordingsToday: Number(raw?.recordings_today ?? raw?.recordingsToday ?? 0),
-    silentHives: Array.isArray(raw?.silent_hives ?? raw?.silentHives)
-      ? (raw?.silent_hives ?? raw?.silentHives)
-      : [],
-    highTempPreSwarmHives: Array.isArray(
-      raw?.high_temp_pre_swarm_hives ?? raw?.highTempPreSwarmHives,
-    )
-      ? (raw?.high_temp_pre_swarm_hives ?? raw?.highTempPreSwarmHives)
-      : [],
-    allHives: [],
-    allHivesHistory: [],
-    statusTrend: [],
-    pendingAdvisoryActions: Number(
-      raw?.pending_advisory_actions ?? raw?.pendingAdvisoryActions ?? 0,
-    ),
-    lowConfidenceInferences: Number(
-      raw?.low_confidence_inferences ?? raw?.lowConfidenceInferences ?? 0,
-    ),
-  };
-
-  // Fetch per-hive metric history (in parallel with the /dashboard call above,
-  // the hive list is already fetched; now we fetch each hive's detail).
   try {
-    const details = await Promise.all(
-      hivesForStatus.map((hive) =>
-        fetchHiveDetail(hive.id).catch(() => null),
+    // Fire the dashboard endpoint and hive list in parallel to save a round-trip
+    const [raw, hivesForStatus] = await Promise.all([
+      apiRequest<any>("/dashboard"),
+      fetchHives().catch(() => [] as Awaited<ReturnType<typeof fetchHives>>),
+    ]);
+
+    const metrics = raw?.key_metrics ?? raw?.keyMetrics ?? {};
+
+    // Calculate statusCounts from actual hives, not just the raw API's count
+    const statusCounts: DashboardData["statusCounts"] = {
+      active: 0,
+      inactive_hive: 0,
+      swarming: 0,
+      Abscondment: 0,
+      external_noise: 0,
+      quacking_queens: 0,
+      pests: 0,
+      queenless: 0,
+      unknown: 0,
+    };
+
+    hivesForStatus.forEach(hive => {
+      statusCounts[hive.status]++;
+    });
+
+    const result: DashboardData = {
+      totalHives: hivesForStatus.length,
+      activeHives: statusCounts.active,
+      statusCounts,
+      keyMetrics: {
+        temperatureC: Number(metrics.temperature_c ?? metrics.temperatureC ?? 0),
+        humidityPercent: Number(
+          metrics.humidity_percent ?? metrics.humidityPercent ?? 0,
+        ),
+        populationKBees: Number(
+          metrics.population_k_bees ?? metrics.populationKBees ?? 0,
+        ),
+        nectarFlowKgPerDay: Number(
+          metrics.nectar_flow_kg_per_day ?? metrics.nectarFlowKgPerDay ?? 0,
+        ),
+      },
+      pendingAlerts: Number(raw?.pending_alerts ?? raw?.pendingAlerts ?? 0),
+      acknowledgedAlerts: Number(
+        raw?.acknowledged_alerts ?? raw?.acknowledgedAlerts ?? 0,
       ),
-    );
+      // Normalise API trend data — attach empty statusBreakdown for now
+      preSwarmTrend: Array.isArray(raw?.pre_swarm_trend ?? raw?.preSwarmTrend)
+        ? (raw?.pre_swarm_trend ?? raw?.preSwarmTrend).map((d: any) => ({
+            day: String(d.day ?? d.date ?? d.label ?? ""),
+            count: Number(d.count ?? d.value ?? 0),
+            statusBreakdown: d.status_breakdown ?? d.statusBreakdown ?? undefined,
+          }))
+        : [],
+      recordingsToday: Number(raw?.recordings_today ?? raw?.recordingsToday ?? 0),
+      silentHives: Array.isArray(raw?.silent_hives ?? raw?.silentHives)
+        ? (raw?.silent_hives ?? raw?.silentHives)
+        : [],
+      highTempPreSwarmHives: Array.isArray(
+        raw?.high_temp_pre_swarm_hives ?? raw?.highTempPreSwarmHives,
+      )
+        ? (raw?.high_temp_pre_swarm_hives ?? raw?.highTempPreSwarmHives)
+        : [],
+      allHives: [],
+      allHivesHistory: [],
+      statusTrend: [],
+      pendingAdvisoryActions: Number(
+        raw?.pending_advisory_actions ?? raw?.pendingAdvisoryActions ?? 0,
+      ),
+      lowConfidenceInferences: Number(
+        raw?.low_confidence_inferences ?? raw?.lowConfidenceInferences ?? 0,
+      ),
+    };
 
-    const allHivesHistory: HiveHistoryEntry[] = [];
-    const allHives: HiveSnapshot[] = [];
+    // Fetch per-hive metric history (in parallel with the /dashboard call above,
+    // the hive list is already fetched; now we fetch each hive's detail).
+    try {
+      const details = await Promise.all(
+        hivesForStatus.map((hive) =>
+          fetchHiveDetail(hive.id).catch(() => null),
+        ),
+      );
 
-    details.forEach((detail, i) => {
-      if (!detail) return;
-      const hiveId = detail.id;
-      const hive = hivesForStatus[i];
-      const history =
-      detail.metricSeries.length > 0
-        ? detail.metricSeries
-        : []; // Don't generate fake history for new hives
+      const allHivesHistory: HiveHistoryEntry[] = [];
+      const allHives: HiveSnapshot[] = [];
 
-      allHivesHistory.push({ hiveId, hiveName: detail.name, history });
+      details.forEach((detail, i) => {
+        if (!detail) return;
+        const hiveId = detail.id;
+        const hive = hivesForStatus[i];
+        const history =
+        detail.metricSeries.length > 0
+          ? detail.metricSeries
+          : []; // Don't generate fake history for new hives
 
-    const last = history[history.length - 1];
-    allHives.push({
-      hiveId,
-      hiveName: detail.name,
-      temperatureC: last?.temperatureC,
-      humidityPercent: last?.humidityPercent,
-      status: hive?.status,
-    });
-    });
+        allHivesHistory.push({ hiveId, hiveName: detail.name, history });
 
-    if (allHivesHistory.length > 0) {
-      result.allHivesHistory = allHivesHistory;
-      result.allHives = allHives;
+      const last = history[history.length - 1];
+      allHives.push({
+        hiveId,
+        hiveName: detail.name,
+        temperatureC: last?.temperatureC,
+        humidityPercent: last?.humidityPercent,
+        status: hive?.status,
+      });
+      });
 
-      // Build status trend from real hive history + current statuses
-      result.statusTrend = buildStatusTrend(allHivesHistory, allHives);
+      if (allHivesHistory.length > 0) {
+        result.allHivesHistory = allHivesHistory;
+        result.allHives = allHives;
 
-      // Build preSwarmTrend from real hive history data (replaces / enriches API trend)
-      const historyTrend = buildTrendFromHistory(allHivesHistory, allHives);
-      if (historyTrend.length > 0) {
-        result.preSwarmTrend = historyTrend;
+        // Build status trend from real hive history + current statuses
+        result.statusTrend = buildStatusTrend(allHivesHistory, allHives);
+
+        // Build preSwarmTrend from real hive history data (replaces / enriches API trend)
+        const historyTrend = buildTrendFromHistory(allHivesHistory, allHives);
+        if (historyTrend.length > 0) {
+          result.preSwarmTrend = historyTrend;
+        }
+      }
+    } catch {
+      // Fall back to any inline dashboard payload if present
+      const rawHistory = raw?.all_hives_history ?? raw?.allHivesHistory;
+      const allHivesRaw = raw?.all_hives ?? raw?.allHives;
+
+      if (Array.isArray(rawHistory) && rawHistory.length > 0) {
+        result.allHivesHistory = rawHistory.map(
+          (h: Record<string, unknown>, i: number) => {
+            const normalized = normalizeHiveHistory(h, i);
+            if (normalized.history.length > 0) return normalized;
+            const baseTemp = Number(
+              h.temperatureC ?? h.temperature_c ?? h.temperature ?? 34,
+            );
+            const baseHum = Number(
+              h.humidityPercent ?? h.humidity_percent ?? h.humidity ?? 60,
+            );
+            return {
+              hiveId: normalized.hiveId,
+              hiveName: normalized.hiveName ?? "",
+              history: buildHourlyMetricHistory(baseTemp, baseHum, 24 * 30, i + 1),
+            };
+          },
+        );
+      } else if (Array.isArray(allHivesRaw) && allHivesRaw.length > 0) {
+        result.allHivesHistory = allHivesRaw.map(
+          (h: Record<string, unknown>, i: number) => {
+            const hiveId = String(
+              h.hiveId ?? h.hive_id ?? h.id ?? `Hive-${i + 1}`,
+            );
+            const baseTemp = Number(
+              h.temperatureC ?? h.temperature_c ?? h.temperature ?? 34,
+            );
+            const baseHum = Number(
+              h.humidityPercent ?? h.humidity_percent ?? h.humidity ?? 60,
+            );
+            const embedded = h.history ?? h.metric_series ?? h.metricSeries;
+            const history =
+              Array.isArray(embedded) && embedded.length > 0
+                ? embedded.map((p: Record<string, unknown>, pi: number) =>
+                    normalizeMetricPoint(p, pi),
+                  )
+                : buildHourlyMetricHistory(baseTemp, baseHum, 24 * 30, i + 1);
+            return { hiveId, hiveName: "", history };
+          },
+        );
+        result.allHives = allHivesRaw.map(
+          (h: Record<string, unknown>, i: number) => ({
+            hiveId: String(h.hiveId ?? h.hive_id ?? h.id ?? `Hive-${i + 1}`),
+            hiveName: String(
+              h.hiveName ??
+                h.hive_name ??
+                h.name ??
+                h.hiveId ??
+                h.hive_id ??
+                `Hive ${i + 1}`,
+            ),
+            temperatureC: Number(
+              h.temperatureC ?? h.temperature_c ?? h.temperature ?? 34,
+            ),
+            humidityPercent: Number(
+              h.humidityPercent ?? h.humidity_percent ?? h.humidity ?? 60,
+            ),
+          }),
+        );
       }
     }
-  } catch {
-    // Fall back to any inline dashboard payload if present
-    const rawHistory = raw?.all_hives_history ?? raw?.allHivesHistory;
-    const allHivesRaw = raw?.all_hives ?? raw?.allHives;
 
-    if (Array.isArray(rawHistory) && rawHistory.length > 0) {
-      result.allHivesHistory = rawHistory.map(
-        (h: Record<string, unknown>, i: number) => {
-          const normalized = normalizeHiveHistory(h, i);
-          if (normalized.history.length > 0) return normalized;
-          const baseTemp = Number(
-            h.temperatureC ?? h.temperature_c ?? h.temperature ?? 34,
-          );
-          const baseHum = Number(
-            h.humidityPercent ?? h.humidity_percent ?? h.humidity ?? 60,
-          );
-          return {
-            hiveId: normalized.hiveId,
-            hiveName: normalized.hiveName ?? "",
-            history: buildHourlyMetricHistory(baseTemp, baseHum, 24 * 30, i + 1),
-          };
-        },
-      );
-    } else if (Array.isArray(allHivesRaw) && allHivesRaw.length > 0) {
-      result.allHivesHistory = allHivesRaw.map(
-        (h: Record<string, unknown>, i: number) => {
-          const hiveId = String(
-            h.hiveId ?? h.hive_id ?? h.id ?? `Hive-${i + 1}`,
-          );
-          const baseTemp = Number(
-            h.temperatureC ?? h.temperature_c ?? h.temperature ?? 34,
-          );
-          const baseHum = Number(
-            h.humidityPercent ?? h.humidity_percent ?? h.humidity ?? 60,
-          );
-          const embedded = h.history ?? h.metric_series ?? h.metricSeries;
-          const history =
-            Array.isArray(embedded) && embedded.length > 0
-              ? embedded.map((p: Record<string, unknown>, pi: number) =>
-                  normalizeMetricPoint(p, pi),
-                )
-              : buildHourlyMetricHistory(baseTemp, baseHum, 24 * 30, i + 1);
-          return { hiveId, hiveName: "", history };
-        },
-      );
-      result.allHives = allHivesRaw.map(
-        (h: Record<string, unknown>, i: number) => ({
-          hiveId: String(h.hiveId ?? h.hive_id ?? h.id ?? `Hive-${i + 1}`),
-          hiveName: String(
-            h.hiveName ??
-              h.hive_name ??
-              h.name ??
-              h.hiveId ??
-              h.hive_id ??
-              `Hive ${i + 1}`,
-          ),
-          temperatureC: Number(
-            h.temperatureC ?? h.temperature_c ?? h.temperature ?? 34,
-          ),
-          humidityPercent: Number(
-            h.humidityPercent ?? h.humidity_percent ?? h.humidity ?? 60,
-          ),
-        }),
-      );
+    // Cache the dashboard data
+    await cacheData("dashboard", result);
+
+    return result;
+  } catch (error) {
+    // If fetch fails, try to get cached data
+    const cached = await getCachedData<DashboardData>("dashboard");
+    if (cached) {
+      return cached;
     }
+    throw error;
   }
-
-  return result;
 }

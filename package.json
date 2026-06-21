@@ -29,6 +29,7 @@
     "expo-font": "~13.0.4",
     "expo-image-picker": "~16.0.6",
     "expo-location": "~18.0.6",
+    "expo-network": "~7.0.5",
     "expo-notifications": "~0.29.14",
     "expo-status-bar": "~2.0.1",
     "expo-system-ui": "~4.0.9",

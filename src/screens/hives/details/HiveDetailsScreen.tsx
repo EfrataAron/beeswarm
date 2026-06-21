@@ -331,8 +331,16 @@ export function HiveDetailsScreen({ route, navigation }: Props) {
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const loadDetail = useCallback(async () => {
-    setLoading(true);
+    // First, try to get cached data
+    const cachedDetail = await import("../../../api/utils/offlineCache").then(mod => mod.getCachedData<any>(`hive_${hiveId}`));
+    if (cachedDetail) {
+      setDetail(cachedDetail);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
     setError(null);
+
     try {
       const [data, alerts] = await Promise.all([
         fetchHiveDetail(hiveId),
@@ -341,9 +349,15 @@ export function HiveDetailsScreen({ route, navigation }: Props) {
       setDetail(data);
       setHiveAlerts(alerts);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Could not load hive details",
-      );
+      // Only set error if we don't have any detail yet
+      setDetail(currentDetail => {
+        if (!currentDetail) {
+          setError(
+            err instanceof Error ? err.message : "Could not load hive details",
+          );
+        }
+        return currentDetail;
+      });
     } finally {
       setLoading(false);
     }

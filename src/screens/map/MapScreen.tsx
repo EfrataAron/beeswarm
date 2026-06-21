@@ -60,8 +60,28 @@ export function MapScreen({ navigation }: Props) {
   const [isPollingEnabled, setIsPollingEnabled] = useState(true);
 
   const loadHives = useCallback(async (initial = false) => {
-    if (initial) setLoading(true);
+    // First, try to get cached data
+    const [cachedHives, cachedDashboard] = await Promise.all([
+      import("../../api/utils/offlineCache").then(mod => mod.getCachedData<any>("hives")),
+      import("../../api/utils/offlineCache").then(mod => mod.getCachedData<any>("dashboard")),
+    ]);
+    
+    if (cachedHives) {
+      const withCoords = await enrichHivesWithCoordinates(cachedHives);
+      setHives(withCoords);
+      if (cachedDashboard?.allHives) {
+        const map: Record<string, { temperatureC: number; humidityPercent: number }> = {};
+        cachedDashboard.allHives.forEach((h: any) => {
+          map[h.hiveId] = { temperatureC: h.temperatureC, humidityPercent: h.humidityPercent };
+        });
+        setSensorMap(map);
+      }
+      if (initial) setLoading(false);
+    } else if (initial) {
+      setLoading(true);
+    }
     setError(null);
+
     try {
       // Fetch hives and sensor snapshot in parallel
       const [data, dashboard] = await Promise.all([
@@ -80,7 +100,13 @@ export function MapScreen({ navigation }: Props) {
         setSensorMap(map);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load hive map data");
+      // Only set error if we don't have any hives yet
+      setHives(currentHives => {
+        if (currentHives.length === 0) {
+          setError(err instanceof Error ? err.message : "Could not load hive map data");
+        }
+        return currentHives;
+      });
     } finally {
       if (initial) setLoading(false);
     }

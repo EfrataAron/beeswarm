@@ -7,6 +7,7 @@ import { apiRequest } from "../client";
 import { AlertItem, AlertDetailData, Advisory } from "../types";
 import { normalizeAlertItem, normalizeHiveAlertItem, normalizeSeverity } from "../utils/normalizers";
 import { fetchHiveDetail } from "./hive.service";
+import { cacheData, getCachedData } from "../utils/offlineCache";
 
 export async function fetchHiveAlerts(hiveId: string):
   Promise<AlertItem[]> {
@@ -22,58 +23,84 @@ export async function fetchHiveAlerts(hiveId: string):
 }
 
 export async function fetchAlerts(): Promise<AlertItem[]> {
-  const raw = await apiRequest<any[]>("/alerts");
-  if (!Array.isArray(raw)) return [];
-  console.log("Raw API Response: /fetchAlerts()", raw);
+  try {
+    const raw = await apiRequest<any[]>("/alerts");
+    if (!Array.isArray(raw)) return [];
+    console.log("Raw API Response: /fetchAlerts()", raw);
 
-  // Fetch hive details for each alert to get hive names
-  const alertsWithHiveNames = await Promise.all(
-    raw.map(async (item, i) => {
-      const hiveId = item.hive_id ?? item.hiveId ?? "";
-      let hiveName = item.hive_name ?? item.hiveName ?? "";
+    // Fetch hive details for each alert to get hive names
+    const alertsWithHiveNames = await Promise.all(
+      raw.map(async (item, i) => {
+        const hiveId = item.hive_id ?? item.hiveId ?? "";
+        let hiveName = item.hive_name ?? item.hiveName ?? "";
 
-      // If hive name not provided, fetch it
-      if (!hiveName && hiveId) {
-        try {
-          const hive = await fetchHiveDetail(hiveId);
-          hiveName = hive.name;
-          console.log(`Fetched hive name for ${hiveId}:`, hiveName);
-        } catch (error) {
-          console.warn(`Failed to fetch hive name for ${hiveId}:`, error);
-          hiveName = hiveId; // Fallback to hive ID
+        // If hive name not provided, fetch it
+        if (!hiveName && hiveId) {
+          try {
+            const hive = await fetchHiveDetail(hiveId);
+            hiveName = hive.name;
+            console.log(`Fetched hive name for ${hiveId}:`, hiveName);
+          } catch (error) {
+            console.warn(`Failed to fetch hive name for ${hiveId}:`, error);
+            hiveName = hiveId; // Fallback to hive ID
+          }
         }
-      }
 
-      return normalizeAlertItem({ ...item, hiveName }, i);
-    })
-  );
+        return normalizeAlertItem({ ...item, hiveName }, i);
+      })
+    );
 
-  return alertsWithHiveNames;
+    // Cache the alerts
+    await cacheData("alerts", alertsWithHiveNames);
+
+    return alertsWithHiveNames;
+  } catch (error) {
+    // If fetch fails, try to get cached data
+    const cached = await getCachedData<AlertItem[]>("alerts");
+    if (cached) {
+      return cached;
+    }
+    throw error;
+  }
 }
 
 export async function fetchAlertDetail(
   alertId: string,
 ): Promise<AlertDetailData> {
-  const raw = await apiRequest<any>(`/alerts/${encodeURIComponent(alertId)}`);
+  try {
+    const raw = await apiRequest<any>(`/alerts/${encodeURIComponent(alertId)}`);
 
-  return {
-    id: String(raw.id ?? alertId),
-    hiveId: String(raw.hive_id ?? raw.hiveId ?? ""),
-    hiveName: String(raw.hive_name ?? raw.hiveName ?? raw.hive_id ?? raw.hiveId ?? ""),
-    severity: normalizeSeverity(String(raw.severity ?? raw.level ?? raw.severity_level ?? "info")),
-    title: String(raw.title ?? raw.alert ?? "Alert"),
-    time: String(raw.time ?? raw.createdAt ?? raw.created_at ?? ""),
-    createdAt: String(raw.createdAt ?? raw.created_at ?? ""),
-    details: String(raw.details ?? raw.summary ?? raw.message ?? raw.recommended_action ?? ""),
-    acknowledged: Boolean(raw.acknowledged ?? raw.is_acknowledged ?? raw.action_status === 'acknowledged'),
-    audioRecording: raw.audio_recording ? {
-      id: String(raw.audio_recording.id),
-      file_path: String(raw.audio_recording.file_path),
-      duration_seconds: Number(raw.audio_recording.duration_seconds ?? 30),
-      recorded_at: String(raw.audio_recording.recorded_at),
-    } : null,
-    advisory: raw.advisory,
-  };
+    const alertDetail = {
+      id: String(raw.id ?? alertId),
+      hiveId: String(raw.hive_id ?? raw.hiveId ?? ""),
+      hiveName: String(raw.hive_name ?? raw.hiveName ?? raw.hive_id ?? raw.hiveId ?? ""),
+      severity: normalizeSeverity(String(raw.severity ?? raw.level ?? raw.severity_level ?? "info")),
+      title: String(raw.title ?? raw.alert ?? "Alert"),
+      time: String(raw.time ?? raw.createdAt ?? raw.created_at ?? ""),
+      createdAt: String(raw.createdAt ?? raw.created_at ?? ""),
+      details: String(raw.details ?? raw.summary ?? raw.message ?? raw.recommended_action ?? ""),
+      acknowledged: Boolean(raw.acknowledged ?? raw.is_acknowledged ?? raw.action_status === 'acknowledged'),
+      audioRecording: raw.audio_recording ? {
+        id: String(raw.audio_recording.id),
+        file_path: String(raw.audio_recording.file_path),
+        duration_seconds: Number(raw.audio_recording.duration_seconds ?? 30),
+        recorded_at: String(raw.audio_recording.recorded_at),
+      } : null,
+      advisory: raw.advisory,
+    };
+
+    // Cache the alert detail
+    await cacheData(`alert_${alertId}`, alertDetail);
+
+    return alertDetail;
+  } catch (error) {
+    // If fetch fails, try to get cached data
+    const cached = await getCachedData<AlertDetailData>(`alert_${alertId}`);
+    if (cached) {
+      return cached;
+    }
+    throw error;
+  }
 }
 
 export async function acknowledgeAlert(alertId: string): Promise<void> {
@@ -89,7 +116,7 @@ export async function fetchAdvisory(
     const raw = await apiRequest<any>(`/alerts/${encodeURIComponent(alertId)}/advisory`);
     if (!raw) return null;
     
-    return {
+    const advisory = {
       id: String(raw.id ?? `advisory_${alertId}`),
       alertId: String(raw.alert_id ?? alertId),
       type: raw.type === "Preventive" || raw.type === "Reactive" ? raw.type : "Reactive",
@@ -102,7 +129,17 @@ export async function fetchAdvisory(
           : "Medium",
       })) : [],
     };
-  } catch {
+    
+    // Cache the advisory
+    await cacheData(`advisory_${alertId}`, advisory);
+    
+    return advisory;
+  } catch (error) {
+    // If fetch fails, try to get cached advisory data
+    const cached = await getCachedData<Advisory>(`advisory_${alertId}`);
+    if (cached) {
+      return cached;
+    }
     return null;
   }
 }

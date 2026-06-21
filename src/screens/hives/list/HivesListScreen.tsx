@@ -64,13 +64,31 @@ export function HivesListScreen({ navigation, route }: Props) {
   const [isPollingEnabled, setIsPollingEnabled] = useState(true);
 
   const loadHives = useCallback(async (search: string, initial = false) => {
-    if (initial) setLoading(true);
+    // First, try to get cached data (only for non-search)
+    if (initial && !search) {
+      const cachedHives = await import("../../../api/utils/offlineCache").then(mod => mod.getCachedData<any>("hives"));
+      if (cachedHives) {
+        setHives(cachedHives);
+        setLoading(false);
+      } else if (initial) {
+        setLoading(true);
+      }
+    } else if (initial) {
+      setLoading(true);
+    }
     setError(null);
+
     try {
       const data = await fetchHives(search);
       setHives(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load hives");
+      // Only set error if we don't have any hives yet
+      setHives(currentHives => {
+        if (currentHives.length === 0) {
+          setError(err instanceof Error ? err.message : "Could not load hives");
+        }
+        return currentHives;
+      });
     } finally {
       if (initial) setLoading(false);
     }

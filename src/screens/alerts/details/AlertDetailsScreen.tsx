@@ -72,8 +72,19 @@ export function AlertDetailsScreen({ route }: Props) {
   const PRIORITY_COLOR = { High: "#DC2626", Medium: "#D97706", Low: "#16A34A" };
 
   const loadDetail = useCallback(async () => {
-    setLoading(true);
+    // First, try to get cached data
+    const cachedDetail = await import("../../../api/utils/offlineCache").then(mod => mod.getCachedData<any>(`alert_${alertId}`));
+    if (cachedDetail) {
+      setDetail(cachedDetail);
+      if (cachedDetail.advisory) {
+        setAdvisory(cachedDetail.advisory);
+      }
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
     setError(null);
+
     try {
       const data = await fetchAlertDetail(alertId);
       setDetail(data);
@@ -99,7 +110,13 @@ export function AlertDetailsScreen({ route }: Props) {
         setAdvisory(adv);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load alert details");
+      // Only set error if we don't have any detail yet
+      setDetail(currentDetail => {
+        if (!currentDetail) {
+          setError(err instanceof Error ? err.message : "Could not load alert details");
+        }
+        return currentDetail;
+      });
     } finally {
       setLoading(false);
     }

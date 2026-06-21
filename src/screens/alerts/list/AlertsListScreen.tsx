@@ -159,14 +159,28 @@ const selectedDashboardAlert = useMemo(() => {
   
 
   const loadAlerts = useCallback(async (initial = false) => {
-    if (initial) setLoading(true);
+    // First, try to get cached data
+    const cachedAlerts = await import("../../../api/utils/offlineCache").then(mod => mod.getCachedData<any>("alerts"));
+    if (cachedAlerts) {
+      setAlerts(cachedAlerts);
+      if (initial) setLoading(false);
+    } else if (initial) {
+      setLoading(true);
+    }
     setError(null);
     setAlertsError(null);
+
     try {
       const data = await fetchAlerts();
       setAlerts(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load alerts");
+      // Only set error if we don't have any alerts yet
+      setAlerts(currentAlerts => {
+        if (currentAlerts.length === 0) {
+          setError(err instanceof Error ? err.message : "Could not load alerts");
+        }
+        return currentAlerts;
+      });
     } finally {
       if (initial) setLoading(false);
     }
