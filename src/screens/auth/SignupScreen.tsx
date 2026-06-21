@@ -149,11 +149,11 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
         />
         
         {/* Divider */}
-        <View style={styles.sectionDivider} />
-        <Text style={styles.sectionLabel}>API Configuration</Text>
+        {/* <View style={styles.sectionDivider} />
+        <Text style={styles.sectionLabel}>API Configuration</Text> */}
 
         {/* API Key */}
-        <TextInput
+        {/* <TextInput
           placeholder="API Key (optional)"
           placeholderTextColor={THEME.placeholder}
           style={[styles.input, !!errors.apiKey && styles.inputError]}
@@ -165,10 +165,10 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
         {!!errors.apiKey && <Text style={styles.fieldError}>{errors.apiKey}</Text>}
         <Text style={styles.hintText}>
           Your sensor API key for connecting hive devices.
-        </Text>
+        </Text> */}
 
         {/* Hive recording server URL (farmer's ngrok / external server) */}
-        <TextInput
+        {/* <TextInput
           placeholder="Hive Server URL (optional, e.g. ngrok)"
           placeholderTextColor={THEME.placeholder}
           style={[styles.input, !!errors.serverUrl && styles.inputError]}
@@ -176,11 +176,11 @@ export function SignupScreen({ navigation, onAuthSuccess }: Props) {
           autoCorrect={false}
           value={hiveServerUrl}
           onChangeText={(t) => { setHiveServerUrl(t); clearError("serverUrl"); }}
-        />
-        {!!errors.serverUrl && <Text style={styles.fieldError}>{errors.serverUrl}</Text>}
+        /> */}
+        {/* {!!errors.serverUrl && <Text style={styles.fieldError}>{errors.serverUrl}</Text>}
         <Text style={styles.hintText}>
           URL of your hive audio recording server. You can add this later in Profile.
-        </Text>
+        </Text> */}
 
         {/* Divider */}
         <View style={styles.sectionDivider} />

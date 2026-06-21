@@ -315,7 +315,7 @@ export function ProfileScreen({
             )}
           </View>
         </View>
-        <View style={styles.profileDivider} />
+        {/* <View style={styles.profileDivider} />
 
         <View style={styles.profileFieldRow}>
           <Ionicons
@@ -323,8 +323,8 @@ export function ProfileScreen({
             size={18}
             color={THEME.textMuted}
             style={styles.profileFieldIcon}
-          />
-          <View style={{ flex: 1 }}>
+          /> */}
+          {/* <View style={{ flex: 1 }}>
             <Text style={styles.profileFieldLabel}>API Key</Text>
             {editing ? (
               <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -368,9 +368,9 @@ export function ProfileScreen({
                 )}
               </View>
             )}
-          </View>
-        </View>
-        <View style={styles.profileDivider} />
+          </View> */}
+        {/* </View>
+        <View style={styles.profileDivider} /> */}
 
         {/* Server URL is fixed (Railway) — not shown to end users */}
       </View>

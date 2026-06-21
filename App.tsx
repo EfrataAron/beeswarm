@@ -357,7 +357,7 @@ function MainTabsScreen({
           paddingTop: 8,
         },
         tabBarActiveTintColor: "#FFB268",
-        tabBarInactiveTintColor: "#FFB268",
+        tabBarInactiveTintColor: colors.muted,
         headerRight: () => (
           <HeaderOverflowMenu
             onOpenSettings={openSettingsPage}
