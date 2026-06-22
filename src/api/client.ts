@@ -76,10 +76,13 @@ function isBsadsApiBaseUrl(url: string): boolean {
   if (u.includes("ngrok")) return false;
   // if (u.includes(":8081")) return false; // Expo Metro bundler, not an API server
 
-  // if (u.includes("railway.app")) return true; // Railway (production) — commented out
+  // Allow your production server and local servers
+  if (u.includes("196.43.168.57")) return true;
+  if (u.includes("railway.app")) return true;
   if (u.includes("localhost") || u.includes("127.0.0.1") || u.includes("10.0.2.2"))
     return true;
   if (u.includes(":8000")) return true;
+  if (u.includes(":8085")) return true;
   return false;
 }
 
