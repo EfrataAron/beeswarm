@@ -110,7 +110,7 @@ export function SettingsScreen({
             thumbColor="#FFFFFF"
           />
         </View>
-        <View style={styles.settingsDivider} />
+        {/* <View style={styles.settingsDivider} />
         <View style={styles.settingsRow}>
           <View style={{ flex: 1 }}>
             <Text style={styles.settingsRowLabel}>Critical Alerts Only</Text>
@@ -124,12 +124,12 @@ export function SettingsScreen({
             trackColor={{ false: "#D0D5DD", true: THEME.accent }}
             thumbColor="#FFFFFF"
           />
-        </View>
+        </View> */}
       </View>
 
       <View style={styles.settingsSection}>
         <Text style={styles.settingsSectionTitle}>App Preferences</Text>
-        <View style={styles.settingsRow}>
+        {/* <View style={styles.settingsRow}>
           <View style={{ flex: 1 }}>
             <Text style={styles.settingsRowLabel}>Biometric Login</Text>
             <Text style={styles.settingsRowHint}>
@@ -142,7 +142,7 @@ export function SettingsScreen({
             trackColor={{ false: "#D0D5DD", true: THEME.accent }}
             thumbColor="#FFFFFF"
           />
-        </View>
+        </View> */}
         <View style={styles.settingsDivider} />
         <View style={styles.settingsRow}>
           <View style={{ flex: 1 }}>

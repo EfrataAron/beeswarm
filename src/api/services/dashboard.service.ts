@@ -6,6 +6,7 @@
 import { apiRequest } from "../client";
 import { DashboardData, HiveStatus } from "../types";
 import { fetchHiveDetail, fetchHives } from "./hive.service";
+import { fetchRecordingsToday, fetchSilentHives, fetchLowConfidenceInferences } from "./system.service";
 import {
   buildHourlyMetricHistory,
   normalizeHiveHistory,
@@ -165,10 +166,13 @@ function buildTrendFromHistory(
 
 export async function fetchDashboard(): Promise<DashboardData> {
   try {
-    // Fire the dashboard endpoint and hive list in parallel to save a round-trip
-    const [raw, hivesForStatus] = await Promise.all([
+    // Fire all necessary endpoints in parallel
+    const [raw, hivesForStatus, recordingsToday, silentHives, lowConfidenceInferences] = await Promise.all([
       apiRequest<any>("/dashboard"),
       fetchHives().catch(() => [] as Awaited<ReturnType<typeof fetchHives>>),
+      fetchRecordingsToday().catch(() => []),
+      fetchSilentHives().catch(() => []),
+      fetchLowConfidenceInferences().catch(() => []),
     ]);
 
     const metrics = raw?.key_metrics ?? raw?.keyMetrics ?? {};
@@ -189,6 +193,12 @@ export async function fetchDashboard(): Promise<DashboardData> {
     hivesForStatus.forEach(hive => {
       statusCounts[hive.status]++;
     });
+
+    // Helper to get hive name by id
+    const getHiveName = (hiveId: string): string | undefined => {
+      const hive = hivesForStatus.find(h => h.id === hiveId);
+      return hive?.name;
+    };
 
     const result: DashboardData = {
       totalHives: hivesForStatus.length,
@@ -218,14 +228,17 @@ export async function fetchDashboard(): Promise<DashboardData> {
             statusBreakdown: d.status_breakdown ?? d.statusBreakdown ?? undefined,
           }))
         : [],
-      recordingsToday: Number(raw?.recordings_today ?? raw?.recordingsToday ?? 0),
-      silentHives: Array.isArray(raw?.silent_hives ?? raw?.silentHives)
-        ? (raw?.silent_hives ?? raw?.silentHives)
-        : [],
+      recordingsToday: recordingsToday.length,
+      recordingsTodayDetails: recordingsToday,
+      silentHives: silentHives,
       highTempPreSwarmHives: Array.isArray(
         raw?.high_temp_pre_swarm_hives ?? raw?.highTempPreSwarmHives,
       )
-        ? (raw?.high_temp_pre_swarm_hives ?? raw?.highTempPreSwarmHives)
+        ? (raw?.high_temp_pre_swarm_hives ?? raw?.highTempPreSwarmHives).map((h: any) => ({
+            hiveId: String(h.hive_id ?? h.hiveId),
+            temperatureC: Number(h.temperature_c ?? h.temperatureC ?? 0),
+            hiveName: getHiveName(String(h.hive_id ?? h.hiveId)),
+          }))
         : [],
       allHives: [],
       allHivesHistory: [],
@@ -233,9 +246,8 @@ export async function fetchDashboard(): Promise<DashboardData> {
       pendingAdvisoryActions: Number(
         raw?.pending_advisory_actions ?? raw?.pendingAdvisoryActions ?? 0,
       ),
-      lowConfidenceInferences: Number(
-        raw?.low_confidence_inferences ?? raw?.lowConfidenceInferences ?? 0,
-      ),
+      lowConfidenceInferences: lowConfidenceInferences.length,
+      lowConfidenceInferencesDetails: lowConfidenceInferences,
     };
 
     // Fetch per-hive metric history (in parallel with the /dashboard call above,

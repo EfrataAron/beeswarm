@@ -85,6 +85,20 @@ export {
   sendTestNotification,
 } from "./services/notification.service";
 
+// Export system monitoring service
+export {
+  fetchRecordingsToday,
+  fetchSilentHives,
+  fetchLowConfidenceInferences,
+} from "./services/system.service";
+
+// Export types from system service
+export type {
+  RecordingDetail,
+  SilentHiveDetail,
+  LowConfidenceInference,
+} from "./services/system.service";
+
 // Export utility functions (for advanced use cases)
 export {
   validateServerUrl,

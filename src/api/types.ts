@@ -138,8 +138,24 @@ export type DashboardData = {
   /** Per-time-point status counts derived from hive state history — used for Hive Status Trend chart */
   statusTrend: Array<{ timeLabel: string; counts: Partial<Record<HiveStatus, number>> }>;
   recordingsToday: number;
-  silentHives: Array<{ hiveId: string; lastSeenHoursAgo: number }>;
-  highTempPreSwarmHives: Array<{ hiveId: string; temperatureC: number }>;
+  recordingsTodayDetails?: Array<{ 
+    id: string;
+    hiveId: string;
+    hiveName?: string;
+    durationSeconds: number;
+    recordedAt: string;
+  }>;
+  silentHives: Array<{ 
+    hiveId: string; 
+    lastSeenHoursAgo: number;
+    hiveName?: string;
+    lastInferenceAt?: string | null;
+  }>;
+  highTempPreSwarmHives: Array<{ 
+    hiveId: string; 
+    temperatureC: number;
+    hiveName?: string;
+  }>;
   allHives: Array<{
     hiveId: string;
     hiveName: string;
@@ -158,6 +174,12 @@ export type DashboardData = {
   }>;
   pendingAdvisoryActions: number;
   lowConfidenceInferences: number;
+  lowConfidenceInferencesDetails?: Array<{
+    hiveId: string;
+    hiveName?: string;
+    inferenceScore: number;
+    time: string;
+  }>;
 };
 
 export type AmbientWeather = {

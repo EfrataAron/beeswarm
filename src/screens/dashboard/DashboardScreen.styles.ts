@@ -491,14 +491,15 @@ statCard: {
     // },
       infoCard: {
       flex: 1,
-      backgroundColor: THEME.surface,
+      backgroundColor: t.surface,
       borderRadius: 12,
       padding: 16,
       alignItems: "center",
     },
   infoCardWarn: {
-    borderColor: "#FCA5A5",
-    backgroundColor: "#1A0F0F",
+    borderColor: "#EF4444",
+    backgroundColor: "#FEE2E2", // Light red background
+    borderWidth: 1,
   },
   infoCardValue: {
     fontSize: 26,
