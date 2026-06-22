@@ -24,8 +24,12 @@ export async function fetchHiveAlerts(hiveId: string):
 
 export async function fetchAlerts(): Promise<AlertItem[]> {
   try {
-    const raw = await apiRequest<any[]>("/alerts");
-    if (!Array.isArray(raw)) return [];
+    const raw = await apiRequest<any[]>("/alerts").catch(() => null); // Don't throw error, just return null
+    if (!raw || !Array.isArray(raw)) {
+      // Return cached data if available
+      const cached = await getCachedData<AlertItem[]>("alerts");
+      return cached ?? [];
+    }
     console.log("Raw API Response: /fetchAlerts()", raw);
 
     // Fetch hive details for each alert to get hive names
@@ -60,7 +64,8 @@ export async function fetchAlerts(): Promise<AlertItem[]> {
     if (cached) {
       return cached;
     }
-    throw error;
+    // If no cached data, just return an empty array instead of throwing
+    return [];
   }
 }
 

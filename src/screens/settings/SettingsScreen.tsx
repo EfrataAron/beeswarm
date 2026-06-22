@@ -26,6 +26,7 @@ type Props = NativeStackScreenProps<RootStackParamList, "Settings"> & {
 
 export function SettingsScreen({
   navigation,
+  route,
   darkModeEnabled,
   onDarkModeChange,
 }: Props) {

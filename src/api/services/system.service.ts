@@ -119,22 +119,23 @@ export async function fetchSilentHives(): Promise<SilentHiveDetail[]> {
 
 export async function fetchLowConfidenceInferences(): Promise<LowConfidenceInference[]> {
   try {
-    // First, let's fetch all recent inferences (adjust endpoint as needed)
     const [raw, hives] = await Promise.all([
-      apiRequest<any>("/inferences").catch(() => null), // Or /inferences/recent
-      fetchHives(),
+      apiRequest<any>("/inferences").catch(() => null),
+      fetchHives().catch(() => []),
     ]);
+
+    if (!raw) return [];
 
     const hiveById = new Map(hives.map((h) => [h.id, h]));
     const inferences: any[] = Array.isArray(raw) ? raw : raw?.inferences || raw?.data || [];
 
-    // Filter for low confidence scores (< 0.6) and map to our structure
+    // Filter for low confidence scores (< 0.6) and map to our structure using only DB fields (check both confidence and confidence_score)
     return inferences
-      .filter((inf) => Number(inf.confidence_score) < 0.6)
+      .filter((inf) => Number(inf.confidence ?? inf.confidence_score) < 0.6)
       .map((inf) => ({
         hiveId: String(inf.hive_id),
         hiveName: hiveById.get(String(inf.hive_id))?.name,
-        inferenceScore: Number(inf.confidence_score || 0),
+        inferenceScore: Number(inf.confidence ?? inf.confidence_score ?? 0),
         time: String(inf.created_at),
       }));
   } catch {

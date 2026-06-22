@@ -25,7 +25,13 @@ export async function fetchHives(search = ""): Promise<Hive[]> {
     const raw = await apiRequest<any>(
       "/hives",
       search ? { query: { search } } : undefined,
-    );
+    ).catch(() => null);
+
+    if (!raw) {
+      // If API fails, return cached data
+      const cached = await getCachedData<Hive[]>("hives");
+      return cached ?? [];
+    }
 
     const rows: any[] = Array.isArray(raw)
       ? raw
@@ -52,7 +58,7 @@ export async function fetchHives(search = ""): Promise<Hive[]> {
           item.installation_date ?? item.installationDate ?? "",
         ),
         status: normalizeStatus(
-          String(item.current_state ?? item.status ?? item.state ?? ""),
+          String(item.current_state ?? item.status ?? item.state ?? "unknown"),
         ),
         latitude: coords.latitude,
         longitude: coords.longitude,
@@ -82,10 +88,7 @@ export async function fetchHives(search = ""): Promise<Hive[]> {
   } catch (error) {
     // If fetch fails, try to get cached data
     const cached = await getCachedData<Hive[]>("hives");
-    if (cached) {
-      return cached;
-    }
-    throw error;
+    return cached ?? [];
   }
 }
 
@@ -136,7 +139,35 @@ export async function enrichHivesWithCoordinates(hives: Hive[]): Promise<Hive[]>
 
 export async function fetchHiveDetail(hiveId: string): Promise<HiveDetailData> {
   try {
-    const raw = await apiRequest<any>(`/hives/${encodeURIComponent(hiveId)}`);
+    const raw = await apiRequest<any>(`/hives/${encodeURIComponent(hiveId)}`).catch(() => null);
+
+    if (!raw) {
+      // If API fails, return cached data or a minimal object
+      const cached = await getCachedData<HiveDetailData>(`hive_${hiveId}`);
+      if (cached) return cached;
+      
+      // Fallback: return a minimal hive detail object
+      return {
+        id: hiveId,
+        name: hiveId,
+        location: "",
+        type: "",
+        installationDate: "",
+        status: "unknown",
+        stateSince: undefined,
+        alertTitle: "",
+        alertMessage: "",
+        metrics: [],
+        metricSeries: [],
+        mapLabel: hiveId,
+        acknowledged: false,
+        lastInferenceAt: undefined,
+        weather: undefined,
+        lastAnalysisTime: undefined,
+        latitude: undefined,
+        longitude: undefined,
+      };
+    }
 
     const rawSeries: any[] = raw.metric_series ?? raw.metricSeries ?? [];
     let metricSeries = rawSeries.map((p: any, i: number) =>
@@ -203,12 +234,31 @@ export async function fetchHiveDetail(hiveId: string): Promise<HiveDetailData> {
 
     return hiveDetail;
   } catch (error) {
-    // If fetch fails, try to get cached data
+    // If any error, try to get cached data
     const cached = await getCachedData<HiveDetailData>(`hive_${hiveId}`);
-    if (cached) {
-      return cached;
-    }
-    throw error;
+    if (cached) return cached;
+    
+    // Fallback: return a minimal hive detail object
+    return {
+      id: hiveId,
+      name: hiveId,
+      location: "",
+      type: "",
+      installationDate: "",
+      status: "unknown",
+      stateSince: undefined,
+      alertTitle: "",
+      alertMessage: "",
+      metrics: [],
+      metricSeries: [],
+      mapLabel: hiveId,
+      acknowledged: false,
+      lastInferenceAt: undefined,
+      weather: undefined,
+      lastAnalysisTime: undefined,
+      latitude: undefined,
+      longitude: undefined,
+    };
   }
 }
 

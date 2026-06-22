@@ -197,17 +197,19 @@ function HivesStackScreen({
   const colors = isDarkMode ? APP_COLORS.dark : APP_COLORS.light;
   return (
     <HivesStack.Navigator
-      screenOptions={{
-        headerStyle: { backgroundColor: colors.surface },
-        headerTintColor: colors.text,
-        headerTitleStyle: { fontWeight: "800" },
-        headerRight: () => (
-          <HeaderOverflowMenu
-            onOpenSettings={onOpenSettings}
-            onLogout={onLogout}
-          />
-        ),
-      }}
+      {...({
+        screenOptions: {
+          headerStyle: { backgroundColor: colors.surface },
+          headerTintColor: colors.text,
+          headerTitleStyle: { fontWeight: "800" },
+          headerRight: () => (
+            <HeaderOverflowMenu
+              onOpenSettings={onOpenSettings}
+              onLogout={onLogout}
+            />
+          ),
+        },
+      } as any)}
     >
       <HivesStack.Screen
         name="HiveList"
@@ -236,11 +238,14 @@ function HivesStackScreen({
         })}
       />
       <HivesStack.Screen
-        name="CreateHive"
-        options={{ title: "Create Hive" }}
-      >
-        {(props) => <CreateHiveScreen {...props} currentUser={currentUser} />}
-      </HivesStack.Screen>
+        {...({
+          name: "CreateHive",
+          options: { title: "Create Hive" },
+          children: (props: any) => (
+            <CreateHiveScreen {...props} currentUser={currentUser} />
+          ),
+        } as any)}
+      />
       <HivesStack.Screen
         name="EditHive"
         component={EditHiveScreen}
@@ -264,29 +269,32 @@ function AlertsStackScreen({
   const colors = isDarkMode ? APP_COLORS.dark : APP_COLORS.light;
   return (
     <AlertsStack.Navigator
-      screenOptions={{
-        headerStyle: { backgroundColor: colors.surface },
-        headerTintColor: colors.text,
-        headerTitleStyle: { fontWeight: "800" },
-        headerRight: () => (
-          <HeaderOverflowMenu
-            onOpenSettings={onOpenSettings}
-            onLogout={onLogout}
-          />
-        ),
-      }}
+      {...({
+        screenOptions: {
+          headerStyle: { backgroundColor: colors.surface },
+          headerTintColor: colors.text,
+          headerTitleStyle: { fontWeight: "800" },
+          headerRight: () => (
+            <HeaderOverflowMenu
+              onOpenSettings={onOpenSettings}
+              onLogout={onLogout}
+            />
+          ),
+        },
+      } as any)}
     >
       <AlertsStack.Screen
-        name="AlertsList"
-        options={{ title: "Recent Alerts" }}
-      >
-        {(props) => (
-          <AlertsListScreen
-            {...props}
-            route={{ ...props.route, params: { onAlertOpened } }}
-          />
-        )}
-      </AlertsStack.Screen>
+        {...({
+          name: "AlertsList",
+          options: { title: "Recent Alerts" },
+          children: (props: any) => (
+            <AlertsListScreen
+              {...props}
+              route={{ ...props.route, params: { onAlertOpened } }}
+            />
+          ),
+        } as any)}
+      />
     
       <AlertsStack.Screen
         name="AlertDetails"
@@ -311,7 +319,7 @@ function MainTabsScreen({
   isDarkMode: boolean;
   initialTabRoute: keyof MainTabParamList;
 }) {
-  const openSettingsPage = () => navigation.navigate("Settings");
+  const openSettingsPage = () => (navigation as any).navigate("Settings");
   const [unreadAlertCount, setUnreadAlertCount] = useState(0);
   const colors = isDarkMode ? APP_COLORS.dark : APP_COLORS.light;
 
@@ -334,40 +342,42 @@ function MainTabsScreen({
 
   return (
     <Tab.Navigator
-      initialRouteName={initialTabRoute}
-      screenOptions={{
-        headerStyle: { backgroundColor: colors.surface },
-        headerTintColor: colors.text,
-        headerTitleStyle: { fontWeight: "800" },
-        tabBarShowLabel: true,
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: "700",
-          includeFontPadding: false,
+      {...({
+        initialRouteName: initialTabRoute,
+        screenOptions: {
+          headerStyle: { backgroundColor: colors.surface },
+          headerTintColor: colors.text,
+          headerTitleStyle: { fontWeight: "800" },
+          tabBarShowLabel: true,
+          tabBarLabelStyle: {
+            fontSize: 11,
+            fontWeight: "700",
+            includeFontPadding: false,
+          },
+          tabBarIconStyle: { marginBottom: 2 },
+          tabBarItemStyle: {
+            alignItems: "center",
+            justifyContent: "center",
+            flex: 1,
+          },
+          tabBarStyle: {
+            backgroundColor: colors.surface,
+            borderTopColor: colors.border,
+            borderTopWidth: 1,
+            height: Platform.OS === "ios" ? 85 : 70,
+            paddingBottom: Platform.OS === "ios" ? 20 : 10,
+            paddingTop: 8,
+          },
+          tabBarActiveTintColor: "#FFB268",
+          tabBarInactiveTintColor: colors.muted,
+          headerRight: () => (
+            <HeaderOverflowMenu
+              onOpenSettings={openSettingsPage}
+              onLogout={onLogout}
+            />
+          ),
         },
-        tabBarIconStyle: { marginBottom: 2 },
-        tabBarItemStyle: {
-          alignItems: "center",
-          justifyContent: "center",
-          flex: 1,
-        },
-        tabBarStyle: {
-          backgroundColor: colors.surface,
-          borderTopColor: colors.border,
-          borderTopWidth: 1,
-          height: Platform.OS === "ios" ? 85 : 70,
-          paddingBottom: Platform.OS === "ios" ? 20 : 10,
-          paddingTop: 8,
-        },
-        tabBarActiveTintColor: "#FFB268",
-        tabBarInactiveTintColor: "t.textmuted",
-        headerRight: () => (
-          <HeaderOverflowMenu
-            onOpenSettings={openSettingsPage}
-            onLogout={onLogout}
-          />
-        ),
-      }}
+      } as any)}
     >
       <Tab.Screen
         name="Dashboard"
@@ -385,60 +395,62 @@ function MainTabsScreen({
         }}
       />
       <Tab.Screen
-        name="Hives"
-        options={{
-          headerShown: false,
-          title: "Hive Management",
-          tabBarLabel: "Hives",
-          tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons
-              name={focused ? "grid" : "grid-outline"}
-              size={size}
-              color={color}
+        {...({
+          name: "Hives",
+          options: {
+            headerShown: false,
+            title: "Hive Management",
+            tabBarLabel: "Hives",
+            tabBarIcon: ({ color, size, focused }: any) => (
+              <Ionicons
+                name={focused ? "grid" : "grid-outline"}
+                size={size}
+                color={color}
+              />
+            ),
+          },
+          children: () => (
+            <HivesStackScreen
+              onOpenSettings={openSettingsPage}
+              onLogout={onLogout}
+              currentUser={currentUser}
+              isDarkMode={isDarkMode}
             />
           ),
-        }}
-      >
-        {() => (
-          <HivesStackScreen
-            onOpenSettings={openSettingsPage}
-            onLogout={onLogout}
-            currentUser={currentUser}
-            isDarkMode={isDarkMode}
-          />
-        )}
-      </Tab.Screen>
+        } as any)}
+      />
       <Tab.Screen
-        name="Alerts"
-        options={{
-          headerShown: false,
-          tabBarLabel: "Alerts",
-          tabBarBadge: unreadAlertCount > 0 ? unreadAlertCount : undefined,
-          tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons
-              name={focused ? "notifications" : "notifications-outline"}
-              size={size}
-              color={color}
+        {...({
+          name: "Alerts",
+          options: {
+            headerShown: false,
+            tabBarLabel: "Alerts",
+            tabBarBadge: unreadAlertCount > 0 ? unreadAlertCount : undefined,
+            tabBarIcon: ({ color, size, focused }: any) => (
+              <Ionicons
+                name={focused ? "notifications" : "notifications-outline"}
+                size={size}
+                color={color}
+              />
+            ),
+          },
+          children: () => (
+            <AlertsStackScreen
+              onOpenSettings={openSettingsPage}
+              onLogout={onLogout}
+              onAlertOpened={handleAlertOpened}
+              isDarkMode={isDarkMode}
             />
           ),
-        }}
-      >
-        {() => (
-          <AlertsStackScreen
-            onOpenSettings={openSettingsPage}
-            onLogout={onLogout}
-            onAlertOpened={handleAlertOpened}
-            isDarkMode={isDarkMode}
-          />
-        )}
-      </Tab.Screen>
+        } as any)}
+      />
       <Tab.Screen
         name="Map"
         component={MapScreen}
         options={{
           title: "Map",
           tabBarLabel: "Map",
-          tabBarIcon: ({ color, size, focused }) => (
+          tabBarIcon: ({ color, size, focused }: any) => (
             <Ionicons
               name={focused ? "location" : "location-outline"}
               size={size}
@@ -449,28 +461,29 @@ function MainTabsScreen({
       />
       
       <Tab.Screen
-        name="Profile"
-        options={{
-          title: "Profile",
-          tabBarLabel: "Profile",
-          tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons
-              name={focused ? "person-circle" : "person-circle-outline"}
-              size={size}
-              color={color}
+        {...({
+          name: "Profile",
+          options: {
+            title: "Profile",
+            tabBarLabel: "Profile",
+            tabBarIcon: ({ color, size, focused }: any) => (
+              <Ionicons
+                name={focused ? "person-circle" : "person-circle-outline"}
+                size={size}
+                color={color}
+              />
+            ),
+          },
+          children: () => (
+            <ProfileScreen
+              onLogout={onLogout}
+              onOpenSettings={openSettingsPage}
+              currentUser={currentUser}
+              onProfileUpdate={onProfileUpdate}
             />
           ),
-        }}
-      >
-        {() => (
-          <ProfileScreen
-            onLogout={onLogout}
-            onOpenSettings={openSettingsPage}
-            currentUser={currentUser}
-            onProfileUpdate={onProfileUpdate}
-          />
-        )}
-      </Tab.Screen>
+        } as any)}
+      />
     </Tab.Navigator>
   );
 }
@@ -491,13 +504,25 @@ export default function App() {
   const { expoPushToken } = useNotifications();
 
   // Load fonts
-  let [fontsLoaded] = useFonts({
+  let [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
     Inter_600SemiBold,
     Inter_700Bold,
     Inter_800ExtraBold,
   });
+  
+  // Fallback for fonts loading timeout
+  const [fontsTimedOut, setFontsTimedOut] = useState(false);
+  
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      console.log("[App] Font loading timed out - proceeding without custom fonts");
+      setFontsTimedOut(true);
+    }, 3000); // 3 seconds timeout
+    
+    return () => clearTimeout(timeout);
+  }, []);
 
   // Load Google Fonts for web
   useEffect(() => {
@@ -663,7 +688,7 @@ export default function App() {
     }
   };
 
-  if (!fontsLoaded || bootstrapping) {
+  if ((!fontsLoaded && !fontError && !fontsTimedOut) || bootstrapping) {
     return (
       <View
         style={{
@@ -682,78 +707,90 @@ export default function App() {
     <>
       <OfflineBanner />
       <NavigationContainer 
-        theme={navigationTheme} 
-        linking={linking}
-        initialState={navigationState}
-        onStateChange={(state) => {
-          // Reset idle timer on any navigation (counts as user activity)
-          resetIdleTimer();
-          // Save navigation state to AsyncStorage
-          AsyncStorage.setItem(NAVIGATION_STATE_KEY, JSON.stringify(state)).catch(() => {});
-        }}
+        {...({
+          theme: navigationTheme,
+          linking: linking,
+          initialState: navigationState,
+          onStateChange: (state: any) => {
+            // Reset idle timer on any navigation (counts as user activity)
+            resetIdleTimer();
+            // Save navigation state to AsyncStorage
+            AsyncStorage.setItem(NAVIGATION_STATE_KEY, JSON.stringify(state)).catch(() => {});
+          },
+        } as any)}
       >
         <ExpoStatusBar style={colors.statusBar} />
         <NotificationHandler />
         <RootStack.Navigator
-          initialRouteName={
-            isAuthenticated
+          {...({
+            initialRouteName: isAuthenticated
               ? initialWebPath === "/settings"
                 ? "Settings"
                 : "MainTabs"
-              : getInitialAuthRoute(initialWebPath)
-          }
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: colors.page },
-            animation: "slide_from_right",
-          }}
+              : getInitialAuthRoute(initialWebPath),
+            screenOptions: {
+              headerShown: false,
+              contentStyle: { backgroundColor: colors.page },
+              animation: "slide_from_right",
+            },
+          } as any)}
         >
           {!isAuthenticated ? (
             <>
               <RootStack.Screen name="Welcome" component={WelcomeScreen} />
-              <RootStack.Screen name="Login">
-                {(props) => (
-                  <LoginScreen {...props} onAuthSuccess={handleAuthSuccess} />
-                )}
-              </RootStack.Screen>
-              <RootStack.Screen name="Signup">
-                {(props) => (
-                  <SignupScreen {...props} onAuthSuccess={handleAuthSuccess} />
-                )}
-              </RootStack.Screen>
+              <RootStack.Screen
+                {...({
+                  name: "Login",
+                  children: (props: any) => (
+                    <LoginScreen {...props} onAuthSuccess={handleAuthSuccess} />
+                  ),
+                } as any)}
+              />
+              <RootStack.Screen
+                {...({
+                  name: "Signup",
+                  children: (props: any) => (
+                    <SignupScreen {...props} onAuthSuccess={handleAuthSuccess} />
+                  ),
+                } as any)}
+              />
             </>
           ) : (
             <>
-              <RootStack.Screen name="MainTabs">
-                {(props) => (
-                  <MainTabsScreen
-                    {...props}
-                    currentUser={currentUser}
-                    onProfileUpdate={setCurrentUser}
-                    onLogout={() => void handleLogout()}
-                    isDarkMode={darkModeEnabled}
-                    initialTabRoute={getInitialTabRoute(initialWebPath)}
-                  />
-                )}
-              </RootStack.Screen>
               <RootStack.Screen
-                name="Settings"
-                options={{
-                  headerShown: true,
-                  title: "Settings",
-                  headerStyle: { backgroundColor: colors.surface },
-                  headerTintColor: colors.text,
-                  headerTitleStyle: { fontWeight: "800" },
-                }}
-              >
-                {(props) => (
-                  <SettingsScreen
-                    {...props}
-                    darkModeEnabled={darkModeEnabled}
-                    onDarkModeChange={handleDarkModeChange}
-                  />
-                )}
-              </RootStack.Screen>
+                {...({
+                  name: "MainTabs",
+                  children: (props: any) => (
+                    <MainTabsScreen
+                      {...props}
+                      currentUser={currentUser}
+                      onProfileUpdate={setCurrentUser}
+                      onLogout={() => void handleLogout()}
+                      isDarkMode={darkModeEnabled}
+                      initialTabRoute={getInitialTabRoute(initialWebPath)}
+                    />
+                  ),
+                } as any)}
+              />
+              <RootStack.Screen
+                {...({
+                  name: "Settings",
+                  options: {
+                    headerShown: true,
+                    title: "Settings",
+                    headerStyle: { backgroundColor: colors.surface },
+                    headerTintColor: colors.text,
+                    headerTitleStyle: { fontWeight: "800" },
+                  },
+                  children: (props: any) => (
+                    <SettingsScreen
+                      {...props}
+                      darkModeEnabled={darkModeEnabled}
+                      onDarkModeChange={handleDarkModeChange}
+                    />
+                  ),
+                } as any)}
+              />
             </>
           )}
         </RootStack.Navigator>
