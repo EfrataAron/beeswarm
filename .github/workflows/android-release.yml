@@ -80,7 +80,7 @@ jobs:
 
   build-android:
     name: Build Android APK
-    needs: [test, version-and-release]
+    needs: [test]
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
@@ -119,12 +119,38 @@ jobs:
             android/app/build/outputs/apk/debug/app-debug.apk
             android/app/build/outputs/apk/release/app-release.apk
 
-      - name: Attach APKs to Release
+      - name: Download latest release tag (if exists)
+        id: get-latest-tag
+        uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              const latestRelease = await github.rest.repos.getLatestRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo
+              });
+              return { tagName: latestRelease.data.tag_name, exists: true };
+            } catch (error) {
+              return { tagName: null, exists: false };
+            }
+
+      - name: Attach APKs to Latest Release (if exists)
         uses: softprops/action-gh-release@v2
-        if: needs.version-and-release.outputs.new-release-published == 'true'
+        if: steps.get-latest-tag.outputs.exists == 'true'
         with:
           files: |
             android/app/build/outputs/apk/debug/app-debug.apk
             android/app/build/outputs/apk/release/app-release.apk
-          tag_name: ${{ needs.version-and-release.outputs.new-release-tag }}
+          tag_name: ${{ fromJSON(steps.get-latest-tag.outputs.result).tagName }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Initial Release (if no releases yet)
+        uses: softprops/action-gh-release@v2
+        if: steps.get-latest-tag.outputs.exists == 'false'
+        with:
+          tag_name: 'v1.0.0'
+          name: 'Initial Release'
+          files: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+            android/app/build/outputs/apk/release/app-release.apk
           token: ${{ secrets.GITHUB_TOKEN }}
