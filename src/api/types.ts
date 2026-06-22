@@ -151,11 +151,13 @@ export type DashboardData = {
     hiveName?: string;
     lastInferenceAt?: string | null;
   }>;
+  
   highTempPreSwarmHives: Array<{ 
     hiveId: string; 
     temperatureC: number;
     hiveName?: string;
   }>;
+
   allHives: Array<{
     hiveId: string;
     hiveName: string;
@@ -163,6 +165,7 @@ export type DashboardData = {
     humidityPercent: number;
     status?: HiveStatus;
   }>;
+
   allHivesHistory: Array<{
     hiveId: string;
     hiveName?: string;

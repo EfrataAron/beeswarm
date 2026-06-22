@@ -6,7 +6,7 @@
 import { apiRequest } from "../client";
 import { DashboardData, HiveStatus } from "../types";
 import { fetchHiveDetail, fetchHives } from "./hive.service";
-import { fetchRecordingsToday, fetchSilentHives, fetchLowConfidenceInferences } from "./system.service";
+import { fetchLowConfidenceInferences } from "./system.service";
 import {
   buildHourlyMetricHistory,
   normalizeHiveHistory,
@@ -167,11 +167,9 @@ function buildTrendFromHistory(
 export async function fetchDashboard(): Promise<DashboardData> {
   try {
     // Fire all necessary endpoints in parallel
-    const [raw, hivesForStatus, recordingsToday, silentHives, lowConfidenceInferences] = await Promise.all([
+    const [raw, hivesForStatus, lowConfidenceInferences] = await Promise.all([
       apiRequest<any>("/dashboard"),
       fetchHives().catch(() => [] as Awaited<ReturnType<typeof fetchHives>>),
-      fetchRecordingsToday().catch(() => []),
-      fetchSilentHives().catch(() => []),
       fetchLowConfidenceInferences().catch(() => []),
     ]);
 
@@ -228,9 +226,14 @@ export async function fetchDashboard(): Promise<DashboardData> {
             statusBreakdown: d.status_breakdown ?? d.statusBreakdown ?? undefined,
           }))
         : [],
-      recordingsToday: recordingsToday.length,
-      recordingsTodayDetails: recordingsToday,
-      silentHives: silentHives,
+      recordingsToday: Number(raw?.recordings_today ?? 0),
+      recordingsTodayDetails: [],
+      silentHives: (raw?.silent_hives ?? []).map((h: any) => ({
+        hiveId: String(h.hive_id),
+        hiveName: String(h.hive_name ?? h.hive_id),
+        lastSeenHoursAgo: Number(h.hours_silent ?? 4),
+        lastInferenceAt: h.last_audio_at ?? null,
+      })),
       highTempPreSwarmHives: Array.isArray(
         raw?.high_temp_pre_swarm_hives ?? raw?.highTempPreSwarmHives,
       )
