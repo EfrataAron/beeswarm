@@ -1,3 +1,10 @@
+## [1.1.2](https://github.com/EfrataAron/beeswarm/compare/v1.1.1...v1.1.2) (2026-06-22)
+
+
+### Bug Fixes
+
+* allow custom server URL and cleartext traffic ([12e63b1](https://github.com/EfrataAron/beeswarm/commit/12e63b1d211d9869a10e67b79a7edd8d86afd75c))
+
 ## [1.1.1](https://github.com/EfrataAron/beeswarm/compare/v1.1.0...v1.1.1) (2026-06-22)
 
 
