@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/EfrataAron/beeswarm/compare/v1.0.0...v1.1.0) (2026-06-22)
+
+
+### Features
+
+* add full CI/CD pipeline with APK releases ([6bb07af](https://github.com/EfrataAron/beeswarm/commit/6bb07af31d6d0419103148917bd7a705e83b2828))
+
 # 1.0.0 (2026-06-22)
 
 
