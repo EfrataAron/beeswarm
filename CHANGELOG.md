@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/EfrataAron/beeswarm/compare/v1.1.0...v1.1.1) (2026-06-22)
+
+
+### Bug Fixes
+
+* update to Node 22 and fix release tag error ([b839895](https://github.com/EfrataAron/beeswarm/commit/b83989590e0cd473b16931d0ea0ba611d49c70e1))
+
 # [1.1.0](https://github.com/EfrataAron/beeswarm/compare/v1.0.0...v1.1.0) (2026-06-22)
 
 
