@@ -1,3 +1,12 @@
+## [1.1.3](https://github.com/EfrataAron/beeswarm/compare/v1.1.2...v1.1.3) (2026-06-22)
+
+
+### Bug Fixes
+
+* apk build and alerts ([f4741a5](https://github.com/EfrataAron/beeswarm/commit/f4741a5fe0c47ed1cfe2984953a04be01c2191f7))
+* icons on mobile phone app ([217aa78](https://github.com/EfrataAron/beeswarm/commit/217aa788d63664ba9ba35e8f9df3a5309564aa88))
+* sync package-lock.json and fix hive name display ([80b98d6](https://github.com/EfrataAron/beeswarm/commit/80b98d68d6e59b6514e6f40e1044678c8506cbbb))
+
 ## [1.1.2](https://github.com/EfrataAron/beeswarm/compare/v1.1.1...v1.1.2) (2026-06-22)
 
 
