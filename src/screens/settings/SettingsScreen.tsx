@@ -129,20 +129,7 @@ export function SettingsScreen({
 
       <View style={styles.settingsSection}>
         <Text style={styles.settingsSectionTitle}>App Preferences</Text>
-        {/* <View style={styles.settingsRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.settingsRowLabel}>Biometric Login</Text>
-            <Text style={styles.settingsRowHint}>
-              Use fingerprint or face unlock on launch
-            </Text>
-          </View>
-          <Switch
-            value={biometricLoginEnabled}
-            onValueChange={setBiometricLoginEnabled}
-            trackColor={{ false: "#D0D5DD", true: THEME.accent }}
-            thumbColor="#FFFFFF"
-          />
-        </View> */}
+       
         <View style={styles.settingsDivider} />
         <View style={styles.settingsRow}>
           <View style={{ flex: 1 }}>
