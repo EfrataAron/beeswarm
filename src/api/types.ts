@@ -68,6 +68,12 @@ export type HiveDetailData = {
   mapLabel: string;
   acknowledged: boolean;
   lastInferenceAt?: string | null;
+  confidenceScore?: number | null;
+  predictionDetails?: {
+    predicted_class: string;
+    confidence: number;
+    top_predictions: Array<{ class: string; confidence: number }>;
+  } | null;
   weather?: WeatherData;
   lastAnalysisTime?: string | null;
   latitude?: number;
@@ -85,6 +91,7 @@ export type AlertItem = {
   summary: string;
   alertStatus: string;
   hiveName: string;
+  viewedAt?: string | null;  // set when farmer has opened the alert
 };
 
 export type AudioRecording = {
@@ -106,10 +113,16 @@ export type AlertDetailData = {
   acknowledged: boolean;
   audioRecording?: AudioRecording | null; 
   advisory?: Advisory | null;
+  predictionDetails?: {
+    predicted_class: string;
+    confidence: number;
+    top_predictions: Array<{ class: string; confidence: number }>;
+  } | null;
 };
 
 export type AdvisoryAction = {
   id: string;
+  title?: string;
   description: string;
   priority: "High" | "Medium" | "Low";
 };

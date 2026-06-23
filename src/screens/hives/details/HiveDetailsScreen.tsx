@@ -295,6 +295,7 @@ import {
   fetchHiveDetail,
   deleteHive,
 } from "../../../api";
+import { apiRequest } from "../../../api/client";
 import {
   STATUS_COLOR,
   displayStatus,
@@ -307,6 +308,7 @@ import { useTemperatureUnit } from "../../../hooks/useTemperatureUnit";
 import { HivesStackParamList, MainTabParamList } from "../../../navigation/types";
 import { createHiveDetailsStyles } from "./HiveDetailsScreen.styles";
 import { HiveMetricsLineChart } from "../../../components/HiveMetricsLineChart";
+import { HiveStatusTrendChart } from "../../../components/HiveStatusTrendChart";
 
 type NavigationProp = CompositeNavigationProp<
   NativeStackScreenProps<HivesStackParamList, "HiveDetails">["navigation"],
@@ -329,6 +331,11 @@ export function HiveDetailsScreen({ route, navigation }: Props) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  // Hive conditions (internal sensor data) + toggle
+  const [hiveConditions, setHiveConditions] = useState<any[]>([]);
+  const [showHiveConditions, setShowHiveConditions] = useState(true);
+  // Per-hive inference state trend
+  const [stateTrendPoints, setStateTrendPoints] = useState<any[]>([]);
 
   const loadDetail = useCallback(async () => {
     // First, try to get cached data
@@ -342,12 +349,35 @@ export function HiveDetailsScreen({ route, navigation }: Props) {
     setError(null);
 
     try {
-      const [data, alerts] = await Promise.all([
+      const [data, alerts, conditions, trend] = await Promise.all([
         fetchHiveDetail(hiveId),
         fetchHiveAlerts(hiveId),
+        apiRequest<any[]>(`/hives/${encodeURIComponent(hiveId)}/conditions`).catch(() => []),
+        apiRequest<any[]>(`/hives/${encodeURIComponent(hiveId)}/state-trend?limit=300`).catch(() => []),
       ]);
       setDetail(data);
-      setHiveAlerts(alerts);
+      // Newest first, limit to 10
+      setHiveAlerts([...alerts].sort((a, b) =>
+        new Date(b.date).getTime() - new Date(a.date).getTime()
+      ).slice(0, 10));
+      setHiveConditions(Array.isArray(conditions) ? conditions : []);
+      // Build statusTrend: group inferences by time slot, count states per slot
+      if (Array.isArray(trend) && trend.length > 0) {
+        const { normalizeStatus } = await import("../../../api/utils/normalizers");
+        const buckets = new Map<string, Record<string, number>>();
+        trend.forEach((r: any) => {
+          const dt = new Date(r.analyzed_at + "Z");
+          const label = dt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+          if (!buckets.has(label)) buckets.set(label, {});
+          const counts = buckets.get(label)!;
+          // Normalize raw DB state (e.g. "swarm") to HiveStatus (e.g. "swarming")
+          const status = normalizeStatus(r.hive_state);
+          counts[status] = (counts[status] ?? 0) + 1;
+        });
+        const points = Array.from(buckets.entries())
+          .map(([timeLabel, counts]) => ({ timeLabel, counts }));
+        setStateTrendPoints(points);
+      }
     } catch (err) {
       // Only set error if we don't have any detail yet
       setDetail(currentDetail => {
@@ -567,9 +597,9 @@ export function HiveDetailsScreen({ route, navigation }: Props) {
               ]}
             >
             </Text>
-            {lastAnalysisTime ? (
+            {detail.lastInferenceAt ? (
               <Text style={styles.detailLastAnalysisTime}>
-                Last analysis: {formatRelativeTime(lastAnalysisTime)}
+                Last analysis: {formatRelativeTime(detail.lastInferenceAt)}
               </Text>
             ) : (
               <Text style={styles.detailLastAnalysisTime}>
@@ -596,7 +626,7 @@ export function HiveDetailsScreen({ route, navigation }: Props) {
           <View style={{ flex: 1 }}>
             <Text style={styles.detailAlertTitle}>
               <Text style={styles.detailAlertTitle}>
-                {lastAnalysisTime ? (
+                {detail.lastInferenceAt ? (
                   <>
                     {statusCondition(detail.status)}
                   </>
@@ -618,7 +648,7 @@ export function HiveDetailsScreen({ route, navigation }: Props) {
         <View style={[styles.card, { backgroundColor: theme.surface }]}>
           <View style={styles.weatherHeader}>
             <Ionicons name="cloud-outline" size={18} color={theme.primary} />
-            <Text style={styles.cardTitle}>Latest Weather Readings</Text>
+            <Text style={styles.cardTitle}>Latest Surrounding Weather Readings</Text>
           </View>
           <Text style={styles.weatherSubtitle}>
             {detail.weather.weatherDescription ?? "Current conditions"}
@@ -653,26 +683,185 @@ export function HiveDetailsScreen({ route, navigation }: Props) {
 
       {/* ── Metrics Graph ── */}
       <View style={[styles.card, { backgroundColor: theme.surface }]}>
-        <Text style={styles.cardTitle}>
-          Temperature & Humidity Trends
-        </Text>
-
-        {metricSeries.length === 0 ? (
-          <View style={[styles.centerState, { paddingVertical: 40 }]}>
-            <Ionicons name="analytics-outline" size={40} color={theme.textMuted} />
-            <Text style={styles.stateText}>No analysis history available yet</Text>
-            <Text style={styles.metricsSubtitle}>
-              Check back once we've collected the first set of readings
-            </Text>
+        {/* Header with toggle */}
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+          <Text style={styles.cardTitle}>
+            {showHiveConditions ? "Hive Internal Conditions" : "Temperature & Humidity Trends"}
+          </Text>
+          {/* Toggle between ambient weather and internal hive sensors */}
+          <View style={{ flexDirection: "row", backgroundColor: theme.surfaceSoft, borderRadius: 20, padding: 3 }}>
+            <Pressable
+              onPress={() => setShowHiveConditions(false)}
+              style={{
+                paddingHorizontal: 10, paddingVertical: 4, borderRadius: 16,
+                backgroundColor: !showHiveConditions ? theme.accent : "transparent",
+              }}
+            >
+              <Text style={{ fontSize: 10, fontWeight: "700", color: !showHiveConditions ? "#fff" : theme.textMuted }}>
+                Ambient
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setShowHiveConditions(true)}
+              style={{
+                paddingHorizontal: 10, paddingVertical: 4, borderRadius: 16,
+                backgroundColor: showHiveConditions ? theme.accent : "transparent",
+              }}
+            >
+              <Text style={{ fontSize: 10, fontWeight: "700", color: showHiveConditions ? "#fff" : theme.textMuted }}>
+                In-Hive
+              </Text>
+            </Pressable>
           </View>
+        </View>
+
+        {showHiveConditions ? (
+          /* ── In-hive sensor readings from hive_conditions table ── */
+          hiveConditions.length === 0 ? (
+            <View style={[styles.centerState, { paddingVertical: 40 }]}>
+              <Ionicons name="thermometer-outline" size={40} color={theme.textMuted} />
+              <Text style={styles.stateText}>No internal sensor data yet</Text>
+              <Text style={styles.metricsSubtitle}>Internal hive readings appear here once sensors transmit data</Text>
+            </View>
+          ) : (
+            <View>
+              <Text style={[styles.metricsSubtitle, { marginBottom: 12 }]}>
+                Temperature & humidity from 3 hive zones · {hiveConditions.length} readings
+              </Text>
+              {/* Zone legend */}
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+                {[
+                  { label: "Honey zone", color: "#F59E0B" },
+                  { label: "Brood zone", color: "#EF4444" },
+                  { label: "Exterior", color: "#0891B2" },
+                ].map(z => (
+                  <View key={z.label} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                    <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: z.color }} />
+                    <Text style={{ fontSize: 10, color: theme.textMuted, fontWeight: "600" }}>{z.label}</Text>
+                  </View>
+                ))}
+              </View>
+              {/* Latest reading summary */}
+              {(() => {
+                const latest = hiveConditions[hiveConditions.length - 1];
+                if (!latest) return null;
+                return (
+                  <View style={{ flexDirection: "row", gap: 8, marginBottom: 12 }}>
+                    {[
+                      { label: "Honey", temp: latest.temp_honey, hum: latest.humidity_honey, color: "#F59E0B" },
+                      { label: "Brood", temp: latest.temp_brood, hum: latest.humidity_brood, color: "#EF4444" },
+                      { label: "Exterior", temp: latest.temp_exterior, hum: latest.humidity_exterior, color: "#0891B2" },
+                    ].map(z => (
+                      <View key={z.label} style={{ flex: 1, backgroundColor: theme.surfaceSoft, borderRadius: 10, padding: 10, alignItems: "center" }}>
+                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: z.color, marginBottom: 4 }} />
+                        <Text style={{ fontSize: 11, fontWeight: "800", color: theme.primary }}>
+                          {z.temp != null ? `${z.temp.toFixed(1)}°C` : "—"}
+                        </Text>
+                        <Text style={{ fontSize: 10, color: theme.textMuted }}>
+                          {z.hum != null ? `${z.hum.toFixed(0)}%` : "—"}
+                        </Text>
+                        <Text style={{ fontSize: 9, color: theme.textMuted, marginTop: 2, fontWeight: "600" }}>{z.label}</Text>
+                      </View>
+                    ))}
+                  </View>
+                );
+              })()}
+              <Text style={{ fontSize: 11, color: theme.textMuted, textAlign: "center" }}>
+                Last updated {formatRelativeTime(hiveConditions[hiveConditions.length - 1]?.recorded_at)}
+              </Text>
+            </View>
+          )
         ) : (
-          <HiveMetricsLineChart
-            metricSeries={metricSeries}
-            // hiveId={detail.id}
-            hiveName={detail.name}
-          />
+          /* ── Ambient weather-based metric series ── */
+          metricSeries.length === 0 ? (
+            <View style={[styles.centerState, { paddingVertical: 40 }]}>
+              <Ionicons name="analytics-outline" size={40} color={theme.textMuted} />
+              <Text style={styles.stateText}>No analysis history available yet</Text>
+              <Text style={styles.metricsSubtitle}>
+                Check back once we've collected the first set of readings
+              </Text>
+            </View>
+          ) : (
+            <HiveMetricsLineChart
+              metricSeries={metricSeries}
+              hiveName={detail.name}
+            />
+          )
         )}
       </View>
+
+
+      {/* ── Hive State Trend (per-hive inference history) ── */}
+      {stateTrendPoints.length > 0 && (
+        <View style={[styles.card, { backgroundColor: theme.surface }]}>
+          <View style={styles.rowBetween}>
+            <Text style={styles.cardTitle}>State History</Text>
+            <Text style={{ fontSize: 10, color: theme.textMuted, fontWeight: "600" }}>
+              Last {stateTrendPoints.length} inferences
+            </Text>
+          </View>
+          <Text style={[styles.metricsSubtitle, { marginBottom: 4 }]}>
+            How this hive's detected state has changed over time
+          </Text>
+          <HiveStatusTrendChart statusTrend={stateTrendPoints} />
+        </View>
+      )}
+
+      {/* ── Latest ML Inference Result ── */}
+      {detail.predictionDetails && (
+        <View style={[styles.card, { backgroundColor: theme.surface }]}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
+            <Ionicons name="hardware-chip-outline" size={18} color={theme.accent} />
+            <Text style={styles.cardTitle}>Latest ML Analysis</Text>
+            <View style={{ marginLeft: "auto", backgroundColor: theme.surfaceSoft, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+              <Text style={{ fontSize: 11, fontWeight: "700", color: theme.textMuted }}>
+                {formatRelativeTime(detail.lastInferenceAt)}
+              </Text>
+            </View>
+          </View>
+
+          {/* Predicted class + main confidence */}
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 16, padding: 12, backgroundColor: theme.surfaceSoft, borderRadius: 10 }}>
+            <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: `${STATUS_COLOR[detail.status]}20`, alignItems: "center", justifyContent: "center" }}>
+              <Ionicons name="analytics-outline" size={22} color={STATUS_COLOR[detail.status]} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 16, fontWeight: "800", color: theme.primary }}>
+                {detail.predictionDetails.predicted_class.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())}
+              </Text>
+              <Text style={{ fontSize: 12, color: theme.textMuted, marginTop: 2 }}>Predicted hive state</Text>
+            </View>
+            <Text style={{ fontSize: 22, fontWeight: "900", color: STATUS_COLOR[detail.status] }}>
+              {(detail.predictionDetails.confidence * 100).toFixed(1)}%
+            </Text>
+          </View>
+
+          {/* Top 3 predictions bar chart */}
+          <Text style={{ fontSize: 12, fontWeight: "700", color: theme.textMuted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
+            Top Predictions
+          </Text>
+          {detail.predictionDetails.top_predictions.map((pred: { class: string; confidence: number }, idx: number) => {
+            const pct = pred.confidence * 100;
+            const isTop = idx === 0;
+            const barColor = isTop ? STATUS_COLOR[detail.status] : (theme.isDark ? "#4B5563" : "#CBD5E1");
+            return (
+              <View key={pred.class} style={{ marginBottom: 8 }}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 3 }}>
+                  <Text style={{ fontSize: 13, fontWeight: isTop ? "700" : "500", color: isTop ? theme.primary : theme.textMuted }}>
+                    {pred.class.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())}
+                  </Text>
+                  <Text style={{ fontSize: 13, fontWeight: "700", color: isTop ? STATUS_COLOR[detail.status] : theme.textMuted }}>
+                    {pct.toFixed(2)}%
+                  </Text>
+                </View>
+                <View style={{ height: 7, backgroundColor: theme.surfaceSoft, borderRadius: 4, overflow: "hidden" }}>
+                  <View style={{ width: `${pct}%`, height: "100%", backgroundColor: barColor, borderRadius: 4 }} />
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      )}
 
       {/* ── Notifications ── */}
       <View style={[styles.card, { backgroundColor: theme.surface }]}>
@@ -680,14 +869,14 @@ export function HiveDetailsScreen({ route, navigation }: Props) {
           <Text style={styles.cardTitle}>Previous Notifications</Text>
 
           {(() => {
-            const pendingReview = hiveAlerts.filter(alert => alert.alertStatus !== "acknowledged").length;
-
-            if (pendingReview > 0) {
+            // pending = not yet viewed by farmer; acknowledged = farmer opened it
+            const unviewed = hiveAlerts.filter(
+              alert => alert.alertStatus === "pending"
+            ).length;
+            if (unviewed > 0) {
               return (
                 <View style={styles.hiveAlertCountBadge}>
-                  <Text style={styles.hiveAlertCountText}>
-                    {pendingReview}
-                  </Text>
+                  <Text style={styles.hiveAlertCountText}>{unviewed}</Text>
                 </View>
               );
             }
@@ -709,7 +898,6 @@ export function HiveDetailsScreen({ route, navigation }: Props) {
         )}
 
         {hiveAlerts.map((alert) => {
-          console.log("alert.severity :", alert)
           var bg, color = '';
           if (alert.alertStatus !== "acknowledged") {
             color = severityColors["Info"];

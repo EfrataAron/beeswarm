@@ -92,6 +92,7 @@ export async function fetchAlertDetail(
         recorded_at: String(raw.audio_recording.recorded_at),
       } : null,
       advisory: raw.advisory,
+      predictionDetails: raw.prediction_details ?? raw.predictionDetails ?? null,
     };
 
     // Cache the alert detail

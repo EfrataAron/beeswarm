@@ -299,7 +299,14 @@ function AlertsStackScreen({
       <AlertsStack.Screen
         name="AlertDetails"
         component={AlertDetailsScreen}
-        options={{ title: "Alert Details" }}
+        options={({ navigation }) => ({
+          title: "Alert Details",
+          headerLeft: () => (
+            <Pressable onPress={() => navigation.goBack()} style={{ padding: 8, marginLeft: -4 }}>
+              <Ionicons name="arrow-back" size={24} color={colors.text} />
+            </Pressable>
+          ),
+        })}
       />
     </AlertsStack.Navigator>
   );
@@ -326,10 +333,7 @@ function MainTabsScreen({
   useEffect(() => {
     void fetchAlerts()
       .then((alerts) => {
-        // Only count alerts that haven't been acknowledged yet
-        const unread = alerts.filter(
-          (a) => a.alertStatus !== "acknowledged" && a.alertStatus !== "read",
-        );
+        const unread = alerts.filter((a) => a.alertStatus === "pending");
         setUnreadAlertCount(unread.length);
       })
       .catch(() => {});

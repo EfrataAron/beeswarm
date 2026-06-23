@@ -103,13 +103,19 @@ export function formatStateDuration(since?: string): string {
 export function formatRelativeTime(timestamp?: string | null): string {
   if (!timestamp) return "No analysis yet";
   
-  const date = new Date(timestamp);
+  // Backend stores UTC timestamps without a 'Z' suffix.
+  // Append 'Z' so JavaScript parses them as UTC, not local time.
+  const normalized = timestamp.endsWith("Z") || timestamp.includes("+")
+    ? timestamp
+    : timestamp + "Z";
+
+  const date = new Date(normalized);
   if (isNaN(date.getTime())) return "Invalid date";
   
   const ms = Date.now() - date.getTime();
   if (!Number.isFinite(ms)) return "Invalid date";
   
-  if (ms < 0) return "In the future";
+  if (ms < 0) return "just now";
   
   const seconds = Math.floor(ms / 1000);
   if (seconds < 60) return `${seconds}s ago`;

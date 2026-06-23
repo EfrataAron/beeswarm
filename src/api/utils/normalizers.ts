@@ -83,6 +83,7 @@ export function normalizeAlertItem(
     summary: String(item.summary ?? item.message ?? ""),
     alertStatus: String(item.alertStatus ?? item.action_status ?? "pending"),
     hiveName: String(item.hive_name ?? item.hiveName ?? ""),
+    viewedAt: item.viewed_at ?? null,
   };
 }
 
@@ -106,12 +107,14 @@ export function normalizeHiveAlertItem(
         item.createdAt ??
         item.created_at ??
         "",
-    ), 
+    ),
     summary: String(
       item.recommended_action ?? item.summary ?? item.message ?? "",
     ),
-    alertStatus: String(item.action_status ?? ""),
+    // Mobile endpoint returns camelCase alertStatus; hive endpoint returns action_status
+    alertStatus: String(item.alertStatus ?? item.action_status ?? "pending"),
     hiveName: String(item.hive_name ?? item.hiveName ?? ""),
+    viewedAt: item.viewed_at ?? null,
   };
 }
 

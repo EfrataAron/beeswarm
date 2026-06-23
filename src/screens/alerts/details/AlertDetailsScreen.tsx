@@ -14,12 +14,11 @@ import {
   Advisory,
   AlertDetailData,
   AlertSeverity,
-  fetchAdvisory,
   fetchAlertDetail,
-  acknowledgeAlert,
+  getAuthToken,
 } from "../../../api";
 import { getServerUrl } from "../../../api";
-import { formatAbsoluteTime, formatRelativeTime } from "../../../theme";
+import { formatAbsoluteTime } from "../../../theme";
 import { useTheme } from "../../../hooks/useTheme";
 import { AlertsStackParamList } from "../../../navigation/types";
 import { createAlertDetailsStyles } from "./AlertDetailsScreen.styles";
@@ -89,25 +88,11 @@ export function AlertDetailsScreen({ route }: Props) {
       const data = await fetchAlertDetail(alertId);
       setDetail(data);
       
-      // Automatically acknowledge the alert when viewing details
-      if (!data.acknowledged) {
-        try {
-          await acknowledgeAlert(alertId);
-          // Update local state to reflect acknowledgment
-          setDetail({ ...data, acknowledged: true });
-        } catch (err) {
-          console.warn("Failed to acknowledge alert automatically:", err);
-          // Don't block the UI if acknowledgment fails
-        }
-      }
-      
-      // Load advisory if available from the detail response
+      // Advisory is embedded in the alert detail response — use it directly.
+      // The separate /advisory endpoint is a legacy fallback that 404s when
+      // no advisory library rows exist, so we skip it entirely.
       if (data.advisory) {
         setAdvisory(data.advisory);
-      } else {
-        // Try fetching advisory separately
-        const adv = await fetchAdvisory(alertId);
-        setAdvisory(adv);
       }
     } catch (err) {
       // Only set error if we don't have any detail yet
@@ -155,9 +140,18 @@ export function AlertDetailsScreen({ route }: Props) {
         return;
       }
 
-      // Load and play new audio
+      // Build fully-qualified audio URI (file_path is relative e.g. /audio/{id}/stream)
+      const audioUri = detail.audioRecording.file_path.startsWith("http")
+        ? detail.audioRecording.file_path
+        : `${getServerUrl()}/bsads-api-db${detail.audioRecording.file_path}`;
+
+      // expo-av needs auth header since the stream endpoint requires a JWT
+      const token = getAuthToken();
       const { sound: newSound } = await Audio.Sound.createAsync(
-        { uri: detail.audioRecording.file_path },
+        {
+          uri: audioUri,
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        },
         { shouldPlay: true },
         (status) => {
           if (status.isLoaded && status.didJustFinish) {
@@ -251,6 +245,53 @@ export function AlertDetailsScreen({ route }: Props) {
         <Text style={styles.detailLongText}>{detail.details}</Text>
       </View>
 
+      {/* ── ML Prediction Details ── */}
+      {detail.predictionDetails && (
+        <View style={styles.card}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
+            <Ionicons name="hardware-chip-outline" size={18} color={theme.accent} />
+            <Text style={styles.cardTitle}>Prediction Confidence  Threshold</Text>
+          </View>
+
+          {/* Main prediction row */}
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 14, padding: 12, backgroundColor: theme.surfaceSoft ?? "#F8FAFC", borderRadius: 10 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 15, fontWeight: "800", color: theme.primary ?? "#0F172A" }}>
+                {detail.predictionDetails.predicted_class.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())}
+              </Text>
+              <Text style={{ fontSize: 11, color: theme.textMuted ?? "#94A3B8", marginTop: 2 }}>Predicted state</Text>
+            </View>
+            <Text style={{ fontSize: 20, fontWeight: "900", color: theme.accent ?? "#F59E0B" }}>
+              {(detail.predictionDetails.confidence * 100).toFixed(1)}%
+            </Text>
+          </View>
+
+          {/* Top predictions bars */}
+          <Text style={{ fontSize: 11, fontWeight: "700", color: theme.textMuted ?? "#94A3B8", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>
+            Top Predictions
+          </Text>
+          {detail.predictionDetails.top_predictions.map((pred: { class: string; confidence: number }, idx: number) => {
+            const pct = pred.confidence * 100;
+            const isTop = idx === 0;
+            return (
+              <View key={pred.class} style={{ marginBottom: 7 }}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 2 }}>
+                  <Text style={{ fontSize: 12, fontWeight: isTop ? "700" : "500", color: isTop ? (theme.primary ?? "#0F172A") : (theme.textMuted ?? "#94A3B8") }}>
+                    {pred.class.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())}
+                  </Text>
+                  <Text style={{ fontSize: 12, fontWeight: "700", color: isTop ? (theme.accent ?? "#F59E0B") : (theme.textMuted ?? "#94A3B8") }}>
+                    {pct.toFixed(2)}%
+                  </Text>
+                </View>
+                <View style={{ height: 6, backgroundColor: theme.surfaceSoft ?? "#F1F5F9", borderRadius: 3, overflow: "hidden" }}>
+                  <View style={{ width: `${pct}%`, height: "100%", backgroundColor: isTop ? (theme.accent ?? "#F59E0B") : "#CBD5E1", borderRadius: 3 }} />
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      )}
+
       {/* ── Audio Recording ── */}
       {detail.audioRecording && (
         <View style={styles.card}>
@@ -338,7 +379,10 @@ export function AlertDetailsScreen({ route }: Props) {
                 <Text style={styles.advisoryActionNumberText}>{index + 1}</Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.advisoryActionText}>{action.description}</Text>
+                {action.title && (
+                  <Text style={[styles.advisoryActionText, { fontWeight: "700", marginBottom: 2 }]}>{action.title}</Text>
+                )}
+                <Text style={[styles.advisoryActionText, { color: theme.textMuted }]}>{action.description}</Text>
               </View>
               <View style={[styles.advisoryPriorityDot, { backgroundColor: PRIORITY_COLOR[action.priority] }]} />
             </View>
