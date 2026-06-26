@@ -175,22 +175,35 @@ export async function fetchDashboard(): Promise<DashboardData> {
 
     const metrics = raw?.key_metrics ?? raw?.keyMetrics ?? {};
 
-    // Calculate statusCounts from actual hives, not just the raw API's count
+    // Build statusCounts from the backend's status_counts object (snake_case)
+    // The backend now returns all 9 states directly.
+    const rawCounts = raw?.status_counts ?? raw?.statusCounts ?? {};
+    console.log("[dashboard] raw status_counts from API:", JSON.stringify(rawCounts));
+
+    // Start with backend counts (post-restart server has all states)
     const statusCounts: DashboardData["statusCounts"] = {
-      active: 0,
-      inactive_hive: 0,
-      swarming: 0,
-      Abscondment: 0,
-      external_noise: 0,
-      quacking_queens: 0,
-      pests: 0,
-      queenless: 0,
-      unknown: 0,
+      active: Number(rawCounts.normal ?? 0),
+      inactive_hive: Number(rawCounts.other ?? 0),
+      swarming: Number(rawCounts.swarm ?? 0),
+      Abscondment: Number(rawCounts.abscondment ?? 0),
+      external_noise: Number(rawCounts.external_noise ?? 0),
+      quacking_queens: Number(rawCounts.queenbee_present ?? 0),
+      pests: Number(rawCounts.pest_infested ?? 0),
+      queenless: Number(rawCounts.missing_queen ?? 0),
+      unknown: Number(rawCounts.uncertain ?? 0),
     };
 
-    hivesForStatus.forEach(hive => {
-      statusCounts[hive.status]++;
-    });
+    // Fallback: if ALL counts are 0 (old server or cache), count from live hive list
+    const backendTotal = Object.values(statusCounts).reduce((a, b) => a + b, 0);
+    if (backendTotal === 0 && hivesForStatus.length > 0) {
+      console.log("[dashboard] backend counts all zero — falling back to hive list status");
+      hivesForStatus.forEach(hive => {
+        const s = hive.status;
+        if (s in statusCounts) {
+          (statusCounts as any)[s]++;
+        }
+      });
+    }
 
     // Helper to get hive name by id
     const getHiveName = (hiveId: string): string | undefined => {
@@ -199,8 +212,8 @@ export async function fetchDashboard(): Promise<DashboardData> {
     };
 
     const result: DashboardData = {
-      totalHives: hivesForStatus.length,
-      activeHives: statusCounts.active,
+      totalHives: Number(raw?.total_hives ?? raw?.totalHives ?? hivesForStatus.length),
+      activeHives: Number(raw?.active_hives ?? raw?.activeHives ?? statusCounts.active),
       statusCounts,
       keyMetrics: {
         temperatureC: Number(metrics.temperature_c ?? metrics.temperatureC ?? 0),

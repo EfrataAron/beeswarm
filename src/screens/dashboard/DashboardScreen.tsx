@@ -41,14 +41,9 @@ export function DashboardScreen({ navigation }: Props) {
   const [refreshing, setRefreshing] = useState(false);
   const [isPollingEnabled, setIsPollingEnabled] = useState(true);
   const loadDashboard = useCallback(async (initial = false) => {
-    // First, try to get cached data
-    const cachedDashboard = await import("../../api/utils/offlineCache").then(mod => mod.getCachedData<any>("dashboard"));
-    if (cachedDashboard) {
-      setDashboard(cachedDashboard);
-      if (initial) setLoading(false);
-    } else if (initial) {
-      setLoading(true);
-    }
+    // Clear stale dashboard cache so statusCounts are always fresh
+    await import("../../api/utils/offlineCache").then(mod => mod.clearCache("dashboard"));
+    if (initial) setLoading(true);
     setError(null);
 
     try {
@@ -126,6 +121,7 @@ export function DashboardScreen({ navigation }: Props) {
   }
 
   const total = dashboard.totalHives ?? 0;
+  console.log("DASHBOARD: ",dashboard)
 
   const donutSegments = [
     { pct: dashboard.statusCounts.active / total, color: "#22C55E", label: "Harmonious", count: dashboard.statusCounts.active },
@@ -164,6 +160,7 @@ export function DashboardScreen({ navigation }: Props) {
           tintColor={THEME.accent}
         />
       }
+      
     >
       {/* ── Overview row ── */}
       <Pressable style={styles.overviewCardRow} onPress={() => navigation.navigate("Hives", { screen: "HiveList" })}>
@@ -203,13 +200,15 @@ export function DashboardScreen({ navigation }: Props) {
         <View style={styles.donutRow}>
           <DonutChart segments={donutSegments} total={total} />
           <View style={styles.donutLegend}>
-            {donutSegments.map((seg) => (
+            {donutSegments.map((seg) =>  {
+              console.log("Segments :",seg)
+               return(
               <View key={seg.label} style={styles.donutLegendItem}>
                 <View style={[styles.donutLegendDot, { backgroundColor: seg.color }]} />
                 <Text style={styles.donutLegendLabel}>{seg.label}</Text>
                 <Text style={styles.donutLegendCount}>{seg.count}</Text>
               </View>
-            ))}
+            )})}
           </View>
         </View>
       </Pressable>
