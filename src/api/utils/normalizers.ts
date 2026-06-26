@@ -37,9 +37,9 @@ export function normalizeStatus(raw: string): HiveStatus {
     return "swarming";
   if (s === "abscondment") return "Abscondment";
   if (s === "external_noise" || s === "noise") return "external_noise";
-  if (s === "quacking_queens" || s === "quacking" || s === "queenbee_present") return "quacking_queens";
-  if (s === "pests" || s === "pest") return "pests";
-  if (s === "queenless" || s === "no_queen") return "queenless";
+  if (s === "quacking_queens" || s === "quacking" || s === "queenbee_present" || s === "quacking_queen_bee") return "quacking_queens";
+  if (s === "pests" || s === "pest" || s === "pest_infested") return "pests";
+  if (s === "queenless" || s === "no_queen" || s === "missing_queen" || s === "queenbee_absent") return "queenless";
   
   // Default fallback for unknown statuses - treat as unknown
   return "unknown";

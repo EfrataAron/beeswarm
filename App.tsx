@@ -405,6 +405,7 @@ function MainTabsScreen({
             headerShown: false,
             title: "Hive Management",
             tabBarLabel: "Hives",
+            unmountOnBlur: true,
             tabBarIcon: ({ color, size, focused }: any) => (
               <Ionicons
                 name={focused ? "grid" : "grid-outline"}
@@ -429,6 +430,7 @@ function MainTabsScreen({
           options: {
             headerShown: false,
             tabBarLabel: "Alerts",
+            unmountOnBlur: true,
             tabBarBadge: unreadAlertCount > 0 ? unreadAlertCount : undefined,
             tabBarIcon: ({ color, size, focused }: any) => (
               <Ionicons
@@ -501,7 +503,6 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<BeekeeperProfile | null>(null);
   const [bootstrapping, setBootstrapping] = useState(true);
   const [darkModeEnabled, setDarkModeEnabled] = useState(false);
-  const [navigationState, setNavigationState] = useState<any>();
   const initialWebPath = useMemo(() => getInitialWebPath(), []);
   
   // Notifications
@@ -581,10 +582,9 @@ export default function App() {
 
     void (async () => {
       try {
-        const [user, darkMode, savedNavigationState] = await Promise.all([
+        const [user, darkMode] = await Promise.all([
           initAuthFromStorage(),
           AsyncStorage.getItem(PREF_DARK_MODE),
-          AsyncStorage.getItem(NAVIGATION_STATE_KEY),
         ]);
         if (cancelled) return;
         if (user) {
@@ -595,10 +595,6 @@ export default function App() {
           const enabled = darkMode === "true";
           setDarkModeEnabled(enabled);
           applyThemeMode(enabled);
-        }
-        // Restore navigation state
-        if (savedNavigationState) {
-          setNavigationState(JSON.parse(savedNavigationState));
         }
       } catch {
         // no stored session — stay on auth flow
@@ -714,12 +710,9 @@ export default function App() {
         {...({
           theme: navigationTheme,
           linking: linking,
-          initialState: navigationState,
-          onStateChange: (state: any) => {
+          onStateChange: () => {
             // Reset idle timer on any navigation (counts as user activity)
             resetIdleTimer();
-            // Save navigation state to AsyncStorage
-            AsyncStorage.setItem(NAVIGATION_STATE_KEY, JSON.stringify(state)).catch(() => {});
           },
         } as any)}
       >

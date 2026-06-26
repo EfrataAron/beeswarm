@@ -87,6 +87,7 @@ export const createHivesListStyles = (theme: Theme) => StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+    marginBottom: 14,
   },
   searchBarWrap: {
     flex: 1,
@@ -97,25 +98,31 @@ export const createHivesListStyles = (theme: Theme) => StyleSheet.create({
     borderColor: theme.line,
     borderRadius: 12,
     paddingHorizontal: 12,
-    paddingVertical: 4,
-    marginBottom: 14,
+    paddingVertical: 0,
+    height: 44,
   },
   searchInput: {
     flex: 1,
     color: theme.text,
-    paddingVertical: 10,
+    paddingVertical: 0,
+    height: 44,
     fontSize: 14,
   },
   viewToggle: {
     flexDirection: "row",
+    alignItems: "center",
     backgroundColor: theme.surface,
     borderWidth: 1,
     borderColor: theme.line,
-    borderRadius: 10,
+    borderRadius: 12,
     overflow: "hidden",
+    height: 44,
   },
   viewToggleBtn: {
-    padding: 9,
+    width: 40,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
   },
   viewToggleBtnActive: {
     backgroundColor: theme.surfaceSoft,
@@ -164,17 +171,21 @@ export const createHivesListStyles = (theme: Theme) => StyleSheet.create({
     fontSize: 11,
     fontWeight: "700",
   },
-  // List view
+  // List view — card style matching the alert list cards
   hiveRowFlat: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 4,
-    paddingVertical: 14,
+    padding: 14,
     gap: 12,
+    backgroundColor: theme.surface,
+    borderWidth: 1,
+    borderColor: theme.line,
+    borderRadius: 14,
+    marginBottom: 10,
+    overflow: "hidden",
   },
   hiveRowFlatBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: theme.line,
+    // kept for compat — no longer used for separator, card handles its own border
   },
   hiveRowDot: {
     width: 10,

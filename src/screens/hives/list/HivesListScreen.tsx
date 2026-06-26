@@ -279,18 +279,25 @@ export function HivesListScreen({ navigation, route }: Props) {
         filtered.map((hive, idx) => {
           const duration = formatStateDuration(hive.stateSince);
           const label = displayStatus(hive.status);
+          console.log("HIVE::::: ",hive)
 
           return (
             <Pressable
               key={hive.id}
               style={({ pressed }) => [
                 styles.hiveRowFlat,
-                idx !== filtered.length - 1 && styles.hiveRowFlatBorder,
                 pressed && styles.pressedRow,
               ]}
               onPress={() => navigation.navigate("HiveDetails", { hiveId: hive.id })}
             >
-              <View style={[styles.hiveRowDot, { backgroundColor: STATUS_COLOR[hive.status] }]} />
+              {/* Left colour bar matching the hive status */}
+              <View style={{
+                width: 4,
+                alignSelf: "stretch",
+                borderRadius: 4,
+                backgroundColor: STATUS_COLOR[hive.status],
+                marginRight: 2,
+              }} />
               <View style={styles.hiveRowInfo}>
                 <View style={styles.hiveRowNameRow}>
                   <Text style={styles.hiveName}>{hive.name}</Text>

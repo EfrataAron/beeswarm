@@ -11,15 +11,15 @@ import { cacheData, getCachedData } from "../utils/offlineCache";
 
 export async function fetchHiveAlerts(hiveId: string):
   Promise<AlertItem[]> {
-  //  Use the mobile Alerts endpoint which properly formats data for mobile 
-  const raw = await apiRequest<any[]>(
-    `/alerts?hive_id=${encodeURIComponent(hiveId)}`,
-  );
-    // `/hives/${encodeURIComponent(hiveId)}/alerts`);
-  if (!Array.isArray(raw)) return [];
-  // return raw.map((item, i) => normalizeHiveAlertItem(item, i, hiveId));
-   console.log("Raw API Response: /fetchHiveAlerts()", raw);
-   return raw.map((item, i) => normalizeHiveAlertItem(item, i));
+  try {
+    const raw = await apiRequest<any[]>(
+      `/alerts?hive_id=${encodeURIComponent(hiveId)}`,
+    ).catch(() => null);
+    if (!Array.isArray(raw)) return [];
+    return raw.map((item, i) => normalizeHiveAlertItem(item, i));
+  } catch {
+    return [];
+  }
 }
 
 export async function fetchAlerts(): Promise<AlertItem[]> {

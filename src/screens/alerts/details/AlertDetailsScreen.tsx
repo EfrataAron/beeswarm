@@ -140,13 +140,14 @@ export function AlertDetailsScreen({ route }: Props) {
         return;
       }
 
-      // Build fully-qualified audio URI (file_path is relative e.g. /audio/{id}/stream)
-      const audioUri = detail.audioRecording.file_path.startsWith("http")
+      // Build fully-qualified audio URI with token as query param
+      // (expo-av on web can't set custom headers, so we pass auth via ?token=)
+      const token = getAuthToken();
+      const baseUri = detail.audioRecording.file_path.startsWith("http")
         ? detail.audioRecording.file_path
         : `${getServerUrl()}/bsads-api-db${detail.audioRecording.file_path}`;
+      const audioUri = token ? `${baseUri}?token=${encodeURIComponent(token)}` : baseUri;
 
-      // expo-av needs auth header since the stream endpoint requires a JWT
-      const token = getAuthToken();
       const { sound: newSound } = await Audio.Sound.createAsync(
         {
           uri: audioUri,
