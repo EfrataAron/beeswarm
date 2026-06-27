@@ -27,6 +27,9 @@ export function CreateHiveScreen({ navigation, route, currentUser }: Props) {
   const theme = useTheme();
   const styles = useMemo(() => createHiveStyles(theme), [theme]);
 
+  // Check if user has api_key and server_url
+  const hasRequiredCredentials = currentUser?.api_key && currentUser?.server_url;
+
   // Debug logging
   const [hiveName, setHiveName] = useState("");
   const [hiveLocation, setHiveLocation] = useState("");
@@ -259,6 +262,18 @@ export function CreateHiveScreen({ navigation, route, currentUser }: Props) {
         <View style={styles.card}>
           <Text style={styles.errorText}>
             You must be logged in to create a hive. Please log in and try again.
+          </Text>
+          <Pressable
+            style={styles.cancelButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Text style={styles.cancelButtonText}>Go Back</Text>
+          </Pressable>
+        </View>
+      ) : !hasRequiredCredentials ? (
+        <View style={styles.card}>
+          <Text style={styles.errorText}>
+            You cannot create a hive. Please contact your admin to get your API key and server URL.
           </Text>
           <Pressable
             style={styles.cancelButton}

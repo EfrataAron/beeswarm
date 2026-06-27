@@ -5,6 +5,7 @@ import { ActivityIndicator, AppState, Platform, View, Pressable } from "react-na
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { StatusBar as ExpoStatusBar } from "expo-status-bar";
 import Toast from "react-native-toast-message";
+import { Asset } from "expo-asset";
 import {
   DarkTheme,
   DefaultTheme,
@@ -508,7 +509,7 @@ export default function App() {
   // Notifications
   const { expoPushToken } = useNotifications();
 
-  // Load fonts
+  // Load fonts and icons
   let [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -516,9 +517,25 @@ export default function App() {
     Inter_700Bold,
     Inter_800ExtraBold,
   });
+
+  const [iconsLoaded, setIconsLoaded] = useState(false);
   
   // Fallback for fonts loading timeout
   const [fontsTimedOut, setFontsTimedOut] = useState(false);
+
+  // Preload Ionicons
+  useEffect(() => {
+    async function loadIcons() {
+      try {
+        await Ionicons.loadFont();
+        setIconsLoaded(true);
+      } catch (error) {
+        console.warn("Failed to load Ionicons:", error);
+        setIconsLoaded(true); // Proceed even if icons fail to load
+      }
+    }
+    loadIcons();
+  }, []);
   
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -688,7 +705,7 @@ export default function App() {
     }
   };
 
-  if ((!fontsLoaded && !fontError && !fontsTimedOut) || bootstrapping) {
+  if ((!fontsLoaded && !fontError && !fontsTimedOut) || bootstrapping || !iconsLoaded) {
     return (
       <View
         style={{
