@@ -1,3 +1,10 @@
+## [1.1.4](https://github.com/EfrataAron/beeswarm/compare/v1.1.3...v1.1.4) (2026-06-28)
+
+
+### Bug Fixes
+
+* metrics ([7c05a47](https://github.com/EfrataAron/beeswarm/commit/7c05a4796f5061e0428da3ffa2a32dffa865b006))
+
 ## [1.1.3](https://github.com/EfrataAron/beeswarm/compare/v1.1.2...v1.1.3) (2026-06-22)
 
 
