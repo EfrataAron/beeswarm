@@ -5,6 +5,7 @@
 
 export type MetricPoint = {
   timeLabel: string;
+  recordedAt?: string;
   temperatureC: number;
   humidityPercent: number;
 };
@@ -62,10 +63,12 @@ export function buildHourlyMetricHistory(
 }
 
 export function normalizeMetricPoint(raw: Record<string, unknown>, index: number): MetricPoint {
+  const recordedAt = raw.recorded_at ?? raw.recordedAt;
   return {
     timeLabel: String(
       raw.time_label ?? raw.timeLabel ?? raw.time ?? `T${index + 1}`,
     ),
+    recordedAt: recordedAt != null ? String(recordedAt) : undefined,
     temperatureC: Number(raw.temperature_c ?? raw.temperatureC ?? raw.temp ?? 0),
     humidityPercent: Number(
       raw.humidity_percent ?? raw.humidityPercent ?? raw.humidity ?? 0,
@@ -97,6 +100,7 @@ export function averageFleetMetrics(
     const temps: number[] = [];
     const hums: number[] = [];
     let label = "";
+    let recordedAt: string | undefined;
 
     allHivesHistory.forEach((hive) => {
       const point = hive.history[i];
@@ -104,12 +108,14 @@ export function averageFleetMetrics(
       temps.push(point.temperatureC);
       hums.push(point.humidityPercent);
       if (!label) label = point.timeLabel;
+      if (!recordedAt) recordedAt = point.recordedAt;
     });
 
     if (temps.length === 0) continue;
 
     averaged.push({
       timeLabel: label || `T${i + 1}`,
+      recordedAt,
       temperatureC: parseFloat(
         (temps.reduce((a, b) => a + b, 0) / temps.length).toFixed(1),
       ),

@@ -80,35 +80,48 @@ export async function fetchFleetMetricsFromHives(): Promise<{
  *
  * Returns points sorted chronologically, one entry per unique time label.
  */
+/** Bucket key for aligning readings across hives. Truncates to the hour so
+ *  readings from different days at the same hour don't collide — using the
+ *  bare "HH:MM" time label would merge e.g. Monday 14:00 and Tuesday 14:00. */
+function bucketKey(p: MetricPoint): string {
+  if (p.recordedAt) {
+    const d = new Date(p.recordedAt);
+    if (!Number.isNaN(d.getTime())) return d.toISOString().slice(0, 13); // YYYY-MM-DDTHH
+  }
+  return p.timeLabel;
+}
+
 function buildStatusTrend(
   allHivesHistory: HiveHistoryEntry[],
   allHives: HiveSnapshot[],
 ): DashboardData["statusTrend"] {
-  // Collect ordered unique time labels
-  const labelSet: string[] = [];
-  const seen = new Set<string>();
+  // Collect ordered unique time buckets, remembering one display label + timestamp each.
+  const keys: string[] = [];
+  const meta = new Map<string, { timeLabel: string; recordedAt?: string }>();
   allHivesHistory.forEach((h) => {
     h.history.forEach((p) => {
-      if (!seen.has(p.timeLabel)) {
-        seen.add(p.timeLabel);
-        labelSet.push(p.timeLabel);
+      const key = bucketKey(p);
+      if (!meta.has(key)) {
+        meta.set(key, { timeLabel: p.timeLabel, recordedAt: p.recordedAt });
+        keys.push(key);
       }
     });
   });
 
-  // Build a status→count map per time label.
-  // For each time label that a hive has a reading for, add its current status.
-  return labelSet.map((timeLabel) => {
+  // Build a status→count map per time bucket.
+  // For each bucket that a hive has a reading for, add its current status.
+  return keys.map((key) => {
     const counts: Partial<Record<HiveStatus, number>> = {};
     allHivesHistory.forEach((h, idx) => {
-      const hasReading = h.history.some((p) => p.timeLabel === timeLabel);
+      const hasReading = h.history.some((p) => bucketKey(p) === key);
       if (!hasReading) return;
       const status = allHives[idx]?.status;
       if (status) {
         counts[status] = (counts[status] ?? 0) + 1;
       }
     });
-    return { timeLabel, counts };
+    const { timeLabel, recordedAt } = meta.get(key)!;
+    return { timeLabel, recordedAt, counts };
   });
 }
 

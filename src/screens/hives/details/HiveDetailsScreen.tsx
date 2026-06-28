@@ -364,18 +364,20 @@ export function HiveDetailsScreen({ route, navigation }: Props) {
       // Build statusTrend: group inferences by time slot, count states per slot
       if (Array.isArray(trend) && trend.length > 0) {
         const { normalizeStatus } = await import("../../../api/utils/normalizers");
-        const buckets = new Map<string, Record<string, number>>();
+        // Bucket by the full timestamp (not just time-of-day) so readings from
+        // different days at the same hour don't get merged into one bucket.
+        const buckets = new Map<string, { timeLabel: string; recordedAt: string; counts: Record<string, number> }>();
         trend.forEach((r: any) => {
           const dt = new Date(r.analyzed_at + "Z");
+          const key = dt.toISOString();
           const label = dt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
-          if (!buckets.has(label)) buckets.set(label, {});
-          const counts = buckets.get(label)!;
+          if (!buckets.has(key)) buckets.set(key, { timeLabel: label, recordedAt: key, counts: {} });
+          const bucket = buckets.get(key)!;
           // Normalize raw DB state (e.g. "swarm") to HiveStatus (e.g. "swarming")
           const status = normalizeStatus(r.hive_state);
-          counts[status] = (counts[status] ?? 0) + 1;
+          bucket.counts[status] = (bucket.counts[status] ?? 0) + 1;
         });
-        const points = Array.from(buckets.entries())
-          .map(([timeLabel, counts]) => ({ timeLabel, counts }));
+        const points = Array.from(buckets.values());
         setStateTrendPoints(points);
       }
     } catch (err) {

@@ -7,6 +7,7 @@ import { THEME } from "../theme";
 
 type TrendPoint = {
   timeLabel: string;
+  recordedAt?: string;
   counts: Partial<Record<HiveStatus, number>>;
 };
 
@@ -33,6 +34,14 @@ const STATUS_META: Array<{ status: HiveStatus; label: string; color: string }> =
 type Range = "24h" | "7d" | "30d";
 const RANGES: Range[] = ["24h", "7d", "30d"];
 const RANGE_MIN_DAYS: Record<Range, number> = { "24h": 0, "7d": 1, "30d": 7 };
+
+/** 24h shows time-of-day; 7d/30d show the date, since multiple days are on screen. */
+function labelFor(point: TrendPoint, range: Range): string {
+  if (range === "24h" || !point.recordedAt) return point.timeLabel;
+  const date = new Date(point.recordedAt);
+  if (Number.isNaN(date.getTime())) return point.timeLabel;
+  return date.toLocaleDateString([], { month: "short", day: "numeric" });
+}
 
 /** Which ranges are actually meaningful given how long the hive has existed. */
 function availableRanges(installationDate?: string): Range[] {
@@ -334,7 +343,7 @@ export function HiveStatusTrendChart({ statusTrend, installationDate }: Props) {
                     fontWeight: "600",
                   }}
                 >
-                  {pt.timeLabel}
+                  {labelFor(pt, range)}
                 </Text>
               ) : null,
             )}

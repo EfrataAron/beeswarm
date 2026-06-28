@@ -149,7 +149,7 @@ export type DashboardData = {
   acknowledgedAlerts: number;
   preSwarmTrend: Array<{ day: string; count: number; statusBreakdown?: Partial<Record<HiveStatus, number>> }>;
   /** Per-time-point status counts derived from hive state history — used for Hive Status Trend chart */
-  statusTrend: Array<{ timeLabel: string; counts: Partial<Record<HiveStatus, number>> }>;
+  statusTrend: Array<{ timeLabel: string; recordedAt?: string; counts: Partial<Record<HiveStatus, number>> }>;
   recordingsToday: number;
   recordingsTodayDetails?: Array<{ 
     id: string;

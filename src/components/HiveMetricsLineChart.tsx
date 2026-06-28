@@ -5,6 +5,7 @@ import { useTemperatureUnit, convertTemp } from "../hooks/useTemperatureUnit";
 
 type MetricPoint = {
   timeLabel: string;
+  recordedAt?: string;
   temperatureC: number;
   humidityPercent: number;
 };
@@ -47,6 +48,14 @@ function sliceForRange(series: MetricPoint[], range: TimeRange): MetricPoint[] {
   if (range === "24h") return series.slice(-24);
   if (range === "7d")  return series.slice(-7 * 24);
   return series; // 30d — show all
+}
+
+/** 24h shows time-of-day; 7d/30d show the date, since multiple days are on screen. */
+function labelFor(point: MetricPoint, range: TimeRange): string {
+  if (range === "24h" || !point.recordedAt) return point.timeLabel;
+  const date = new Date(point.recordedAt);
+  if (Number.isNaN(date.getTime())) return point.timeLabel;
+  return date.toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
 type SelectedPoint = {
@@ -157,8 +166,8 @@ export function HiveMetricsLineChart({
   const yT  = (v: number) => PAD_TOP + ((maxT - v) / (maxT - minT)) * plotH;
   const yH  = (v: number) => PAD_TOP + ((maxH - v) / (maxH - minH)) * plotH;
 
-  const tPts = series.map((d, i) => ({ x: xOf(i), y: yT(d.temperatureC),    label: d.timeLabel, value: d.temperatureC }));
-  const hPts = series.map((d, i) => ({ x: xOf(i), y: yH(d.humidityPercent), label: d.timeLabel, value: d.humidityPercent }));
+  const tPts = series.map((d, i) => ({ x: xOf(i), y: yT(d.temperatureC),    label: labelFor(d, range), value: d.temperatureC }));
+  const hPts = series.map((d, i) => ({ x: xOf(i), y: yH(d.humidityPercent), label: labelFor(d, range), value: d.humidityPercent }));
 
   const threshY    = yT(THRESHOLD_TEMP);
   const humThreshY = yH(THRESHOLD_HUM);
