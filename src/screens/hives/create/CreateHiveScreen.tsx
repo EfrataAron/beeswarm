@@ -69,11 +69,11 @@ export function CreateHiveScreen({ navigation, route, currentUser }: Props) {
    * Geocode a place name → lat/lng using OpenStreetMap Nominatim (free, no key).
    * Called when the user finishes typing in the Location field.
    */
-  const geocodeLocation = async (place: string) => {
+  const geocodeLocation = async (place: string): Promise<{ lat: string; lng: string } | null> => {
     const trimmed = place.trim();
-    if (!trimmed || trimmed.length < 3) return;
+    if (!trimmed || trimmed.length < 3) return null;
     // Don't re-geocode if coords already filled manually
-    if (latitude && longitude) return;
+    if (latitude && longitude) return { lat: latitude, lng: longitude };
 
     setGeocoding(true);
     try {
@@ -85,12 +85,17 @@ export function CreateHiveScreen({ navigation, route, currentUser }: Props) {
       const data = await res.json() as Array<{ lat: string; lon: string; display_name: string }>;
       if (data.length > 0) {
         const { lat, lon } = data[0];
-        setLatitude(parseFloat(lat).toFixed(6));
-        setLongitude(parseFloat(lon).toFixed(6));
+        const latStr = parseFloat(lat).toFixed(6);
+        const lngStr = parseFloat(lon).toFixed(6);
+        setLatitude(latStr);
+        setLongitude(lngStr);
         setErrors((prev) => ({ ...prev, latitude: "", longitude: "" }));
+        return { lat: latStr, lng: lngStr };
       }
+      return null;
     } catch {
       // Geocoding failure is silent — user can still enter coords manually
+      return null;
     } finally {
       setGeocoding(false);
     }
@@ -227,6 +232,34 @@ export function CreateHiveScreen({ navigation, route, currentUser }: Props) {
   const handleSubmit = async () => {
     if (!validateForm() || !currentUser?.id) return;
 
+    // If no coordinates were captured yet (GPS skipped, manual entry skipped,
+    // geocoding hadn't finished), try once more before falling back — saving
+    // (0,0) silently makes the hive permanently invisible on the Map screen,
+    // since (0,0) is treated as "no location" there.
+    let lat = latitude;
+    let lng = longitude;
+    if (!lat || !lng) {
+      const geocoded = await geocodeLocation(hiveLocation);
+      if (geocoded) {
+        lat = geocoded.lat;
+        lng = geocoded.lng;
+      }
+    }
+
+    if (!lat || !lng) {
+      const proceed = await new Promise<boolean>((resolve) => {
+        Alert.alert(
+          "No map location set",
+          "We couldn't determine GPS coordinates for this hive, so it won't appear on the Map screen. You can add coordinates later by editing the hive.",
+          [
+            { text: "Cancel", style: "cancel", onPress: () => resolve(false) },
+            { text: "Create Anyway", onPress: () => resolve(true) },
+          ],
+        );
+      });
+      if (!proceed) return;
+    }
+
     setLoading(true);
     try {
       await createHive({
@@ -234,8 +267,8 @@ export function CreateHiveScreen({ navigation, route, currentUser }: Props) {
         hive_location: hiveLocation.trim(),
         hive_type: hiveType.trim(),
         installation_date: installationDate.trim(),
-        latitude: parseFloat(latitude || "0"),
-        longitude: parseFloat(longitude || "0"),
+        latitude: lat ? parseFloat(lat) : 0,
+        longitude: lng ? parseFloat(lng) : 0,
         owner_id: currentUser.id,
       });
 

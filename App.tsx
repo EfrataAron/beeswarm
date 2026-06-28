@@ -431,7 +431,6 @@ function MainTabsScreen({
           options: {
             headerShown: false,
             tabBarLabel: "Alerts",
-            unmountOnBlur: true,
             tabBarBadge: unreadAlertCount > 0 ? unreadAlertCount : undefined,
             tabBarIcon: ({ color, size, focused }: any) => (
               <Ionicons

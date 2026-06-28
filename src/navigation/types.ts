@@ -1,4 +1,5 @@
 import { NavigatorScreenParams } from "@react-navigation/native";
+import { HiveStatus } from "../api";
 
 export type RootStackParamList = {
   Welcome: undefined;
@@ -17,7 +18,7 @@ export type MainTabParamList = {
 };
 
 export type HivesStackParamList = {
-  HiveList: { refresh?: number } | undefined;
+  HiveList: { refresh?: number; statusFilter?: HiveStatus; hiveIds?: string[] } | undefined;
   HiveDetails: { hiveId: string, lastAnalysisTime?: string | null };
   CreateHive: undefined;
   EditHive: { hiveId: string };

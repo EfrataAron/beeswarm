@@ -13,6 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import {
   AmbientWeather,
   DashboardData,
+  HiveStatus,
   fetchAmbientWeather,
   fetchDashboard,
 } from "../../api";
@@ -123,16 +124,16 @@ export function DashboardScreen({ navigation }: Props) {
   const total = dashboard.totalHives ?? 0;
   console.log("DASHBOARD: ",dashboard)
 
-  const donutSegments = [
-    { pct: dashboard.statusCounts.active / total, color: "#22C55E", label: "Harmonious", count: dashboard.statusCounts.active },
-    { pct: dashboard.statusCounts.swarming / total, color: "#EF4444", label: "Swarming", count: dashboard.statusCounts.swarming },
-    { pct: dashboard.statusCounts.quacking_queens / total, color: "#8B5CF6", label: "Multiple Queens", count: dashboard.statusCounts.quacking_queens },
-    { pct: dashboard.statusCounts.pests / total, color: "#DC2626", label: "Pests", count: dashboard.statusCounts.pests },
-    { pct: dashboard.statusCounts.queenless / total, color: "#EC4899", label: "Queenless", count: dashboard.statusCounts.queenless },
-    { pct: dashboard.statusCounts.external_noise / total, color: "#D97706", label: "External Noise", count: dashboard.statusCounts.external_noise },
-    { pct: dashboard.statusCounts.inactive_hive / total, color: "#94A3B8", label: "Inactive", count: dashboard.statusCounts.inactive_hive },
-    { pct: dashboard.statusCounts.Abscondment / total, color: "#6B7280", label: "Absconded", count: dashboard.statusCounts.Abscondment },
-    { pct: dashboard.statusCounts.unknown / total, color: "#64748B", label: "Unknown", count: dashboard.statusCounts.unknown },
+  const donutSegments: Array<{ pct: number; color: string; label: string; count: number; statusKey: HiveStatus }> = [
+    { pct: dashboard.statusCounts.active / total, color: "#22C55E", label: "Harmonious", count: dashboard.statusCounts.active, statusKey: "active" },
+    { pct: dashboard.statusCounts.swarming / total, color: "#EF4444", label: "Swarming", count: dashboard.statusCounts.swarming, statusKey: "swarming" },
+    { pct: dashboard.statusCounts.quacking_queens / total, color: "#8B5CF6", label: "Multiple Queens", count: dashboard.statusCounts.quacking_queens, statusKey: "quacking_queens" },
+    { pct: dashboard.statusCounts.pests / total, color: "#DC2626", label: "Pests", count: dashboard.statusCounts.pests, statusKey: "pests" },
+    { pct: dashboard.statusCounts.queenless / total, color: "#EC4899", label: "Queenless", count: dashboard.statusCounts.queenless, statusKey: "queenless" },
+    { pct: dashboard.statusCounts.external_noise / total, color: "#D97706", label: "External Noise", count: dashboard.statusCounts.external_noise, statusKey: "external_noise" },
+    { pct: dashboard.statusCounts.inactive_hive / total, color: "#94A3B8", label: "Inactive", count: dashboard.statusCounts.inactive_hive, statusKey: "inactive_hive" },
+    { pct: dashboard.statusCounts.Abscondment / total, color: "#6B7280", label: "Absconded", count: dashboard.statusCounts.Abscondment, statusKey: "Abscondment" },
+    { pct: dashboard.statusCounts.unknown / total, color: "#64748B", label: "Unknown", count: dashboard.statusCounts.unknown, statusKey: "unknown" },
   ];
 
   // Only use dashboard metrics if they are not 0 and not undefined
@@ -163,30 +164,49 @@ export function DashboardScreen({ navigation }: Props) {
       
     >
       {/* ── Overview row ── */}
-      <Pressable style={styles.overviewCardRow} onPress={() => navigation.navigate("Hives", { screen: "HiveList" })}>
-        <View style={[styles.overviewTile, { backgroundColor: dashboard.silentHives.length > 0 ? "#152566" : "#36f57c" }]}>
+      <View style={styles.overviewCardRow}>
+        <Pressable
+          style={[styles.overviewTile, { backgroundColor: dashboard.silentHives.length > 0 ? "#152566" : "#36f57c" }]}
+          onPress={() =>
+            navigation.navigate("Hives", {
+              screen: "HiveList",
+              params: dashboard.silentHives.length > 0
+                ? { hiveIds: dashboard.silentHives.map((h) => h.hiveId) }
+                : undefined,
+            })
+          }
+        >
           <Ionicons name={dashboard.silentHives.length > 0 ? "wifi-outline" : "radio-outline"} size={25} color="#fff" />
           <Text style={styles.overviewTileValue}>
             {dashboard.silentHives.length > 0 ? dashboard.silentHives.length : dashboard.totalHives}
           </Text>
           <Text style={styles.overviewTileLabel}>{dashboard.silentHives.length > 0 ? "Offline" : "All Online"}</Text>
-        </View>
-        <View style={[styles.overviewTile, { backgroundColor: "#5184f2" }]}>
+        </Pressable>
+        <Pressable
+          style={[styles.overviewTile, { backgroundColor: "#5184f2" }]}
+          onPress={() => navigation.navigate("Hives", { screen: "HiveList", params: { statusFilter: "active" } })}
+        >
           <Ionicons name="checkmark-circle-outline" size={25} color="#fff" />
           <Text style={styles.overviewTileValue}>{dashboard.activeHives}</Text>
           <Text style={styles.overviewTileLabel}>Harmonious</Text>
-        </View>
-        <View style={[styles.overviewTile, { backgroundColor: "#f55858" }]}>
+        </Pressable>
+        <Pressable
+          style={[styles.overviewTile, { backgroundColor: "#f55858" }]}
+          onPress={() => navigation.navigate("Alerts", { screen: "AlertsList" })}
+        >
           <Ionicons name="alert-circle-outline" size={25} color="#fff" />
           <Text style={styles.overviewTileValue}>{dashboard.pendingAlerts}</Text>
           <Text style={styles.overviewTileLabel}>Alerts</Text>
-        </View>
-        <View style={[styles.overviewTile, { backgroundColor: "#f3ac5a" }]}>
+        </Pressable>
+        <Pressable
+          style={[styles.overviewTile, { backgroundColor: "#f3ac5a" }]}
+          onPress={() => navigation.navigate("Hives", { screen: "HiveList", params: { statusFilter: "swarming" } })}
+        >
           <Ionicons name="warning-outline" size={25} color="#fff" />
           <Text style={styles.overviewTileValue}>{dashboard.statusCounts.swarming}</Text>
           <Text style={styles.overviewTileLabel}>Swarming</Text>
-        </View>
-      </Pressable>
+        </Pressable>
+      </View>
 
       {/* ── Hive State Donut ── */}
       <Pressable style={[styles.card, { backgroundColor: theme.surface }]} onPress={() => navigation.navigate("Hives", { screen: "HiveList" })}>
@@ -200,15 +220,17 @@ export function DashboardScreen({ navigation }: Props) {
         <View style={styles.donutRow}>
           <DonutChart segments={donutSegments} total={total} />
           <View style={styles.donutLegend}>
-            {donutSegments.map((seg) =>  {
-              console.log("Segments :",seg)
-               return(
-              <View key={seg.label} style={styles.donutLegendItem}>
+            {donutSegments.map((seg) => (
+              <Pressable
+                key={seg.label}
+                style={styles.donutLegendItem}
+                onPress={() => navigation.navigate("Hives", { screen: "HiveList", params: { statusFilter: seg.statusKey } })}
+              >
                 <View style={[styles.donutLegendDot, { backgroundColor: seg.color }]} />
                 <Text style={styles.donutLegendLabel}>{seg.label}</Text>
                 <Text style={styles.donutLegendCount}>{seg.count}</Text>
-              </View>
-            )})}
+              </Pressable>
+            ))}
           </View>
         </View>
       </Pressable>
@@ -300,7 +322,15 @@ export function DashboardScreen({ navigation }: Props) {
 
 <View style={styles.gridThree}>
   {/* Recordings Today */}
-  <View style={styles.infoCard}>
+  <Pressable
+    style={styles.infoCard}
+    onPress={() => {
+      const hiveIds = dashboard.recordingsTodayDetails?.map((r) => r.hiveId);
+      if (hiveIds && hiveIds.length > 0) {
+        navigation.navigate("Hives", { screen: "HiveList", params: { hiveIds } });
+      }
+    }}
+  >
     <Ionicons
       name="mic-outline"
       size={22}
@@ -315,15 +345,20 @@ export function DashboardScreen({ navigation }: Props) {
     <Text style={styles.infoCardSub}>
       Across all hives
     </Text>
-  </View>
+  </Pressable>
 
   {/* Silent Hives */}
-  <View
+  <Pressable
     style={[
       styles.infoCard,
       dashboard.silentHives.length > 0 &&
         styles.infoCardWarn,
     ]}
+    onPress={() => {
+      if (dashboard.silentHives.length > 0) {
+        navigation.navigate("Hives", { screen: "HiveList", params: { hiveIds: dashboard.silentHives.map((h) => h.hiveId) } });
+      }
+    }}
   >
     <Ionicons
       name="volume-mute-outline"
@@ -356,15 +391,21 @@ export function DashboardScreen({ navigation }: Props) {
     <Text style={styles.infoCardSub}>
       No audio in 8h+
     </Text>
-  </View>
+  </Pressable>
 
   {/* Low Confidence */}
-  <View
+  <Pressable
     style={[
       styles.infoCard,
       dashboard.lowConfidenceInferences > 0 &&
         styles.infoCardWarn,
     ]}
+    onPress={() => {
+      const hiveIds = dashboard.lowConfidenceInferencesDetails?.map((r) => r.hiveId);
+      if (hiveIds && hiveIds.length > 0) {
+        navigation.navigate("Hives", { screen: "HiveList", params: { hiveIds } });
+      }
+    }}
   >
     <Ionicons
       name="help-circle-outline"
@@ -397,7 +438,7 @@ export function DashboardScreen({ navigation }: Props) {
     <Text style={styles.infoCardSub}>
       Score &lt; 0.6
     </Text>
-  </View>
+  </Pressable>
 </View>
     </ScrollView>
   );

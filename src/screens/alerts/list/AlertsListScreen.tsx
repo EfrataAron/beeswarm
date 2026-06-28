@@ -147,6 +147,31 @@ const filteredDashboardAlerts = useMemo(
   [alerts, severityFilter, hiveFilter, latestFilter]
 );
 
+// Group the currently filtered alerts by hive, so the list shows one row
+// per hive (with an unread-count badge) instead of every individual alert.
+const hiveAlertGroups = useMemo(() => {
+  const groups = new Map<string, { hiveName: string; total: number; unread: number; latestDate: string }>();
+  filteredDashboardAlerts.forEach((alert) => {
+    const existing = groups.get(alert.hiveName);
+    const isUnread = !openedIds.has(alert.id);
+    if (!existing) {
+      groups.set(alert.hiveName, {
+        hiveName: alert.hiveName,
+        total: 1,
+        unread: isUnread ? 1 : 0,
+        latestDate: alert.date,
+      });
+      return;
+    }
+    existing.total += 1;
+    if (isUnread) existing.unread += 1;
+    if (Date.parse(alert.date.replace(" ", "T")) > Date.parse(existing.latestDate.replace(" ", "T"))) {
+      existing.latestDate = alert.date;
+    }
+  });
+  return Array.from(groups.values()).sort((a, b) => b.unread - a.unread || b.total - a.total);
+}, [filteredDashboardAlerts, openedIds]);
+
 const selectedDashboardAlert = useMemo(() => {
   if (filteredDashboardAlerts.length === 0) return null;
 
@@ -550,39 +575,65 @@ const selectedDashboardAlert = useMemo(() => {
         </View>
       )}
 
-      {filtered.map((alert) => (
-        <Pressable
-          key={alert.id}
-          style={({ pressed }) => [styles.alertCard, pressed && styles.pressedRow]}
-          onPress={() => {
-            // Decrement badge only the first time this alert is opened
-            markAlertOpened(alert.id);
-            navigation.navigate("AlertDetails", {
-              alertId: alert.id,
-              onAlertOpened: () => markAlertOpened(alert.id),
-            });
-          }}
-        >
-          <View style={styles.alertCardBody}>
-            <View style={styles.alertCardTopRow}>
-              <View style={styles.alertCardIconWrap}>
-                <Ionicons name={SEVERITY_ICON[alert.severity]} size={20} color={SEVERITY_COLOR[alert.severity]} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.alertCardTitle}>{alert.title}</Text>
-                <View style={styles.alertCardMeta}>
-                <Ionicons name="cube-outline" size={11} color={theme.textMuted} />
-                <Text style={styles.alertCardMetaText}>{alert.hiveName}</Text>
-                <Text style={styles.alertCardMetaDot}>·</Text>
-                <Text style={styles.alertCardMetaText}>{alert.date}</Text>
-              </View>
+      {hiveFilter === "All" ? (
+        hiveAlertGroups.map((group) => (
+          <Pressable
+            key={group.hiveName}
+            style={({ pressed }) => [styles.hiveAlertGroupRow, pressed && styles.pressedRow]}
+            onPress={() => setHiveFilter(group.hiveName)}
+          >
+            <View style={styles.hiveAlertGroupIconWrap}>
+              <Ionicons name="cube-outline" size={20} color={theme.primary} />
             </View>
+            <View style={styles.hiveAlertGroupInfo}>
+              <Text style={styles.hiveAlertGroupName}>{group.hiveName}</Text>
+              <Text style={styles.hiveAlertGroupMetaText}>
+                {group.total} alert{group.total === 1 ? "" : "s"} · {group.latestDate}
+              </Text>
+            </View>
+            {group.unread > 0 && (
+              <View style={styles.unreadBadge}>
+                <Text style={styles.unreadBadgeText}>{group.unread}</Text>
+              </View>
+            )}
             <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
-          </View>
-          <Text style={styles.alertCardSummary} numberOfLines={2}>{alert.summary}</Text>
-          </View>
-        </Pressable>
-      ))}
+          </Pressable>
+        ))
+      ) : (
+        filtered.map((alert) => (
+          <Pressable
+            key={alert.id}
+            style={({ pressed }) => [styles.alertCard, pressed && styles.pressedRow]}
+            onPress={() => {
+              // Decrement badge only the first time this alert is opened
+              markAlertOpened(alert.id);
+              navigation.navigate("AlertDetails", {
+                alertId: alert.id,
+                onAlertOpened: () => markAlertOpened(alert.id),
+              });
+            }}
+          >
+            <View style={styles.alertCardBody}>
+              <View style={styles.alertCardTopRow}>
+                <View style={styles.alertCardIconWrap}>
+                  <Ionicons name={SEVERITY_ICON[alert.severity]} size={20} color={SEVERITY_COLOR[alert.severity]} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.alertCardTitle}>{alert.title}</Text>
+                  <View style={styles.alertCardMeta}>
+                  <Ionicons name="cube-outline" size={11} color={theme.textMuted} />
+                  <Text style={styles.alertCardMetaText}>{alert.hiveName}</Text>
+                  <Text style={styles.alertCardMetaDot}>·</Text>
+                  <Text style={styles.alertCardMetaText}>{alert.date}</Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
+            </View>
+            <Text style={styles.alertCardSummary} numberOfLines={2}>{alert.summary}</Text>
+            </View>
+          </Pressable>
+        ))
+      )}
     </ScrollView>
   );
 }

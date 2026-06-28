@@ -15,6 +15,17 @@ import {
 } from "../utils/metricsHistory";
 import { cacheData, getCachedData } from "../utils/offlineCache";
 
+function isToday(isoDate: string): boolean {
+  const d = new Date(isoDate);
+  if (Number.isNaN(d.getTime())) return false;
+  const now = new Date();
+  return (
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate()
+  );
+}
+
 type HiveSnapshot = {
   hiveId: string;
   hiveName: string;
@@ -253,7 +264,18 @@ export async function fetchDashboard(): Promise<DashboardData> {
           }))
         : [],
       recordingsToday: Number(raw?.recordings_today ?? 0),
-      recordingsTodayDetails: [],
+      // The backend only returns a count, not a per-hive breakdown, so this is
+      // approximated from hives whose last inference happened today — close
+      // enough to let the "Recordings Today" card link to the relevant hives.
+      recordingsTodayDetails: hivesForStatus
+        .filter((h) => h.lastInferenceAt && isToday(h.lastInferenceAt))
+        .map((h) => ({
+          id: h.id,
+          hiveId: h.id,
+          hiveName: h.name,
+          durationSeconds: 0,
+          recordedAt: h.lastInferenceAt!,
+        })),
       silentHives: (raw?.silent_hives ?? []).map((h: any) => ({
         hiveId: String(h.hive_id),
         hiveName: String(h.hive_name ?? h.hive_id),

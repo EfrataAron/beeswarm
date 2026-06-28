@@ -126,7 +126,17 @@ export function HivesListScreen({ navigation, route }: Props) {
     return () => clearTimeout(timeout);
   }, [searchText, loadHives]);
 
-  const filtered = filterStatus === "All" ? hives : hives.filter((h) => h.status === filterStatus);
+  // Apply a status filter passed in from the dashboard (e.g. tapping "Swarming").
+  useEffect(() => {
+    if (route.params?.statusFilter) {
+      setFilterStatus(route.params.statusFilter);
+    }
+  }, [route.params?.statusFilter]);
+
+  const hiveIdsFilter = route.params?.hiveIds;
+
+  const filtered = (filterStatus === "All" ? hives : hives.filter((h) => h.status === filterStatus))
+    .filter((h) => !hiveIdsFilter || hiveIdsFilter.includes(h.id));
 
   return (
     <ScrollView
@@ -218,6 +228,15 @@ export function HivesListScreen({ navigation, route }: Props) {
           </Pressable>
         </View>
       </View>
+
+      {!!hiveIdsFilter && (
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+          <Text style={styles.hiveListCount}>Showing {hiveIdsFilter.length} selected hive{hiveIdsFilter.length === 1 ? "" : "s"}</Text>
+          <Pressable onPress={() => navigation.setParams({ hiveIds: undefined, statusFilter: undefined })}>
+            <Text style={{ fontSize: 12, color: "#2563EB", fontWeight: "700" }}>Clear filter</Text>
+          </Pressable>
+        </View>
+      )}
 
       {!loading && !error && (
         <Text style={[styles.hiveListCount, { marginTop: 10 }]}>

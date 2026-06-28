@@ -137,6 +137,12 @@ export function MapScreen({ navigation }: Props) {
     [hives, sensorMap],
   );
   const region = useMemo(() => getMapRegion(mapHives), [mapHives]);
+  // Hives without valid coordinates can't be pinned on the map — list them
+  // explicitly instead of letting them silently disappear from this screen.
+  const unmappedHives = useMemo(
+    () => hives.filter((h) => !hasMapCoordinates(h)),
+    [hives],
+  );
 
   return (
     <View style={styles.fullScreenContainer}>
@@ -146,7 +152,9 @@ export function MapScreen({ navigation }: Props) {
           <View>
             <Text style={styles.headerTitle}>Live Hive Map</Text>
             <Text style={styles.headerSubtitle}>
-                {mapHives.length} {mapHives.length === 1 ? 'hive' : 'hives'} mapped
+                {unmappedHives.length > 0
+                  ? `${mapHives.length} of ${hives.length} hives mapped`
+                  : `${mapHives.length} ${mapHives.length === 1 ? 'hive' : 'hives'} mapped`}
               </Text>
           </View>
           <Pressable style={styles.refreshButton} onPress={() => void loadHives()}>
@@ -154,6 +162,25 @@ export function MapScreen({ navigation }: Props) {
           </Pressable>
         </View>
       </View>
+
+      {/* Hives that couldn't be pinned (no valid coordinates) */}
+      {!loading && unmappedHives.length > 0 && (
+        <View style={styles.unmappedBanner}>
+          <Text style={styles.unmappedBannerTitle}>
+            {unmappedHives.length} hive{unmappedHives.length === 1 ? "" : "s"} missing a map location
+          </Text>
+          {unmappedHives.map((h) => (
+            <Pressable
+              key={h.id}
+              style={styles.unmappedHiveRow}
+              onPress={() => navigation.navigate("Hives", { screen: "EditHive", params: { hiveId: h.id } })}
+            >
+              <Text style={styles.unmappedHiveName} numberOfLines={1}>{h.name}</Text>
+              <Text style={styles.unmappedHiveAction}>Add location</Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
 
       {/* Map Container */}
       <View style={styles.mapContainer}>

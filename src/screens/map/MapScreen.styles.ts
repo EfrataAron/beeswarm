@@ -188,4 +188,48 @@ export const mapStyles = StyleSheet.create({
     color: THEME.primary,
     fontWeight: "600",
   },
+
+  unmappedBanner: {
+    position: "absolute",
+    top: 96,
+    left: 16,
+    right: 16,
+    zIndex: 9,
+    backgroundColor: "#FFFBEB",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#FDE68A",
+    padding: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+
+  unmappedBannerTitle: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#92400E",
+    marginBottom: 6,
+  },
+
+  unmappedHiveRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 4,
+  },
+
+  unmappedHiveName: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: THEME.text,
+  },
+
+  unmappedHiveAction: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#2563EB",
+  },
 });
