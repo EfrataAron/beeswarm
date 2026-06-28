@@ -80,7 +80,7 @@ jobs:
 
   build-android:
     name: Build Android APK
-    needs: [test]
+    needs: [test, version-and-release]
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
