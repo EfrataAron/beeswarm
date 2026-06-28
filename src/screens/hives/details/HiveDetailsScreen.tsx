@@ -785,6 +785,7 @@ export function HiveDetailsScreen({ route, navigation }: Props) {
             <HiveMetricsLineChart
               metricSeries={metricSeries}
               hiveName={detail.name}
+              installationDate={detail.installationDate}
             />
           )
         )}
@@ -803,7 +804,7 @@ export function HiveDetailsScreen({ route, navigation }: Props) {
           <Text style={[styles.metricsSubtitle, { marginBottom: 4 }]}>
             How this hive's detected state has changed over time
           </Text>
-          <HiveStatusTrendChart statusTrend={stateTrendPoints} />
+          <HiveStatusTrendChart statusTrend={stateTrendPoints} installationDate={detail.installationDate} />
         </View>
       )}
 

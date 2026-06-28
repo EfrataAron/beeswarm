@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { HiveStatus } from "../api";
 import { THEME } from "../theme";
@@ -12,6 +12,8 @@ type TrendPoint = {
 
 type Props = {
   statusTrend: TrendPoint[];
+  /** ISO install date of the hive — used to disable range tabs the hive hasn't existed long enough to fill. */
+  installationDate?: string;
 };
 
 // ─── Config ───────────────────────────────────────────────────────────────────
@@ -29,15 +31,34 @@ const STATUS_META: Array<{ status: HiveStatus; label: string; color: string }> =
 ];
 
 type Range = "24h" | "7d" | "30d";
+const RANGES: Range[] = ["24h", "7d", "30d"];
+const RANGE_MIN_DAYS: Record<Range, number> = { "24h": 0, "7d": 1, "30d": 7 };
+
+/** Which ranges are actually meaningful given how long the hive has existed. */
+function availableRanges(installationDate?: string): Range[] {
+  if (!installationDate) return RANGES;
+  const installedAt = new Date(installationDate).getTime();
+  if (Number.isNaN(installedAt)) return RANGES;
+  const daysSinceInstall = (Date.now() - installedAt) / (1000 * 60 * 60 * 24);
+  return RANGES.filter((r) => daysSinceInstall >= RANGE_MIN_DAYS[r]);
+}
 
 // ─── Chart ────────────────────────────────────────────────────────────────────
 
-export function HiveStatusTrendChart({ statusTrend }: Props) {
+export function HiveStatusTrendChart({ statusTrend, installationDate }: Props) {
   const [range, setRange] = useState<Range>("7d");
   const [activeStatuses, setActiveStatuses] = useState<Set<HiveStatus>>(
     new Set(STATUS_META.map((m) => m.status)),
   );
   const [chartWidth, setChartWidth] = useState(0);
+
+  const validRanges = useMemo(() => availableRanges(installationDate), [installationDate]);
+
+  useEffect(() => {
+    if (!validRanges.includes(range)) {
+      setRange(validRanges[validRanges.length - 1] ?? "24h");
+    }
+  }, [validRanges, range]);
 
   // ── Slice data for selected range ─────────────────────────────────────────
   const slicedPoints = useMemo(() => {
@@ -119,8 +140,9 @@ export function HiveStatusTrendChart({ statusTrend }: Props) {
   return (
     <View style={{ marginTop: 8 }}>
       {/* ── Range tabs ──────────────────────────────────────────────────── */}
+      {validRanges.length > 1 && (
       <View style={{ flexDirection: "row", gap: 6, marginBottom: 10, alignSelf: "flex-end" }}>
-        {(["24h", "7d", "30d"] as Range[]).map((r) => (
+        {validRanges.map((r) => (
           <Pressable
             key={r}
             onPress={() => setRange(r)}
@@ -143,6 +165,7 @@ export function HiveStatusTrendChart({ statusTrend }: Props) {
           </Pressable>
         ))}
       </View>
+      )}
 
       {/* ── Status toggle chips ─────────────────────────────────────────── */}
       <ScrollView

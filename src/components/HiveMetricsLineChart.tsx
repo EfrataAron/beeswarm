@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useTheme } from "../hooks/useTheme";
 import { useTemperatureUnit, convertTemp } from "../hooks/useTemperatureUnit";
@@ -24,10 +24,22 @@ type Props = {
   showRangeFilter?: boolean;
   /** When set (dashboard), tapping a dot lists each hive's name and value at that time. */
   perHiveSeries?: PerHiveSeries[];
+  /** ISO install date of the hive — used to disable range tabs the hive hasn't existed long enough to fill. */
+  installationDate?: string;
 };
 
 const RANGE_LABELS: Record<TimeRange, string> = { "24h": "24 h", "7d": "7 d", "30d": "30 d" };
 const RANGES: TimeRange[] = ["24h", "7d", "30d"];
+const RANGE_MIN_DAYS: Record<TimeRange, number> = { "24h": 0, "7d": 1, "30d": 7 };
+
+/** Which ranges are actually meaningful given how long the hive has existed. */
+function availableRanges(installationDate?: string): TimeRange[] {
+  if (!installationDate) return RANGES;
+  const installedAt = new Date(installationDate).getTime();
+  if (Number.isNaN(installedAt)) return RANGES;
+  const daysSinceInstall = (Date.now() - installedAt) / (1000 * 60 * 60 * 24);
+  return RANGES.filter((r) => daysSinceInstall >= RANGE_MIN_DAYS[r]);
+}
 
 /** Slice the series to simulate the selected range. */
 function sliceForRange(series: MetricPoint[], range: TimeRange): MetricPoint[] {
@@ -53,6 +65,7 @@ export function HiveMetricsLineChart({
   hiveName: _hiveName,
   showRangeFilter = true,
   perHiveSeries,
+  installationDate,
 }: Props) {
   const theme = useTheme();
   const { unit: tempUnit, formatTemp } = useTemperatureUnit();
@@ -60,6 +73,14 @@ export function HiveMetricsLineChart({
   const [range, setRange] = useState<TimeRange>("24h");
   const [chartWidth, setChartWidth] = useState(0);
   const [selectedPoint, setSelectedPoint] = useState<SelectedPoint | null>(null);
+
+  const validRanges = useMemo(() => availableRanges(installationDate), [installationDate]);
+
+  useEffect(() => {
+    if (!validRanges.includes(range)) {
+      setRange(validRanges[validRanges.length - 1] ?? "24h");
+    }
+  }, [validRanges, range]);
 
   const series = useMemo(() => sliceForRange(metricSeries, range), [metricSeries, range]);
 
@@ -169,9 +190,9 @@ export function HiveMetricsLineChart({
       </View>
 
       {/* Range filter */}
-      {showRangeFilter && (
+      {showRangeFilter && validRanges.length > 1 && (
         <View style={{ flexDirection: "row", gap: 6, marginBottom: 10 }}>
-          {RANGES.map(r => (
+          {validRanges.map(r => (
             <Pressable
               key={r}
               onPress={() => { setRange(r); setSelectedPoint(null); }}
