@@ -62,8 +62,8 @@ export async function fetchFleetMetricsFromHives(): Promise<{
     allHives.push({
       hiveId,
       hiveName: detail.name,
-      temperatureC: last?.temperatureC,
-      humidityPercent: last?.humidityPercent,
+      temperatureC: last?.temperatureC ?? 0,
+      humidityPercent: last?.humidityPercent ?? 0,
       status: hive?.status,
     });
   });
@@ -306,8 +306,8 @@ export async function fetchDashboard(): Promise<DashboardData> {
       allHives.push({
         hiveId,
         hiveName: detail.name,
-        temperatureC: last?.temperatureC,
-        humidityPercent: last?.humidityPercent,
+        temperatureC: last?.temperatureC ?? 0,
+        humidityPercent: last?.humidityPercent ?? 0,
         status: hive?.status,
       });
       });

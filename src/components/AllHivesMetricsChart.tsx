@@ -14,9 +14,12 @@ type Props = {
   allHives: HivePoint[];
 };
 
+type Category = "healthy" | "atRisk" | "total";
+
 export function AllHivesMetricsChart({ allHives }: Props) {
   const [chartWidth, setChartWidth] = useState(0);
   const [hoveredHive, setHoveredHive] = useState<string | null>(null);
+  const [expandedCategory, setExpandedCategory] = useState<Category | null>(null);
   const { formatTemp, unit: tempUnit } = useTemperatureUnit();
 
   const CHART_HEIGHT = 280;
@@ -27,8 +30,12 @@ export function AllHivesMetricsChart({ allHives }: Props) {
   const THRESHOLD_TEMP = 34.5; // always in °C for logic
   const THRESHOLD_HUMIDITY = 65;
 
-  // Convert all temperatures to the display unit for axis scaling
-  const displayTemps = allHives.map((h) => convertTemp(h.temperatureC, tempUnit));
+  // Convert all temperatures to the display unit for axis scaling.
+  // Filter out non-finite values so one hive with missing data can't turn
+  // Math.max/min (and the whole axis) into NaN for every other hive.
+  const displayTemps = allHives
+    .map((h) => convertTemp(h.temperatureC, tempUnit))
+    .filter((t) => Number.isFinite(t));
   const thresholdDisplay = convertTemp(THRESHOLD_TEMP, tempUnit);
 
   const maxTemp = Math.max(...displayTemps, convertTemp(40, tempUnit));
@@ -36,6 +43,15 @@ export function AllHivesMetricsChart({ allHives }: Props) {
 
   const plotW = Math.max(chartWidth - PAD_LEFT - PAD_RIGHT, 1);
   const plotH = CHART_HEIGHT - PAD_TOP - PAD_BOTTOM;
+
+  const isAbnormal = (h: HivePoint) => h.temperatureC > THRESHOLD_TEMP || h.humidityPercent > THRESHOLD_HUMIDITY;
+  const healthyHives = allHives.filter((h) => !isAbnormal(h));
+  const atRiskHives = allHives.filter(isAbnormal);
+  const categoryHives: Record<Category, HivePoint[]> = {
+    healthy: healthyHives,
+    atRisk: atRiskHives,
+    total: allHives,
+  };
 
   return (
     <View key={`snapshot-${tempUnit}`} style={{ marginTop: 12 }}>
@@ -94,8 +110,7 @@ export function AllHivesMetricsChart({ allHives }: Props) {
               const displayT = convertTemp(hive.temperatureC, tempUnit);
               const x = PAD_LEFT + ((displayT - minTemp) / (maxTemp - minTemp)) * plotW;
               const y = PAD_TOP + (1 - hive.humidityPercent / 100) * plotH;
-              const isAbnormal = hive.temperatureC > THRESHOLD_TEMP || hive.humidityPercent > THRESHOLD_HUMIDITY;
-              const color = isAbnormal ? "#DC2626" : "#22C55E";
+              const color = isAbnormal(hive) ? "#DC2626" : "#22C55E";
               const isHovered = hoveredHive === hive.hiveId;
 
               // Clamp tooltip so it stays inside the chart bounds
@@ -200,23 +215,63 @@ export function AllHivesMetricsChart({ allHives }: Props) {
       {/* Summary */}
       <View style={{ marginTop: 16, paddingHorizontal: 12 }}>
         <View style={{ flexDirection: "row", gap: 12 }}>
-          <View style={{ flex: 1, paddingHorizontal: 10, paddingVertical: 10, backgroundColor: "#ECFDF5", borderRadius: 6 }}>
+          <Pressable
+            style={{ flex: 1, paddingHorizontal: 10, paddingVertical: 10, backgroundColor: "#ECFDF5", borderRadius: 6 }}
+            onPress={() => setExpandedCategory(expandedCategory === "healthy" ? null : "healthy")}
+          >
             <Text style={{ fontSize: 9, color: THEME.textMuted, fontWeight: "600" }}>Healthy</Text>
             <Text style={{ fontSize: 16, fontWeight: "700", color: "#22C55E", marginTop: 4 }}>
-              {allHives.filter((h) => h.temperatureC <= THRESHOLD_TEMP && h.humidityPercent <= THRESHOLD_HUMIDITY).length}
+              {healthyHives.length}
             </Text>
-          </View>
-          <View style={{ flex: 1, paddingHorizontal: 10, paddingVertical: 10, backgroundColor: "#FCE7E7", borderRadius: 6 }}>
+          </Pressable>
+          <Pressable
+            style={{ flex: 1, paddingHorizontal: 10, paddingVertical: 10, backgroundColor: "#FCE7E7", borderRadius: 6 }}
+            onPress={() => setExpandedCategory(expandedCategory === "atRisk" ? null : "atRisk")}
+          >
             <Text style={{ fontSize: 9, color: THEME.textMuted, fontWeight: "600" }}>At Risk</Text>
             <Text style={{ fontSize: 16, fontWeight: "700", color: "#DC2626", marginTop: 4 }}>
-              {allHives.filter((h) => h.temperatureC > THRESHOLD_TEMP || h.humidityPercent > THRESHOLD_HUMIDITY).length}
+              {atRiskHives.length}
             </Text>
-          </View>
-          <View style={{ flex: 1, paddingHorizontal: 10, paddingVertical: 10, backgroundColor: "#F0F4F8", borderRadius: 6 }}>
+          </Pressable>
+          <Pressable
+            style={{ flex: 1, paddingHorizontal: 10, paddingVertical: 10, backgroundColor: "#F0F4F8", borderRadius: 6 }}
+            onPress={() => setExpandedCategory(expandedCategory === "total" ? null : "total")}
+          >
             <Text style={{ fontSize: 9, color: THEME.textMuted, fontWeight: "600" }}>Total</Text>
             <Text style={{ fontSize: 16, fontWeight: "700", color: THEME.primary, marginTop: 4 }}>{allHives.length}</Text>
-          </View>
+          </Pressable>
         </View>
+
+        {expandedCategory && (
+          <View style={{ marginTop: 10, gap: 6 }}>
+            {categoryHives[expandedCategory].length === 0 ? (
+              <Text style={{ fontSize: 11, color: THEME.textMuted, fontStyle: "italic" }}>No hives in this category.</Text>
+            ) : (
+              categoryHives[expandedCategory].map((h) => (
+                <View
+                  key={h.hiveId}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    paddingHorizontal: 10,
+                    paddingVertical: 8,
+                    backgroundColor: THEME.surfaceSoft,
+                    borderRadius: 6,
+                  }}
+                >
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: isAbnormal(h) ? "#DC2626" : "#22C55E" }} />
+                    <Text style={{ fontSize: 12, fontWeight: "700", color: THEME.text }}>{h.hiveName || h.hiveId}</Text>
+                  </View>
+                  <Text style={{ fontSize: 11, color: THEME.textMuted }}>
+                    {formatTemp(h.temperatureC, 1)} · {h.humidityPercent.toFixed(0)}%
+                  </Text>
+                </View>
+              ))
+            )}
+          </View>
+        )}
       </View>
     </View>
   );
