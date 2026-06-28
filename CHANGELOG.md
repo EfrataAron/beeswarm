@@ -1,3 +1,10 @@
+## [1.1.5](https://github.com/EfrataAron/beeswarm/compare/v1.1.4...v1.1.5) (2026-06-28)
+
+
+### Bug Fixes
+
+* apk ([cd39441](https://github.com/EfrataAron/beeswarm/commit/cd39441ac78dd4f1768348f4ed3285d02ca6e170))
+
 ## [1.1.4](https://github.com/EfrataAron/beeswarm/compare/v1.1.3...v1.1.4) (2026-06-28)
 
 
