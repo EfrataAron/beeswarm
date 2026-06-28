@@ -108,6 +108,9 @@ jobs:
       - name: Make Gradlew executable
         run: chmod +x android/gradlew
 
+      - name: Clean Android build
+        run: cd android && ./gradlew clean
+
       - name: Build Android APKs (Debug & Release)
         run: cd android && ./gradlew assembleDebug assembleRelease
 
