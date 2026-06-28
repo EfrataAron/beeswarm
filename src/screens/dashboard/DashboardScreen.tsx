@@ -55,19 +55,23 @@ export function DashboardScreen({ navigation }: Props) {
 
       if (data.status === "fulfilled") {
         setDashboard(data.value);
+      } else {
+        // Promise.allSettled never rejects, so this is the only place a
+        // fetchDashboard() failure surfaces — without this, the screen fell
+        // back to a generic "No data returned from API" message that hid
+        // the real cause (network error, auth failure, etc).
+        setDashboard(currentDashboard => {
+          if (!currentDashboard) {
+            const reason = data.reason;
+            setError(reason instanceof Error ? reason.message : "Could not load dashboard data");
+          }
+          return currentDashboard;
+        });
       }
 
       setAmbientWeather(
         weather.status === "fulfilled" ? weather.value : null,
       );
-    } catch (err) {
-      // Only set error if we don't have any dashboard data yet
-      setDashboard(currentDashboard => {
-        if (!currentDashboard) {
-          setError(err instanceof Error ? err.message : "Could not load dashboard data");
-        }
-        return currentDashboard;
-      });
     } finally {
       if (initial) setLoading(false);
     }
