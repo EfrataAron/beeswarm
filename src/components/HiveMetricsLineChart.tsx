@@ -134,6 +134,11 @@ export function HiveMetricsLineChart({
   const PAD_RIGHT      = 40;
   const THRESHOLD_TEMP = 34.5;
   const THRESHOLD_HUM  = 65;
+  // Acceptable range for a healthy hive — outside these bounds is cause for concern.
+  const TEMP_ACCEPT_MIN = 32;
+  const TEMP_ACCEPT_MAX = 36;
+  const HUM_ACCEPT_MIN  = 50;
+  const HUM_ACCEPT_MAX  = 70;
 
   if (metricSeries.length === 0) {
     return (
@@ -172,6 +177,11 @@ export function HiveMetricsLineChart({
   const threshY    = yT(THRESHOLD_TEMP);
   const humThreshY = yH(THRESHOLD_HUM);
 
+  const tempAcceptMinY = yT(TEMP_ACCEPT_MIN);
+  const tempAcceptMaxY = yT(TEMP_ACCEPT_MAX);
+  const humAcceptMinY  = yH(HUM_ACCEPT_MIN);
+  const humAcceptMaxY  = yH(HUM_ACCEPT_MAX);
+
   // Decide which x-labels to show so they don't overlap
   const labelStep = Math.max(1, Math.ceil(n / 6));
 
@@ -195,6 +205,14 @@ export function HiveMetricsLineChart({
         <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
           <View style={{ width: 12, height: 1.5, backgroundColor: "#3B82F6" }} />
           <Text style={{ fontSize: 11, color: theme.textMuted, fontWeight: "600" }}>Hum threshold</Text>
+        </View>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+          <View style={{ width: 12, height: 0, borderTopWidth: 1.5, borderColor: theme.accent, borderStyle: "dashed" }} />
+          <Text style={{ fontSize: 11, color: theme.textMuted, fontWeight: "600" }}>Temp min/max</Text>
+        </View>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+          <View style={{ width: 12, height: 0, borderTopWidth: 1.5, borderColor: "#3B82F6", borderStyle: "dashed" }} />
+          <Text style={{ fontSize: 11, color: theme.textMuted, fontWeight: "600" }}>Hum min/max</Text>
         </View>
       </View>
 
@@ -292,6 +310,48 @@ export function HiveMetricsLineChart({
             }}>
               {THRESHOLD_HUM}%
             </Text>
+
+            {/* Acceptable temperature range (min/max dashed lines) */}
+            {[
+              { y: tempAcceptMinY, value: TEMP_ACCEPT_MIN },
+              { y: tempAcceptMaxY, value: TEMP_ACCEPT_MAX },
+            ].map(({ y, value }) => (
+              <React.Fragment key={`temp-accept-${value}`}>
+                <View style={{
+                  position: "absolute", left: PAD_LEFT, top: y,
+                  width: plotW, height: 0, borderTopWidth: 1.5,
+                  borderColor: theme.accent, borderStyle: "dashed", opacity: 0.6,
+                }} />
+                <Text style={{
+                  position: "absolute", left: PAD_LEFT + 4, top: y + 2,
+                  fontSize: 8, fontWeight: "700", color: theme.accent,
+                  backgroundColor: theme.surface, paddingHorizontal: 3,
+                }}>
+                  {formatTemp(value, 0)}
+                </Text>
+              </React.Fragment>
+            ))}
+
+            {/* Acceptable humidity range (min/max dashed lines) */}
+            {[
+              { y: humAcceptMinY, value: HUM_ACCEPT_MIN },
+              { y: humAcceptMaxY, value: HUM_ACCEPT_MAX },
+            ].map(({ y, value }) => (
+              <React.Fragment key={`hum-accept-${value}`}>
+                <View style={{
+                  position: "absolute", left: PAD_LEFT, top: y,
+                  width: plotW, height: 0, borderTopWidth: 1.5,
+                  borderColor: "#3B82F6", borderStyle: "dashed", opacity: 0.5,
+                }} />
+                <Text style={{
+                  position: "absolute", right: PAD_RIGHT + 2, top: y + 2,
+                  fontSize: 8, fontWeight: "700", color: "#3B82F6",
+                  backgroundColor: theme.surface, paddingHorizontal: 3,
+                }}>
+                  {value}%
+                </Text>
+              </React.Fragment>
+            ))}
 
             {/* Temperature line segments */}
             {tPts.slice(0, -1).map((p, i) => {
